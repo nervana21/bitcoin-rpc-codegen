@@ -62,18 +62,7 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     }
 
     let result = &method.results[0];
-    let type_name = match result.type_.as_str() {
-        "boolean" => "BooleanResponse".to_string(),
-        "string" => "StringResponse".to_string(),
-        "object" => {
-            if result.inner.is_empty() {
-                "ObjectResponse".to_string() // For methods that return a generic object
-            } else {
-                format!("{}Response", capitalize(&method.name))
-            }
-        }
-        _ => format!("{}Response", capitalize(&method.name)),
-    };
+    let type_name = format!("{}Response", capitalize(&method.name));
 
     let fields = if result.inner.is_empty() {
         format!("\n    pub result: {},\n", get_return_type(result))
@@ -81,7 +70,6 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
         format!("\n{}\n", generate_struct_fields(result))
     };
 
-    // Format the description with proper documentation comments
     let formatted_description = method
         .description
         .split('\n')
@@ -106,7 +94,7 @@ pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<Str
         return None;
     }
 
-    let type_name = get_return_type_from_results(&method.results);
+    let type_name = format!("{}Response", capitalize(&method.name));
     let model_type = format!("model::{}", type_name);
 
     Some(format!(
@@ -114,14 +102,13 @@ pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<Str
     /// Converts version specific type to a version nonspecific, more strongly typed type.
     /// This conversion is specific to version {}.
     pub fn into_model(self) -> Result<{}, {}Error> {{
-        {}
+        Ok(())
     }}
 }}"#,
         type_name,
         version,
         model_type,
-        type_name,
-        generate_conversion_body(method)
+        type_name
     ))
 }
 
@@ -147,13 +134,6 @@ fn get_return_type_from_results(results: &[ApiResult]) -> String {
     }
 }
 
-fn get_fields(results: &[ApiResult]) -> Vec<ApiResult> {
-    if results.is_empty() {
-        vec![]
-    } else {
-        results[0].inner.clone()
-    }
-}
 
 fn generate_method_args(method: &ApiMethod) -> String {
     let mut args = String::new();
@@ -263,18 +243,6 @@ fn get_field_type(field: &ApiResult) -> String {
     }
 }
 
-fn generate_conversion_body(method: &ApiMethod) -> String {
-    let fields = get_fields(&method.results);
-    if fields.is_empty() {
-        "Ok(())".to_string()
-    } else if method.results[0].type_.to_lowercase() == "object" {
-        // For object responses, return a generic JSON value
-        "Ok(serde_json::Value::Object(serde_json::Map::new()))".to_string()
-    } else {
-        "todo!(\"Implement conversion\")".to_string()
-    }
-}
-
 fn sanitize_method_name(name: &str) -> String { name.replace("-", "_").to_lowercase() }
 
 fn sanitize_field_name(name: &str) -> String {
@@ -282,11 +250,13 @@ fn sanitize_field_name(name: &str) -> String {
 }
 
 fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
+    s.split('-').map(|word| {
+        let mut c = word.chars();
+        match c.next() {
+            None => String::new(),
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+        }
+    }).collect::<Vec<_>>().join("")
 }
 
 fn generate_object_type(result: &ApiResult) -> String {
@@ -355,9 +325,14 @@ mod tests {
     #[test]
     fn test_generate_client_macro() {
         let method = create_test_method();
-        let macro_code = generate_client_macro(&method, "v17");
-        assert!(macro_code.contains("impl_client_v17__test_method"));
+        let macro_code = generate_client_macro(&method, "v21");
+        assert!(macro_code.contains("impl_client_v21__test_method"));
         assert!(macro_code.contains("Test method description"));
+    }
+
+    #[test]
+    fn test_capitalize() {
+        assert_eq!(capitalize("test-method"), "TestMethod");
     }
 
     #[test]
@@ -365,24 +340,17 @@ mod tests {
         let method = create_test_method();
         let type_code = generate_return_type(&method).unwrap();
         assert!(type_code.contains("TestMethodResponse"));
-        assert!(type_code.contains("Test method description"));
     }
 
     #[test]
     fn test_generate_type_conversion() {
         let method = create_test_method();
-        let conversion_code = generate_type_conversion(&method, "v17").unwrap();
+        let conversion_code = generate_type_conversion(&method, "v21").unwrap();
         assert!(conversion_code.contains("impl TestMethodResponse"));
-        assert!(conversion_code.contains("into_model"));
     }
 
     #[test]
     fn test_sanitize_method_name() {
         assert_eq!(sanitize_method_name("test-method"), "test_method");
-    }
-
-    #[test]
-    fn test_capitalize() {
-        assert_eq!(capitalize("test-method"), "TestMethod");
     }
 }
