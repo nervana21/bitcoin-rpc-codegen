@@ -112,17 +112,24 @@ pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<Str
     ))
 }
 
-fn get_return_type(result: &ApiResult) -> String {
-    match result.type_.as_str() {
+fn map_type_to_rust(type_str: &str) -> String {
+    match type_str {
         "boolean" => "bool".to_string(),
         "string" => "String".to_string(),
-        "object" =>
-            if result.inner.is_empty() {
-                "serde_json::Value".to_string()
-            } else {
-                generate_object_type(result)
-            },
-        _ => generate_complex_type(result),
+        "number" => "f64".to_string(),
+        "hex" => "Hex".to_string(),
+        "amount" => "Amount".to_string(),
+        "time" => "Time".to_string(),
+        "object" | "elision" => "serde_json::Value".to_string(),
+        _ => type_str.replace("-", "_").to_string(),
+    }
+}
+
+fn get_return_type(result: &ApiResult) -> String {
+    if result.type_.as_str() == "object" && !result.inner.is_empty() {
+        generate_object_type(result)
+    } else {
+        map_type_to_rust(result.type_.as_str())
     }
 }
 
@@ -133,7 +140,6 @@ fn get_return_type_from_results(results: &[ApiResult]) -> String {
         get_return_type(&results[0])
     }
 }
-
 
 fn generate_method_args(method: &ApiMethod) -> String {
     let mut args = String::new();
@@ -223,23 +229,12 @@ fn generate_struct_fields(result: &ApiResult) -> String {
 }
 
 fn get_field_type(field: &ApiResult) -> String {
-    match field.type_.as_str() {
-        "string" => "String".to_string(),
-        "number" => "f64".to_string(),
-        "boolean" => "bool".to_string(),
-        "array" => format!("Vec<{}>", generate_array_type(field)),
-        "array-fixed" => format!("Vec<{}>", generate_array_type(field)),
-        "object" =>
-            if field.inner.is_empty() {
-                "serde_json::Value".to_string()
-            } else {
-                generate_object_type(field)
-            },
-        "hex" => "Hex".to_string(),
-        "amount" => "Amount".to_string(),
-        "time" => "Time".to_string(),
-        "elision" => "serde_json::Value".to_string(),
-        _ => field.type_.replace("-", "_"),
+    if field.type_.as_str() == "array" || field.type_.as_str() == "array-fixed" {
+        format!("Vec<{}>", generate_array_type(field))
+    } else if field.type_.as_str() == "object" && !field.inner.is_empty() {
+        generate_object_type(field)
+    } else {
+        map_type_to_rust(field.type_.as_str())
     }
 }
 
@@ -270,17 +265,6 @@ fn generate_object_type(result: &ApiResult) -> String {
             capitalize(&result.key_name)
         };
         format!("serde_json::{}", base_name)
-    }
-}
-
-fn generate_complex_type(result: &ApiResult) -> String {
-    match result.type_.as_str() {
-        "array" => format!("Vec<{}>", generate_array_type(result)),
-        "object" => generate_object_type(result),
-        _ => {
-            // Replace hyphens with underscores in type names
-            result.type_.replace("-", "_")
-        }
     }
 }
 
