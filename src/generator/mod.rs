@@ -64,20 +64,13 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     let result = &method.results[0];
     let type_name = format!("{}Response", capitalize(&method.name));
 
+    let formatted_description = format_doc_comment(&method.description);
+
     let fields = if result.inner.is_empty() {
         format!("\n    pub result: {},\n", get_return_type(result))
     } else {
         format!("\n{}\n", generate_struct_fields(result))
     };
-
-    let formatted_description = method
-        .description
-        .split('\n')
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .map(|line| format!("/// {}", line))
-        .collect::<Vec<_>>()
-        .join("\n");
 
     Some(format!(
         r#"/// Response for the {} RPC call.
@@ -178,21 +171,21 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
         let arg_type = match arg.type_.as_str() {
-            "hex" => "String".to_string(),
-            "string" => "String".to_string(),
-            "number" => "i64".to_string(),
-            "boolean" => "bool".to_string(),
+            "hex" => "String",
+            "string" => "String",
+            "number" => "i64",
+            "boolean" => "bool",
             "array" =>
                 if arg_name == "inputs" {
-                    "Vec<Input>".to_string()
+                    "Vec<Input>"
                 } else if arg_name == "outputs" {
-                    "Vec<Output>".to_string()
+                    "Vec<Output>"
                 } else {
-                    "Vec<String>".to_string()
+                    "Vec<String>"
                 },
-            "object" => "serde_json::Value".to_string(),
-            "object-named-parameters" => "serde_json::Value".to_string(),
-            _ => arg.type_.clone(),
+            "object" => "serde_json::Value",
+            "object-named-parameters" => "serde_json::Value",
+            _ => &arg.type_,
         };
 
         if arg.optional {
@@ -203,17 +196,31 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
                 arg_name, arg_name, arg_name
             ));
         } else {
-            required_args.push(format!("into_json({})?", arg_name));
+            required_args.push(format!("{}: {}", arg_name, arg_type));
         }
     }
 
     (required_args.join(", "), optional_args.join("\n"))
 }
 
+fn format_doc_comment(description: &str) -> String {
+    description
+        .split('\n')
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map(|line| format!("/// {}", line))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn format_struct_field(field_name: &str, field_type: &str, description: &str) -> String {
+    let formatted_description = format_doc_comment(description);
+    format!("{}\n    pub {}: {},\n", formatted_description, field_name, field_type)
+}
+
 fn generate_struct_fields(result: &ApiResult) -> String {
     let mut fields = String::new();
     for field in &result.inner {
-        // Ensure we have a valid field name
         let field_name = if field.key_name.is_empty() {
             "result".to_string()
         } else {
@@ -222,20 +229,7 @@ fn generate_struct_fields(result: &ApiResult) -> String {
 
         let field_type = get_field_type(field);
 
-        // Format the description with proper documentation comments
-        let formatted_description = field
-            .description
-            .split('\n')
-            .map(|line| line.trim())
-            .filter(|line| !line.is_empty())
-            .map(|line| format!("    /// {}", line))
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        fields.push_str(&format!(
-            "{}\n    pub {}: {},\n",
-            formatted_description, field_name, field_type
-        ));
+        fields.push_str(&format_struct_field(&field_name, &field_type, &field.description));
     }
     fields
 }
