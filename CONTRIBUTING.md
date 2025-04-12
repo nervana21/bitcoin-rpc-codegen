@@ -77,26 +77,19 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 5. **Run the code generator**:
    ```bash
-   cargo run --bin bitcoin-rpc-generator
+   cargo run --bin bitcoin-rpc-codegen
    ```
 
 ## Project Structure
 
-- `src/` - Source code for the generator
-  - `main.rs` - Entry point and orchestration
-  - `generator/` - Code generation logic
-    - `mod.rs` - Module file for generator logic
-  - `parser/` - API documentation parsing
-    - `mod.rs` - Module file for parser logic
 - `generated/` - Output directory for generated code
-  - `client/` - Generated client code
-  - `types/` - Generated type definitions
-- `examples/` - Example code demonstrating how to use the generated code
-- `scripts/` - Utility scripts for development and CI/CD
+- `src/` - Source code for the generator
+  - `generator/` - Code generation logic
+  - `parser/` - API documentation parsing
+  - `lib.rs` - Shared library code
+  - `main.rs` - Entry point and orchestration
+  - `schema.json` - JSON schema file
 - `api.json` - JSON file containing API definitions
-- `tsconfig.json` - TypeScript configuration file
-- `package.json` - Package configuration file
-- `schema.json` - JSON schema file
 
 ## Guidelines for Pull Requests
 
