@@ -1,1 +1,29 @@
-/target
+# Compiled output
+/target/
+
+# Rust/Cargo specific files
+**/*.rs.bk
+Cargo.lock
+
+# IDE and editor specific files
+/.idea/
+/.vscode/
+/*.sublime-workspace
+/*.sublime-project
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*.old
+*.orig
+
+# Generated files
+/generated/
