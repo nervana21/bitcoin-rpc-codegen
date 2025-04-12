@@ -335,7 +335,7 @@ fn generate_array_type(result: &ApiResult) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::api_parser::{ApiMethod, ApiResult};
+    use crate::parser::{ApiMethod, ApiResult};
 
     fn create_test_method() -> ApiMethod {
         ApiMethod {
@@ -348,6 +348,7 @@ mod tests {
                 key_name: "".to_string(),
                 inner: vec![],
             }],
+            category: "test-category".to_string(),
         }
     }
 
