@@ -9,13 +9,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         get_return_type_from_results(&method.results)
     };
 
-    let description = method
-        .description
-        .split('\n')
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<_>>()
-        .join("\n/// ");
+    let description = format_doc_comment(&method.description);
 
     let (required_args, optional_args) = generate_args(method);
     let call_args = if !optional_args.is_empty() {
@@ -31,29 +25,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         format!(r#"self.call("{}", &[{}])"#, method.name, required_args)
     };
 
-    format!(
-        r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
-///
-/// {}
-#[macro_export]
-macro_rules! {} {{
-    () => {{
-        impl Client {{
-            pub fn {}(&self{}) -> Result<{}> {{
-                {}
-            }}
-        }}
-    }};
-}}"#,
-        method.name,
-        version,
-        description,
-        macro_name,
-        method_name,
-        generate_method_args(method),
-        return_type,
-        call_args
-    )
+    generate_macro(&method.name, version, &description, &macro_name, &generate_method_args(method), &return_type, &call_args)
 }
 
 pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
@@ -72,14 +44,7 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
         format!("\n{}\n", generate_struct_fields(result))
     };
 
-    Some(format!(
-        r#"/// Response for the {} RPC call.
-///
-{}
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct {} {{{}}}"#,
-        method.name, formatted_description, type_name, fields
-    ))
+    Some(generate_struct(&type_name, &formatted_description, &fields))
 }
 
 pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<String> {
@@ -290,6 +255,43 @@ fn generate_array_type(result: &ApiResult) -> String {
     } else {
         "serde_json::Value".to_string()
     }
+}
+
+fn generate_macro(method_name: &str, version: &str, description: &str, macro_name: &str, method_args: &str, return_type: &str, call_args: &str) -> String {
+    format!(
+        r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
+///
+/// {}
+#[macro_export]
+macro_rules! {} {{
+    () => {{
+        impl Client {{
+            pub fn {}(&self{}) -> Result<{}> {{
+                {}
+            }}
+        }}
+    }};
+}}"#,
+        method_name,
+        version,
+        description,
+        macro_name,
+        method_name,
+        method_args,
+        return_type,
+        call_args
+    )
+}
+
+fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
+    format!(
+        r#"/// Response for the {} RPC call.
+///
+{}
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct {} {{{}}}"#,
+        type_name, description, type_name, fields
+    )
 }
 
 #[cfg(test)]
