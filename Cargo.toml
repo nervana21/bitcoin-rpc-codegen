@@ -24,12 +24,7 @@ bitcoind = "0.36"
 bitcoincore-rpc = "0.19"
 bitcoin = "0.32"
 
-[features]
-# v28 = [
-#     "bitcoincore-rpc/v28",
-#     "bitcoind/v28",
-# ] # Assuming these are the correct feature flags
 
 [[bin]]
 name = "bitcoin-rpc-codegen"
-path = "src/src/main.rs"
+path = "src/main.rs"

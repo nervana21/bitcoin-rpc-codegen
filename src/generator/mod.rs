@@ -1,0 +1,387 @@
+use crate::parser::{ApiMethod, ApiResult};
+
+pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
+    let method_name = sanitize_method_name(&method.name);
+    let macro_name = format!("impl_client_{}__{}", version, method_name);
+    let return_type = if method.results.iter().any(|r| r.type_.to_lowercase() == "none") {
+        "()".to_string()
+    } else {
+        get_return_type_from_results(&method.results)
+    };
+
+    let description = method
+        .description
+        .split('\n')
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n/// ");
+
+    let has_optional_args = method.arguments.iter().any(|arg| arg.optional);
+    let call_args = if has_optional_args {
+        format!(
+            r#"let mut params = vec![{}];
+{}
+                self.call("{}", &params)"#,
+            generate_required_args(method),
+            generate_optional_args(method),
+            method.name
+        )
+    } else {
+        format!(r#"self.call("{}", &[{}])"#, method.name, generate_required_args(method))
+    };
+
+    format!(
+        r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
+///
+/// {}
+#[macro_export]
+macro_rules! {} {{
+    () => {{
+        impl Client {{
+            pub fn {}(&self{}) -> Result<{}> {{
+                {}
+            }}
+        }}
+    }};
+}}"#,
+        method.name,
+        version,
+        description,
+        macro_name,
+        method_name,
+        generate_method_args(method),
+        return_type,
+        call_args
+    )
+}
+
+pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
+    if method.results.is_empty() || method.results[0].type_.to_lowercase() == "none" {
+        return None;
+    }
+
+    let result = &method.results[0];
+    let type_name = match result.type_.as_str() {
+        "boolean" => "BooleanResponse".to_string(),
+        "string" => "StringResponse".to_string(),
+        "object" => {
+            if result.inner.is_empty() {
+                "ObjectResponse".to_string() // For methods that return a generic object
+            } else {
+                format!("{}Response", capitalize(&method.name))
+            }
+        }
+        _ => format!("{}Response", capitalize(&method.name)),
+    };
+
+    let fields = if result.inner.is_empty() {
+        format!("\n    pub result: {},\n", get_return_type(result))
+    } else {
+        format!("\n{}\n", generate_struct_fields(result))
+    };
+
+    // Format the description with proper documentation comments
+    let formatted_description = method
+        .description
+        .split('\n')
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map(|line| format!("/// {}", line))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Some(format!(
+        r#"/// Response for the {} RPC call.
+///
+{}
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct {} {{{}}}"#,
+        method.name, formatted_description, type_name, fields
+    ))
+}
+
+pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<String> {
+    if method.results.iter().any(|r| r.type_.to_lowercase() == "none") {
+        return None;
+    }
+
+    let type_name = get_return_type_from_results(&method.results);
+    let model_type = format!("model::{}", type_name);
+
+    Some(format!(
+        r#"impl {} {{
+    /// Converts version specific type to a version nonspecific, more strongly typed type.
+    /// This conversion is specific to version {}.
+    pub fn into_model(self) -> Result<{}, {}Error> {{
+        {}
+    }}
+}}"#,
+        type_name,
+        version,
+        model_type,
+        type_name,
+        generate_conversion_body(method)
+    ))
+}
+
+fn get_return_type(result: &ApiResult) -> String {
+    match result.type_.as_str() {
+        "boolean" => "bool".to_string(),
+        "string" => "String".to_string(),
+        "object" =>
+            if result.inner.is_empty() {
+                "serde_json::Value".to_string()
+            } else {
+                generate_object_type(result)
+            },
+        _ => generate_complex_type(result),
+    }
+}
+
+fn get_return_type_from_results(results: &[ApiResult]) -> String {
+    if results.is_empty() {
+        "()".to_string()
+    } else {
+        get_return_type(&results[0])
+    }
+}
+
+fn get_fields(results: &[ApiResult]) -> Vec<ApiResult> {
+    if results.is_empty() {
+        vec![]
+    } else {
+        results[0].inner.clone()
+    }
+}
+
+fn generate_method_args(method: &ApiMethod) -> String {
+    let mut args = String::new();
+    for arg in &method.arguments {
+        let arg_name = &arg.names[0];
+        let arg_type = match arg.type_.as_str() {
+            "hex" => "String".to_string(),
+            "string" => "String".to_string(),
+            "number" => "i64".to_string(),
+            "boolean" => "bool".to_string(),
+            "array" =>
+                if arg_name == "inputs" {
+                    "Vec<Input>".to_string()
+                } else if arg_name == "outputs" {
+                    "Vec<Output>".to_string()
+                } else {
+                    "Vec<String>".to_string()
+                },
+            "object" => "serde_json::Value".to_string(),
+            "object-named-parameters" => "serde_json::Value".to_string(),
+            _ => arg.type_.clone(),
+        };
+        if arg.optional {
+            args.push_str(&format!(", {}: Option<{}>", arg_name, arg_type));
+        } else {
+            args.push_str(&format!(", {}: {}", arg_name, arg_type));
+        }
+    }
+    args
+}
+
+fn generate_required_args(method: &ApiMethod) -> String {
+    let mut args = Vec::new();
+    for arg in &method.arguments {
+        if !arg.optional {
+            let arg_name = &arg.names[0];
+            args.push(format!("into_json({})?", arg_name));
+        }
+    }
+    args.join(", ")
+}
+
+fn generate_optional_args(method: &ApiMethod) -> String {
+    let mut args = Vec::new();
+    for arg in &method.arguments {
+        if arg.optional {
+            let arg_name = &arg.names[0];
+            args.push(format!(
+                "                if let Some({}) = {} {{
+                    params.push(into_json({})?);
+                }}",
+                arg_name, arg_name, arg_name
+            ));
+        }
+    }
+    args.join("\n")
+}
+
+fn generate_struct_fields(result: &ApiResult) -> String {
+    let mut fields = String::new();
+    for field in &result.inner {
+        // Ensure we have a valid field name
+        let field_name = if field.key_name.is_empty() {
+            "result".to_string()
+        } else {
+            sanitize_field_name(&field.key_name)
+        };
+
+        let field_type = get_field_type(field);
+
+        // Format the description with proper documentation comments
+        let formatted_description = field
+            .description
+            .split('\n')
+            .map(|line| line.trim())
+            .filter(|line| !line.is_empty())
+            .map(|line| format!("    /// {}", line))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        fields.push_str(&format!(
+            "{}\n    pub {}: {},\n",
+            formatted_description, field_name, field_type
+        ));
+    }
+    fields
+}
+
+fn get_field_type(field: &ApiResult) -> String {
+    match field.type_.as_str() {
+        "string" => "String".to_string(),
+        "number" => "f64".to_string(),
+        "boolean" => "bool".to_string(),
+        "array" => format!("Vec<{}>", generate_array_type(field)),
+        "array-fixed" => format!("Vec<{}>", generate_array_type(field)),
+        "object" =>
+            if field.inner.is_empty() {
+                "serde_json::Value".to_string()
+            } else {
+                generate_object_type(field)
+            },
+        "hex" => "Hex".to_string(),
+        "amount" => "Amount".to_string(),
+        "time" => "Time".to_string(),
+        "elision" => "serde_json::Value".to_string(),
+        _ => field.type_.replace("-", "_"),
+    }
+}
+
+fn generate_conversion_body(method: &ApiMethod) -> String {
+    let fields = get_fields(&method.results);
+    if fields.is_empty() {
+        "Ok(())".to_string()
+    } else if method.results[0].type_.to_lowercase() == "object" {
+        // For object responses, return a generic JSON value
+        "Ok(serde_json::Value::Object(serde_json::Map::new()))".to_string()
+    } else {
+        "todo!(\"Implement conversion\")".to_string()
+    }
+}
+
+fn sanitize_method_name(name: &str) -> String { name.replace("-", "_").to_lowercase() }
+
+fn sanitize_field_name(name: &str) -> String {
+    name.to_lowercase().replace(" ", "_").replace("-", "_").replace(".", "_")
+}
+
+fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
+fn generate_object_type(result: &ApiResult) -> String {
+    if result.inner.is_empty() {
+        "serde_json::Value".to_string()
+    } else {
+        // Use a more descriptive name for the object type
+        let base_name = if result.key_name.is_empty() {
+            "Value".to_string()
+        } else {
+            capitalize(&result.key_name)
+        };
+        format!("serde_json::{}", base_name)
+    }
+}
+
+fn generate_complex_type(result: &ApiResult) -> String {
+    match result.type_.as_str() {
+        "array" => format!("Vec<{}>", generate_array_type(result)),
+        "object" => generate_object_type(result),
+        _ => {
+            // Replace hyphens with underscores in type names
+            result.type_.replace("-", "_")
+        }
+    }
+}
+
+fn generate_array_type(result: &ApiResult) -> String {
+    if let Some(inner) = result.inner.first() {
+        match inner.type_.as_str() {
+            "string" => "String".to_string(),
+            "number" => "f64".to_string(),
+            "boolean" => "bool".to_string(),
+            "object" => generate_object_type(inner),
+            "hex" => "Hex".to_string(),
+            "amount" => "Amount".to_string(),
+            "time" => "Time".to_string(),
+            "elision" => "serde_json::Value".to_string(),
+            _ => inner.type_.clone(),
+        }
+    } else {
+        "serde_json::Value".to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::api_parser::{ApiMethod, ApiResult};
+
+    fn create_test_method() -> ApiMethod {
+        ApiMethod {
+            name: "test-method".to_string(),
+            description: "Test method description".to_string(),
+            arguments: vec![],
+            results: vec![ApiResult {
+                type_: "string".to_string(),
+                description: "Test result".to_string(),
+                key_name: "".to_string(),
+                inner: vec![],
+            }],
+        }
+    }
+
+    #[test]
+    fn test_generate_client_macro() {
+        let method = create_test_method();
+        let macro_code = generate_client_macro(&method, "v17");
+        assert!(macro_code.contains("impl_client_v17__test_method"));
+        assert!(macro_code.contains("Test method description"));
+    }
+
+    #[test]
+    fn test_generate_return_type() {
+        let method = create_test_method();
+        let type_code = generate_return_type(&method).unwrap();
+        assert!(type_code.contains("TestMethodResponse"));
+        assert!(type_code.contains("Test method description"));
+    }
+
+    #[test]
+    fn test_generate_type_conversion() {
+        let method = create_test_method();
+        let conversion_code = generate_type_conversion(&method, "v17").unwrap();
+        assert!(conversion_code.contains("impl TestMethodResponse"));
+        assert!(conversion_code.contains("into_model"));
+    }
+
+    #[test]
+    fn test_sanitize_method_name() {
+        assert_eq!(sanitize_method_name("test-method"), "test_method");
+    }
+
+    #[test]
+    fn test_capitalize() {
+        assert_eq!(capitalize("test-method"), "TestMethod");
+    }
+}

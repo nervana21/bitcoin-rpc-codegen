@@ -15,5 +15,6 @@ mod tests {
 
 pub mod generator;
 
-pub use generator::parser::api_parser::*;
 pub use generator::*;
+
+pub mod parser;
