@@ -17,18 +17,18 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         .collect::<Vec<_>>()
         .join("\n/// ");
 
-    let has_optional_args = method.arguments.iter().any(|arg| arg.optional);
-    let call_args = if has_optional_args {
+    let (required_args, optional_args) = generate_args(method);
+    let call_args = if !optional_args.is_empty() {
         format!(
             r#"let mut params = vec![{}];
 {}
                 self.call("{}", &params)"#,
-            generate_required_args(method),
-            generate_optional_args(method),
+            required_args,
+            optional_args,
             method.name
         )
     } else {
-        format!(r#"self.call("{}", &[{}])"#, method.name, generate_required_args(method))
+        format!(r#"self.call("{}", &[{}])"#, method.name, required_args)
     };
 
     format!(
@@ -171,31 +171,43 @@ fn generate_method_args(method: &ApiMethod) -> String {
     args
 }
 
-fn generate_required_args(method: &ApiMethod) -> String {
-    let mut args = Vec::new();
-    for arg in &method.arguments {
-        if !arg.optional {
-            let arg_name = &arg.names[0];
-            args.push(format!("into_json({})?", arg_name));
-        }
-    }
-    args.join(", ")
-}
+fn generate_args(method: &ApiMethod) -> (String, String) {
+    let mut required_args = Vec::new();
+    let mut optional_args = Vec::new();
 
-fn generate_optional_args(method: &ApiMethod) -> String {
-    let mut args = Vec::new();
     for arg in &method.arguments {
+        let arg_name = &arg.names[0];
+        let arg_type = match arg.type_.as_str() {
+            "hex" => "String".to_string(),
+            "string" => "String".to_string(),
+            "number" => "i64".to_string(),
+            "boolean" => "bool".to_string(),
+            "array" =>
+                if arg_name == "inputs" {
+                    "Vec<Input>".to_string()
+                } else if arg_name == "outputs" {
+                    "Vec<Output>".to_string()
+                } else {
+                    "Vec<String>".to_string()
+                },
+            "object" => "serde_json::Value".to_string(),
+            "object-named-parameters" => "serde_json::Value".to_string(),
+            _ => arg.type_.clone(),
+        };
+
         if arg.optional {
-            let arg_name = &arg.names[0];
-            args.push(format!(
+            optional_args.push(format!(
                 "                if let Some({}) = {} {{
                     params.push(into_json({})?);
                 }}",
                 arg_name, arg_name, arg_name
             ));
+        } else {
+            required_args.push(format!("into_json({})?", arg_name));
         }
     }
-    args.join("\n")
+
+    (required_args.join(", "), optional_args.join("\n"))
 }
 
 fn generate_struct_fields(result: &ApiResult) -> String {
