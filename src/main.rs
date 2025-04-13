@@ -19,8 +19,8 @@ fn main() -> Result<()> {
     let methods = parse_api_json(&api_json)?;
 
     // Clean up and create output directories
-    if fs::metadata("generated").is_ok() {
-        fs::remove_dir_all("generated")?;
+    if fs::metadata("src/generated").is_ok() {
+        fs::remove_dir_all("src/generated")?;
     }
 
     // Generate code for each version
@@ -28,12 +28,12 @@ fn main() -> Result<()> {
         generate_version_code(version, &methods)?;
     }
 
-    println!("Code generation complete. Files saved in generated/ directory.");
+    println!("Code generation complete. Files saved in src/generated/ directory.");
     Ok(())
 }
 
 fn generate_version_code(version: &str, methods: &[ApiMethod]) -> Result<()> {
-    let root_dir = std::env::current_dir()?.join("generated");
+    let root_dir = std::env::current_dir()?.join("src/generated");
     let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
 
