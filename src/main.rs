@@ -4,9 +4,10 @@ use std::fs;
 use anyhow::Result;
 
 pub mod generator;
+pub mod node_client;
 pub mod parser;
 
-use generator::{generate_client_macro, generate_return_type};
+use generator::{generate_client_macro, generate_mod_rs, generate_return_type};
 use parser::{ApiMethod, parse_api_json};
 
 const SUPPORTED_VERSIONS: &[&str] = &["v28"];
@@ -149,6 +150,9 @@ pub trait SignerResponse {
     // Generate version-specific trait implementations
     generate_trait_implementations(version, &methods_by_category)?;
 
+    // Generate mod.rs file in the root generated directory
+    generate_mod_rs(root_dir.to_str().unwrap())?;
+
     Ok(())
 }
 
@@ -221,5 +225,49 @@ fn capitalize(s: &str) -> String {
     match c.next() {
         None => String::new(),
         Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::node_client::NodeClient;
+    use serde_json::Value;
+
+    #[test]
+    fn test_getblockchaininfo() {
+        // Replace these with your actual regtest node parameters.
+        let url = "http://localhost:18443";
+        let user = "rpcuser";
+        let password = "rpcpassword";
+
+        let client = match NodeClient::new(url, user, password) {
+            Ok(client) => client,
+            Err(e) => {
+                eprintln!("Failed to create NodeClient: {}", e);
+                return;
+            }
+        };
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // For an empty parameters list, annotate the slice type.
+        let response: Value = match client.call("getblockchaininfo", &[] as &[serde_json::Value]) {
+            Ok(response) => response,
+            Err(e) => {
+                eprintln!("RPC call failed: {}", e);
+                return;
+            }
+        };
+
+        println!("getblockchaininfo response: {:#?}", response);
+
+        let chain = match response.get("chain").and_then(|v| v.as_str()) {
+            Some(chain) => chain,
+            None => {
+                eprintln!("Chain field not found in the response");
+                return;
+            }
+        };
+
+        assert_eq!(chain, "regtest", "Expected chain to be 'regtest'");
     }
 }

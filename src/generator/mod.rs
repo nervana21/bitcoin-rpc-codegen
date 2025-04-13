@@ -1,9 +1,15 @@
 use crate::parser::{ApiMethod, ApiResult};
+use std::fs;
+use std::path::Path;
 
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let method_name = sanitize_method_name(&method.name);
     let macro_name = format!("impl_client_{}__{}", version, method_name);
-    let return_type = if method.results.iter().any(|r| r.type_.to_lowercase() == "none") {
+    let return_type = if method
+        .results
+        .iter()
+        .any(|r| r.type_.to_lowercase() == "none")
+    {
         "()".to_string()
     } else {
         get_return_type_from_results(&method.results)
@@ -17,15 +23,21 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
             r#"let mut params = vec![{}];
 {}
                 self.call("{}", &params)"#,
-            required_args,
-            optional_args,
-            method.name
+            required_args, optional_args, method.name
         )
     } else {
         format!(r#"self.call("{}", &[{}])"#, method.name, required_args)
     };
 
-    generate_macro(&method.name, version, &description, &macro_name, &generate_method_args(method), &return_type, &call_args)
+    generate_macro(
+        &method.name,
+        version,
+        &description,
+        &macro_name,
+        &generate_method_args(method),
+        &return_type,
+        &call_args,
+    )
 }
 
 pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
@@ -48,7 +60,11 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
 }
 
 pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<String> {
-    if method.results.iter().any(|r| r.type_.to_lowercase() == "none") {
+    if method
+        .results
+        .iter()
+        .any(|r| r.type_.to_lowercase() == "none")
+    {
         return None;
     }
 
@@ -63,10 +79,7 @@ pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<Str
         Ok(())
     }}
 }}"#,
-        type_name,
-        version,
-        model_type,
-        type_name
+        type_name, version, model_type, type_name
     ))
 }
 
@@ -108,14 +121,15 @@ fn generate_method_args(method: &ApiMethod) -> String {
             "string" => "String".to_string(),
             "number" => "i64".to_string(),
             "boolean" => "bool".to_string(),
-            "array" =>
+            "array" => {
                 if arg_name == "inputs" {
                     "Vec<Input>".to_string()
                 } else if arg_name == "outputs" {
                     "Vec<Output>".to_string()
                 } else {
                     "Vec<String>".to_string()
-                },
+                }
+            }
             "object" => "serde_json::Value".to_string(),
             "object-named-parameters" => "serde_json::Value".to_string(),
             _ => arg.type_.clone(),
@@ -140,14 +154,15 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
             "string" => "String",
             "number" => "i64",
             "boolean" => "bool",
-            "array" =>
+            "array" => {
                 if arg_name == "inputs" {
                     "Vec<Input>"
                 } else if arg_name == "outputs" {
                     "Vec<Output>"
                 } else {
                     "Vec<String>"
-                },
+                }
+            }
             "object" => "serde_json::Value",
             "object-named-parameters" => "serde_json::Value",
             _ => &arg.type_,
@@ -180,7 +195,10 @@ fn format_doc_comment(description: &str) -> String {
 
 fn format_struct_field(field_name: &str, field_type: &str, description: &str) -> String {
     let formatted_description = format_doc_comment(description);
-    format!("{}\n    pub {}: {},\n", formatted_description, field_name, field_type)
+    format!(
+        "{}\n    pub {}: {},\n",
+        formatted_description, field_name, field_type
+    )
 }
 
 fn generate_struct_fields(result: &ApiResult) -> String {
@@ -194,7 +212,11 @@ fn generate_struct_fields(result: &ApiResult) -> String {
 
         let field_type = get_field_type(field);
 
-        fields.push_str(&format_struct_field(&field_name, &field_type, &field.description));
+        fields.push_str(&format_struct_field(
+            &field_name,
+            &field_type,
+            &field.description,
+        ));
     }
     fields
 }
@@ -209,20 +231,28 @@ fn get_field_type(field: &ApiResult) -> String {
     }
 }
 
-fn sanitize_method_name(name: &str) -> String { name.replace("-", "_").to_lowercase() }
+fn sanitize_method_name(name: &str) -> String {
+    name.replace("-", "_").to_lowercase()
+}
 
 fn sanitize_field_name(name: &str) -> String {
-    name.to_lowercase().replace(" ", "_").replace("-", "_").replace(".", "_")
+    name.to_lowercase()
+        .replace(" ", "_")
+        .replace("-", "_")
+        .replace(".", "_")
 }
 
 fn capitalize(s: &str) -> String {
-    s.split('-').map(|word| {
-        let mut c = word.chars();
-        match c.next() {
-            None => String::new(),
-            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-        }
-    }).collect::<Vec<_>>().join("")
+    s.split('-')
+        .map(|word| {
+            let mut c = word.chars();
+            match c.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 fn generate_object_type(result: &ApiResult) -> String {
@@ -257,7 +287,15 @@ fn generate_array_type(result: &ApiResult) -> String {
     }
 }
 
-fn generate_macro(method_name: &str, version: &str, description: &str, macro_name: &str, method_args: &str, return_type: &str, call_args: &str) -> String {
+fn generate_macro(
+    method_name: &str,
+    version: &str,
+    description: &str,
+    macro_name: &str,
+    method_args: &str,
+    return_type: &str,
+    call_args: &str,
+) -> String {
     format!(
         r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
 ///
@@ -292,6 +330,12 @@ fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
 pub struct {} {{{}}}"#,
         type_name, description, type_name, fields
     )
+}
+
+pub fn generate_mod_rs(output_dir: &str) -> std::io::Result<()> {
+    let mod_rs_content = "pub mod client;\npub mod types;\n";
+    let mod_rs_path = Path::new(output_dir).join("mod.rs");
+    fs::write(mod_rs_path, mod_rs_content)
 }
 
 #[cfg(test)]
