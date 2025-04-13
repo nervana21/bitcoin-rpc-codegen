@@ -7,10 +7,10 @@ pub mod generator;
 pub mod parser;
 
 use generator::{generate_client_macro, generate_return_type};
-use parser::{parse_api_json, ApiMethod};
+use parser::{ApiMethod, parse_api_json};
 
-const SUPPORTED_VERSIONS: &[&str] =
-    &["v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"];
+const SUPPORTED_VERSIONS: &[&str] = &["v28"];
+// &["v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"];
 
 fn main() -> Result<()> {
     // Read and parse api.json
@@ -49,7 +49,10 @@ use serde_json;
     // Group methods by category
     let mut methods_by_category: HashMap<String, Vec<&ApiMethod>> = HashMap::new();
     for method in methods {
-        methods_by_category.entry(method.category.clone()).or_insert_with(Vec::new).push(method);
+        methods_by_category
+            .entry(method.category.clone())
+            .or_insert_with(Vec::new)
+            .push(method);
     }
 
     // Generate consolidated files for each category
@@ -158,7 +161,10 @@ fn generate_mod_files(
     for category in methods_by_category.keys() {
         client_mod.push_str(&format!("pub mod {};\n", category));
     }
-    fs::write(format!("generated/client/src/client_sync/{}/mod.rs", version), client_mod)?;
+    fs::write(
+        format!("generated/client/src/client_sync/{}/mod.rs", version),
+        client_mod,
+    )?;
 
     // Generate types mod.rs
     let mut types_mod = String::new();
@@ -203,7 +209,10 @@ fn generate_trait_implementations(
         }
     }
 
-    fs::write(format!("generated/types/src/{}/traits.rs", version), impl_code)?;
+    fs::write(
+        format!("generated/types/src/{}/traits.rs", version),
+        impl_code,
+    )?;
     Ok(())
 }
 
