@@ -33,7 +33,7 @@ fn main() -> Result<()> {
 
 fn generate_version_code(version: &str, methods: &[ApiMethod]) -> Result<()> {
     let root_dir = std::env::current_dir()?.join("generated");
-    let client_dir = root_dir.join("client/src/client_sync").join(version);
+    let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
 
     fs::create_dir_all(&client_dir)?;
@@ -162,7 +162,7 @@ fn generate_mod_files(
         client_mod.push_str(&format!("pub mod {};\n", category));
     }
     fs::write(
-        format!("generated/client/src/client_sync/{}/mod.rs", version),
+        format!("generated/client/src/{}/mod.rs", version),
         client_mod,
     )?;
 
