@@ -9,9 +9,9 @@ const SUPPORTED_VERSIONS: &[&str] = &[
 ];
 
 /// Reads the API JSON file from the resources folder, parses it,
-/// and generates code into the OUT_DIR (in a subdirectory named "generated").
+/// and generates code into the OUT_DIR
 pub fn run_codegen() -> Result<()> {
-    // 1. Locate api.json in the resources folder (relative to the crate root).
+    // Locate api.json in the resources folder in the crate root
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let api_path = Path::new(manifest_dir).join("resources").join("api.json");
     println!("run_codegen: Using API JSON file at: {:?}", api_path);
@@ -19,7 +19,7 @@ pub fn run_codegen() -> Result<()> {
     let api_json = fs::read_to_string(api_path)?;
     let methods = parse_api_json(&api_json)?;
 
-    // 2. Use OUT_DIR for generated code.
+    // Use OUT_DIR for generated code.
     let out_dir = std::env::var("OUT_DIR")?;
     let generated_path = Path::new(&out_dir);
 
@@ -28,12 +28,12 @@ pub fn run_codegen() -> Result<()> {
     }
     fs::create_dir_all(&generated_path)?;
 
-    // 3. For each supported version, generate the files.
+    // For each supported version, generate the files.
     for version in SUPPORTED_VERSIONS {
         generate_version_code(version, &methods, &generated_path)?;
     }
 
-    // 4. Generate the root mod.rs for the generated folder.
+    // Generate the root mod.rs for the generated folder.
     generate_mod_rs(generated_path.to_str().unwrap(), SUPPORTED_VERSIONS)?;
 
     println!(
