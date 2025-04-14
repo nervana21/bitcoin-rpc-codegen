@@ -82,9 +82,11 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 ## Project Structure
 
-- `generated/` - Output directory for generated code
+-`resources/` - Location of resources such as `api.json`
+
 - `src/` - Source code for the generator
   - `generator/` - Code generation logic
+  - `node_client/` - Node that might be used for testing
   - `parser/` - API documentation parsing
   - `lib.rs` - Shared library code
   - `main.rs` - Entry point and orchestration
