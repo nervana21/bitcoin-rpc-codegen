@@ -299,7 +299,7 @@ fn generate_macro(
     format!(
         r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
 ///
-/// {}
+{}
 #[macro_export]
 macro_rules! {} {{
     () => {{
