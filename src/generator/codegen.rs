@@ -21,7 +21,7 @@ pub fn run_codegen() -> Result<()> {
 
     // 2. Use OUT_DIR for generated code.
     let out_dir = std::env::var("OUT_DIR")?;
-    let generated_path = Path::new(&out_dir).join("generated");
+    let generated_path = Path::new(&out_dir);
 
     if fs::metadata(&generated_path).is_ok() {
         fs::remove_dir_all(&generated_path)?;
