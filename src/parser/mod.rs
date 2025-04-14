@@ -1,5 +1,3 @@
-
-
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -65,11 +63,17 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>> {
             .map(|results| results.iter().map(|result| parse_result(result)).collect())
             .unwrap_or_default();
 
-        let category = command_obj["category"].as_str().unwrap_or("other").to_string();
+        let category = command_obj["category"]
+            .as_str()
+            .unwrap_or("other")
+            .to_string();
 
         parsed_methods.push(ApiMethod {
             name: name.clone(),
-            description: command_obj["description"].as_str().unwrap_or("").to_string(),
+            description: command_obj["description"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
             arguments,
             results,
             category,

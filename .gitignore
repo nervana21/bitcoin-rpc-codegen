@@ -4,6 +4,7 @@
 # Rust/Cargo specific files
 **/*.rs.bk
 /bitcoin-rpc-codegen/Cargo.lock
+Cargo.lock
 
 # IDE and editor specific files
 /.idea/
@@ -25,7 +26,4 @@ Thumbs.db
 *.old
 *.orig
 
-# Generated files
-/generated/
-/bitcoin-rpc-codegen/generated
 
