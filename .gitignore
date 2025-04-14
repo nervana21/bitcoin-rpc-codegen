@@ -28,4 +28,4 @@ Thumbs.db
 # Generated files
 /generated/
 /bitcoin-rpc-codegen/generated
-/bitcoin-rpc-codegen/src/generated
+

@@ -332,10 +332,31 @@ pub struct {} {{{}}}"#,
     )
 }
 
-pub fn generate_mod_rs(output_dir: &str) -> std::io::Result<()> {
+pub fn generate_mod_rs(output_dir: &str, versions: &[&str]) -> std::io::Result<()> {
+    // Create mod.rs for the main directory
     let mod_rs_content = "pub mod client;\npub mod types;\n";
     let mod_rs_path = Path::new(output_dir).join("mod.rs");
-    fs::write(mod_rs_path, mod_rs_content)
+    fs::write(mod_rs_path, mod_rs_content)?;
+
+    // Create mod.rs for the client directory
+    let client_mod_rs_content: String = versions
+        .iter()
+        .map(|version| format!("pub use self::{}::*;\n", version))
+        .collect();
+    let client_mod_rs_path = Path::new(output_dir).join("client").join("mod.rs");
+    fs::create_dir_all(client_mod_rs_path.parent().unwrap())?;
+    fs::write(client_mod_rs_path, client_mod_rs_content)?;
+
+    // Create mod.rs for the types directory
+    let types_mod_rs_content: String = versions
+        .iter()
+        .map(|version| format!("pub use self::{}_types::*;\n", version))
+        .collect();
+    let types_mod_rs_path = Path::new(output_dir).join("types").join("mod.rs");
+    fs::create_dir_all(types_mod_rs_path.parent().unwrap())?;
+    fs::write(types_mod_rs_path, types_mod_rs_content)?;
+
+    Ok(())
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::fs;
+use std::{collections::HashMap, path::Path};
 
 use anyhow::Result;
 
@@ -10,12 +10,19 @@ pub mod parser;
 use generator::{generate_client_macro, generate_mod_rs, generate_return_type};
 use parser::{ApiMethod, parse_api_json};
 
-const SUPPORTED_VERSIONS: &[&str] = &["v28"];
-// &["v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"];
+const SUPPORTED_VERSIONS: &[&str] = //&["v28"];
+    &[
+        "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28",
+    ];
 
 fn main() -> Result<()> {
-    // Read and parse api.json
-    let api_json = fs::read_to_string("api.json")?;
+    // Get the absolute path of the project root
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let api_path = Path::new(manifest_dir).join("api.json");
+
+    println!("Using API JSON file found at: {:?}", api_path);
+
+    let api_json = fs::read_to_string(api_path)?;
     let methods = parse_api_json(&api_json)?;
 
     // Clean up and create output directories
@@ -33,7 +40,7 @@ fn main() -> Result<()> {
 }
 
 fn generate_version_code(version: &str, methods: &[ApiMethod]) -> Result<()> {
-    let root_dir = std::env::current_dir()?.join("src/generated");
+    let root_dir = std::env::current_dir()?.join("generated");
     let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
 
@@ -151,7 +158,7 @@ pub trait SignerResponse {
     generate_trait_implementations(version, &methods_by_category)?;
 
     // Generate mod.rs file in the root generated directory
-    generate_mod_rs(root_dir.to_str().unwrap())?;
+    generate_mod_rs(root_dir.to_str().unwrap(), SUPPORTED_VERSIONS)?;
 
     Ok(())
 }
