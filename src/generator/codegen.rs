@@ -21,36 +21,31 @@ pub fn run_codegen() -> Result<()> {
 
     // Use OUT_DIR for generated code.
     let out_dir = std::env::var("OUT_DIR")?;
-    let generated_path = Path::new(&out_dir);
 
-    if fs::metadata(&generated_path).is_ok() {
-        fs::remove_dir_all(&generated_path)?;
+    if fs::metadata(&out_dir).is_ok() {
+        fs::remove_dir_all(&out_dir)?;
     }
-    fs::create_dir_all(&generated_path)?;
+    fs::create_dir_all(&out_dir)?;
 
     // For each supported version, generate the files.
     for version in SUPPORTED_VERSIONS {
-        generate_version_code(version, &methods, &generated_path)?;
+        generate_version_code(version, &methods, &out_dir)?;
     }
 
     // Generate the root mod.rs for the generated folder.
-    generate_mod_rs(generated_path.to_str().unwrap(), SUPPORTED_VERSIONS)?;
+    generate_mod_rs(&out_dir, SUPPORTED_VERSIONS)?;
 
     println!(
         "run_codegen: Code generation complete. Files saved in {:?}",
-        generated_path
+        out_dir
     );
     Ok(())
 }
 
 /// Generates code for a specific version into the provided generated path.
-fn generate_version_code(
-    version: &str,
-    methods: &[ApiMethod],
-    generated_path: &Path,
-) -> Result<()> {
-    // Use the generated_path (from OUT_DIR) as our root.
-    let root_dir = generated_path.to_path_buf();
+fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) -> Result<()> {
+    // Use the out_dir (from OUT_DIR) as our root.
+    let root_dir = Path::new(out_dir);
     let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
 
@@ -158,7 +153,7 @@ pub trait SignerResponse {
     type SignRawTransactionWithKeyResponse: Deserialize<'static> + Serialize;
 }
 "#;
-        fs::write(generated_path.join("types/src/traits.rs"), traits_content)?;
+        fs::write(types_dir.join("traits.rs"), traits_content)?;
     }
 
     Ok(())
