@@ -8,10 +8,7 @@ const SUPPORTED_VERSIONS: &[&str] = &[
     "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28",
 ];
 
-/// Reads the API JSON file from the resources folder, parses it,
-/// and generates code into the OUT_DIR
 pub fn run_codegen() -> Result<()> {
-    // Locate api.json in the resources folder in the crate root
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let api_path = Path::new(manifest_dir).join("resources").join("api.json");
     println!("run_codegen: Using API JSON file at: {:?}", api_path);
@@ -19,22 +16,17 @@ pub fn run_codegen() -> Result<()> {
     let api_json = fs::read_to_string(api_path)?;
     let methods = parse_api_json(&api_json)?;
 
-    // Use OUT_DIR for generated code.
     let out_dir = std::env::var("OUT_DIR")?;
-
     if fs::metadata(&out_dir).is_ok() {
         fs::remove_dir_all(&out_dir)?;
     }
     fs::create_dir_all(&out_dir)?;
 
-    // For each supported version, generate the files.
     for version in SUPPORTED_VERSIONS {
         generate_version_code(version, &methods, &out_dir)?;
     }
 
-    // Generate the root mod.rs for the generated folder.
     generate_mod_rs(&out_dir, SUPPORTED_VERSIONS)?;
-
     println!(
         "run_codegen: Code generation complete. Files saved in {:?}",
         out_dir
@@ -42,9 +34,7 @@ pub fn run_codegen() -> Result<()> {
     Ok(())
 }
 
-/// Generates code for a specific version into the provided generated path.
 fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) -> Result<()> {
-    // Use the out_dir (from OUT_DIR) as our root.
     let root_dir = Path::new(out_dir);
     let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
@@ -52,14 +42,11 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     fs::create_dir_all(&client_dir)?;
     fs::create_dir_all(&types_dir)?;
 
-    // Common imports for generated type files.
     let type_imports = r#"use bitcoin::{amount::Amount, hex::Hex, time::Time};
 use serde::{Deserialize, Serialize};
 use serde_json;
-
 "#;
 
-    // Group API methods by category.
     let mut methods_by_category: HashMap<String, Vec<&ApiMethod>> = HashMap::new();
     for method in methods {
         methods_by_category
@@ -68,9 +55,7 @@ use serde_json;
             .push(method);
     }
 
-    // Generate client and types files for each category.
     for (category, category_methods) in &methods_by_category {
-        // Generate client file.
         let mut client_code = String::new();
         for method in category_methods {
             client_code.push_str(&generate_client_macro(method, version));
@@ -79,7 +64,6 @@ use serde_json;
         let client_path = format!("{}/{}.rs", client_dir.display(), category);
         fs::write(&client_path, client_code)?;
 
-        // Generate types file.
         let mut types_code = String::new();
         types_code.push_str(type_imports);
         for method in category_methods {
@@ -92,7 +76,6 @@ use serde_json;
         fs::write(types_path, types_code)?;
     }
 
-    // For version "v17", generate a traits file.
     if version == "v17" {
         let traits_content = r#"// SPDX-License-Identifier: CC0-1.0
 

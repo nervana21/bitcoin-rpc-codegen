@@ -2,41 +2,139 @@ use crate::parser::{ApiMethod, ApiResult};
 use std::fs;
 use std::path::Path;
 
+/// Generates a struct definition string from a type name, a description, and its fields.
+pub fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
+    format!(
+        r#"/// Response for the {} RPC call.
+{}
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct {} {{{}}}"#,
+        type_name, description, type_name, fields
+    )
+}
+
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let method_name = sanitize_method_name(&method.name);
     let macro_name = format!("impl_client_{}__{}", version, method_name);
-    let return_type = if method
-        .results
-        .iter()
-        .any(|r| r.type_.to_lowercase() == "none")
-    {
-        "()".to_string()
-    } else {
-        get_return_type_from_results(&method.results)
-    };
-
+    // Generate a doc comment from the method description.
     let description = format_doc_comment(&method.description);
+    let mut function_defs = Vec::new();
 
-    let (required_args, optional_args) = generate_args(method);
-    let call_args = if !optional_args.is_empty() {
-        format!(
-            r#"let mut params = vec![{}];
-{}
-                self.call("{}", &params)"#,
-            required_args, optional_args, method.name
-        )
-    } else {
-        format!(r#"self.call("{}", &[{}])"#, method.name, required_args)
+    // Special-case for verifychain.
+    if method_name == "verifychain" {
+        let default_fn = r#"/// Verifies blockchain database using default checklevel and nblocks.
+pub fn verify_chain_default(&self) -> Result<bool> {
+    self.call("verifychain", &[])
+}"#;
+        let param_fn = r#"/// Verifies blockchain database with specified checklevel and nblocks.
+pub fn verify_chain(&self, checklevel: Option<u32>, nblocks: Option<u32>) -> Result<bool> {
+    let params = match (checklevel, nblocks) {
+        (Some(level), Some(num)) => vec![level.into(), num.into()],
+        (Some(level), None) => vec![level.into()],
+        (None, Some(num)) => vec![serde_json::Value::Null, num.into()],
+        (None, None) => vec![],
     };
+    self.call("verifychain", &params)
+}"#;
+        function_defs.push(default_fn.to_string());
+        function_defs.push(param_fn.to_string());
+    } else if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
+        // When all arguments are optional, generate two variants.
+        let default_doc = format!(
+            "{} with default parameters.",
+            format_doc_comment(&method.description)
+        );
+        let default_fn = format!(
+            "/// {}\npub fn {}_default(&self) -> Result<{}> {{
+    self.call(\"{}\", &[])
+}}",
+            default_doc,
+            method_name,
+            get_return_type_from_results(&method.results),
+            method.name
+        );
+        let param_doc = format!(
+            "{} with specified parameters.",
+            format_doc_comment(&method.description)
+        );
+        let method_args = generate_method_args(method);
+        let (required_args, optional_args) = generate_args(method);
+        let optional_args = optional_args
+            .lines()
+            .map(|line| format!("    {}", line))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let base_call = if !optional_args.is_empty() {
+            format!(
+                "let mut params = vec![{}];\n{}\n    self.call(\"{}\", &params)",
+                required_args, optional_args, method.name
+            )
+        } else {
+            format!("self.call(\"{}\", &[{}])", method.name, required_args)
+        };
+        let param_fn = format!(
+            "/// {}\npub fn {}(&self{}) -> Result<{}> {{
+    {}
+}}",
+            param_doc,
+            method_name,
+            method_args,
+            get_return_type_from_results(&method.results),
+            base_call
+        );
+        function_defs.push(default_fn);
+        function_defs.push(param_fn);
+    } else {
+        // Default: generate a single function.
+        let method_args = generate_method_args(method);
+        let (required_args, optional_args) = generate_args(method);
+        let base_call = if !optional_args.is_empty() {
+            format!(
+                "let mut params = vec![{}];
+    {}
+    self.call(\"{}\", &params)",
+                required_args, optional_args, method.name
+            )
+        } else {
+            format!("self.call(\"{}\", &[{}])", method.name, required_args)
+        };
+        let is_none = method
+            .results
+            .iter()
+            .any(|r| r.type_.to_lowercase() == "none");
+        let call_body = if is_none {
+            format!(
+                "match {} {{
+    Ok(serde_json::Value::Null) => Ok(()),
+    Ok(ref val) if val.is_null() => Ok(()),
+    Ok(other) => Err(crate::client_sync::Error::Returned(format!(\"{} expected null, got: {{}}\", other))),
+    Err(e) => Err(e.into()),
+}}",
+                base_call, method.name
+            )
+        } else {
+            base_call
+        };
+        let fn_def = format!(
+            "pub fn {}(&self{}) -> Result<{}> {{
+    {}
+}}",
+            method_name,
+            method_args,
+            get_return_type_from_results(&method.results),
+            call_body
+        );
+        function_defs.push(fn_def);
+    }
 
-    generate_macro(
-        &method.name,
+    let impl_block = function_defs.join("\n\n");
+    format!(
+        "/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}\n{}\n#[macro_export]\nmacro_rules! {} {{\n    () => {{\n        impl Client {{\n{}\n        }}\n    }};\n}}",
+        method.name,
         version,
-        &description,
-        &macro_name,
-        &generate_method_args(method),
-        &return_type,
-        &call_args,
+        description,
+        macro_name,
+        indent(&impl_block, 12)
     )
 }
 
@@ -44,22 +142,18 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     if method.results.is_empty() || method.results[0].type_.to_lowercase() == "none" {
         return None;
     }
-
     let result = &method.results[0];
     let type_name = format!("{}Response", capitalize(&method.name));
-
     let formatted_description = format_doc_comment(&method.description);
-
     let fields = if result.inner.is_empty() {
         format!("    pub result: {},", get_return_type(result))
     } else {
         generate_struct_fields(result)
     };
-
     Some(generate_struct(&type_name, &formatted_description, &fields))
 }
 
-pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<String> {
+pub fn generate_type_conversion(method: &ApiMethod, _version: &str) -> Option<String> {
     if method
         .results
         .iter()
@@ -67,19 +161,15 @@ pub fn generate_type_conversion(method: &ApiMethod, version: &str) -> Option<Str
     {
         return None;
     }
-
     let type_name = format!("{}Response", capitalize(&method.name));
     let model_type = format!("model::{}", type_name);
-
     Some(format!(
         r#"impl {} {{
-    /// Converts version specific type to a version nonspecific, more strongly typed type.
-    /// This conversion is specific to version {}.
     pub fn into_model(self) -> Result<{}, {}Error> {{
         Ok(())
     }}
 }}"#,
-        type_name, version, model_type, type_name
+        type_name, model_type, type_name
     ))
 }
 
@@ -118,7 +208,13 @@ fn generate_method_args(method: &ApiMethod) -> String {
         let arg_name = &arg.names[0];
         let arg_type = match arg.type_.as_str() {
             "hex" => "String".to_string(),
-            "string" => "String".to_string(),
+            "string" => {
+                if method.name == "addnode" && arg_name == "command" {
+                    "AddNodeCommand".to_string()
+                } else {
+                    "String".to_string()
+                }
+            }
             "number" => "i64".to_string(),
             "boolean" => "bool".to_string(),
             "array" => {
@@ -146,46 +242,28 @@ fn generate_method_args(method: &ApiMethod) -> String {
 fn generate_args(method: &ApiMethod) -> (String, String) {
     let mut required_args = Vec::new();
     let mut optional_args = Vec::new();
-
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
-        let arg_type = match arg.type_.as_str() {
-            "hex" => "String",
-            "string" => "String",
-            "number" => "i64",
-            "boolean" => "bool",
-            "array" => {
-                if arg_name == "inputs" {
-                    "Vec<Input>"
-                } else if arg_name == "outputs" {
-                    "Vec<Output>"
-                } else {
-                    "Vec<String>"
-                }
-            }
-            "object" => "serde_json::Value",
-            "object-named-parameters" => "serde_json::Value",
-            _ => &arg.type_,
+        let arg_expr = if method.name == "addnode" && arg_name == "command" {
+            "serde_json::to_value(command)?".to_string()
+        } else {
+            format!("into_json({})?", arg_name)
         };
-
         if arg.optional {
             optional_args.push(format!(
-                "                if let Some({}) = {} {{
-                    params.push(into_json({})?);
-                }}",
+                "if let Some({}) = {} {{\n    params.push(into_json({})?);\n}}",
                 arg_name, arg_name, arg_name
             ));
         } else {
-            required_args.push(format!("{}: {}", arg_name, arg_type));
+            required_args.push(arg_expr);
         }
     }
-
     (required_args.join(", "), optional_args.join("\n"))
 }
 
 fn format_doc_comment(description: &str) -> String {
     description
-        .split('\n')
+        .lines()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(|line| format!("/// {}", line))
@@ -209,9 +287,7 @@ fn generate_struct_fields(result: &ApiResult) -> String {
         } else {
             sanitize_field_name(&field.key_name)
         };
-
         let field_type = get_field_type(field);
-
         fields.push_str(&format_struct_field(
             &field_name,
             &field_type,
@@ -259,7 +335,6 @@ fn generate_object_type(result: &ApiResult) -> String {
     if result.inner.is_empty() {
         "serde_json::Value".to_string()
     } else {
-        // Use a more descriptive name for the object type
         let base_name = if result.key_name.is_empty() {
             "Value".to_string()
         } else {
@@ -287,58 +362,19 @@ fn generate_array_type(result: &ApiResult) -> String {
     }
 }
 
-fn generate_macro(
-    method_name: &str,
-    version: &str,
-    description: &str,
-    macro_name: &str,
-    method_args: &str,
-    return_type: &str,
-    call_args: &str,
-) -> String {
-    format!(
-        r#"/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}
-///
-{}
-#[macro_export]
-macro_rules! {} {{
-    () => {{
-        impl Client {{
-            pub fn {}(&self{}) -> Result<{}> {{
-                {}
-            }}
-        }}
-    }};
-}}"#,
-        method_name,
-        version,
-        description,
-        macro_name,
-        method_name,
-        method_args,
-        return_type,
-        call_args
-    )
-}
-
-fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
-    format!(
-        r#"/// Response for the {} RPC call.
-///
-{}
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct {} {{{}}}"#,
-        type_name, description, type_name, fields
-    )
+fn indent(s: &str, spaces: usize) -> String {
+    let pad = " ".repeat(spaces);
+    s.lines()
+        .map(|line| format!("{}{}", pad, line))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 pub fn generate_mod_rs(output_dir: &str, versions: &[&str]) -> std::io::Result<()> {
-    // Create mod.rs for the main directory
     let mod_rs_content = "pub mod client;\npub mod types;\n";
     let mod_rs_path = Path::new(output_dir).join("mod.rs");
     fs::write(mod_rs_path, mod_rs_content)?;
 
-    // Create mod.rs for the client directory
     let client_mod_rs_content: String = versions
         .iter()
         .map(|version| format!("pub use self::{}::*;\n", version))
@@ -347,7 +383,6 @@ pub fn generate_mod_rs(output_dir: &str, versions: &[&str]) -> std::io::Result<(
     fs::create_dir_all(client_mod_rs_path.parent().unwrap())?;
     fs::write(client_mod_rs_path, client_mod_rs_content)?;
 
-    // Create mod.rs for the types directory
     let types_mod_rs_content: String = versions
         .iter()
         .map(|version| format!("pub use self::{}_types::*;\n", version))
