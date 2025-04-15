@@ -51,9 +51,9 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     let formatted_description = format_doc_comment(&method.description);
 
     let fields = if result.inner.is_empty() {
-        format!("\n    pub result: {},\n", get_return_type(result))
+        format!("    pub result: {},", get_return_type(result))
     } else {
-        format!("\n{}\n", generate_struct_fields(result))
+        generate_struct_fields(result)
     };
 
     Some(generate_struct(&type_name, &formatted_description, &fields))
