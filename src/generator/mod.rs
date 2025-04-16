@@ -20,25 +20,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let description = format_doc_comment(&method.description);
     let mut function_defs = Vec::new();
 
-    // Special-case for verifychain.
-    if method_name == "verifychain" {
-        let default_fn = r#"/// Verifies blockchain database using default checklevel and nblocks.
-pub fn verify_chain_default(&self) -> Result<bool> {
-    self.call("verifychain", &[])
-}"#;
-        let param_fn = r#"/// Verifies blockchain database with specified checklevel and nblocks.
-pub fn verify_chain(&self, checklevel: Option<u32>, nblocks: Option<u32>) -> Result<bool> {
-    let params = match (checklevel, nblocks) {
-        (Some(level), Some(num)) => vec![level.into(), num.into()],
-        (Some(level), None) => vec![level.into()],
-        (None, Some(num)) => vec![serde_json::Value::Null, num.into()],
-        (None, None) => vec![],
-    };
-    self.call("verifychain", &params)
-}"#;
-        function_defs.push(default_fn.to_string());
-        function_defs.push(param_fn.to_string());
-    } else if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
+    if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
         // When all arguments are optional, generate two variants.
         let default_doc = format!(
             "{} with default parameters.",
