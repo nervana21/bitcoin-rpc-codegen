@@ -11,6 +11,12 @@ const SUPPORTED_VERSIONS: &[&str] = &[
 pub fn run_codegen() -> Result<()> {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let api_path = Path::new(manifest_dir).join("resources").join("api.json");
+    if !api_path.exists() {
+        return Err(anyhow::anyhow!(
+            "API JSON file not found at: {:?}",
+            api_path
+        ));
+    }
     println!("run_codegen: Using API JSON file at: {:?}", api_path);
 
     let api_json = fs::read_to_string(api_path)?;
