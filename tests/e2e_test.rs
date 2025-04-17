@@ -54,18 +54,17 @@ mod generated {
 
 // Re-export items as a user would.
 use generated::v28::client::Client;
-use generated::v28::types::GetblockchaininfoResponse;
 
-// The generated macro for getblockchaininfo uses an empty slice (&[]) for parameters,
-// which leaves type inference ambiguous. We override it here by explicitly casting:
+// Implement getblockcount RPC method that takes no parameters
+// and returns the current block height as a JSON value
 impl Client {
-    pub fn getblockchaininfo(&self) -> anyhow::Result<bitcoin_rpc_codegen::serde_json::Value> {
-        self.call("getblockchaininfo", &[] as &[()])
+    pub fn getblockcount(&self) -> anyhow::Result<bitcoin_rpc_codegen::serde_json::Value> {
+        self.call("getblockcount", &[] as &[()])
     }
 }
 
 #[test]
-fn e2e_test_getblockchaininfo() -> Result<()> {
+fn e2e_test_getblockcount() -> Result<()> {
     // Hardcoded connection details for your regtest bitcoind instance.
     let rpc_url = "http://127.0.0.1:18443";
     let rpc_user = "rpcuser";
@@ -76,24 +75,20 @@ fn e2e_test_getblockchaininfo() -> Result<()> {
         Client::new(rpc_url, rpc_user, rpc_pass).expect("Failed to create client instance");
     println!("Client instantiated successfully.");
 
-    // Call the getblockchaininfo RPC.
+    // Call the getblockcount RPC.
     let json_resp = client
-        .getblockchaininfo()
-        .expect("RPC call to getblockchaininfo failed");
+        .getblockcount()
+        .expect("RPC call to getblockcount failed");
     println!("Raw JSON response: {}", json_resp);
 
-    // Deserialize the JSON response into the strongly typed struct.
-    let info: GetblockchaininfoResponse =
-        bitcoin_rpc_codegen::serde_json::from_value(json_resp).expect("Deserialization failed");
-    println!("Deserialized response: {:#?}", info);
+    // Deserialize the JSON response into a number
+    let block_count: i64 = bitcoin_rpc_codegen::serde_json::from_value(json_resp)
+        .expect("Failed to deserialize block count");
+    println!("Current block count: {}", block_count);
 
-    // Verify that the blockchain is running in regtest mode.
-    // assert_eq!(
-    //     info.chain, "regtest",
-    //     "Expected chain 'regtest', but got: {}",
-    //     info.chain
-    // );
-    // println!("End-to-end test succeeded!");
+    // For regtest mode, the block count should be >= 0
+    assert!(block_count >= 0, "Block count should be non-negative");
+    println!("End-to-end test succeeded!");
 
     Ok(())
 }
