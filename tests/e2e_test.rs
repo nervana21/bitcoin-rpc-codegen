@@ -1,4 +1,4 @@
-// tests/roundtrip.rs
+// tests/e2e_test.rs
 
 use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::Client;
@@ -118,8 +118,8 @@ fn run_all_methods(client: &Client) -> Result<()> {
 }
 
 #[test]
-fn roundtrip_all_methods() -> Result<()> {
-    println!("=== roundtrip_all_methods START ===");
+fn e2e_all_methods() -> Result<()> {
+    println!("=== e2e_all_methods START ===");
 
     // 1) Start/regtest bitcoind if needed
     let maybe_child = if !rpc_listening() {
@@ -157,6 +157,6 @@ fn roundtrip_all_methods() -> Result<()> {
         println!("bitcoind exited with {}", status);
     }
 
-    println!("=== roundtrip_all_methods END ===");
+    println!("=== e2e_all_methods END ===");
     Ok(())
 }
