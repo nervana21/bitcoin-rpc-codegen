@@ -1,7 +1,4 @@
 use anyhow::Result;
-// Import our patched serde_json from our library.
-use bitcoin_rpc_codegen::serde_json;
-// (Optionally, you can import bitcoin_rpc_codegen::bitcoin if needed.)
 
 mod generated {
     pub mod v28 {

@@ -46,8 +46,8 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     let type_imports = r#"use bitcoin_rpc_codegen::bitcoin::amount::Amount;
 use bitcoin_rpc_codegen::bitcoin::hex::Hex;
 use bitcoin_rpc_codegen::bitcoin::time::Time;
+use bitcoin_rpc_codegen::serde_json;
 use serde::{Deserialize, Serialize};
-use crate::serde_json;
 "#;
 
     let mut methods_by_category: HashMap<String, Vec<&ApiMethod>> = HashMap::new();
