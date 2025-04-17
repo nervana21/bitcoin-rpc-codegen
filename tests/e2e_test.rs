@@ -61,6 +61,12 @@ impl Client {
     pub fn getblockcount(&self) -> anyhow::Result<bitcoin_rpc_codegen::serde_json::Value> {
         self.call("getblockcount", &[] as &[()])
     }
+    pub fn getblockhash(
+        &self,
+        height: i64,
+    ) -> anyhow::Result<bitcoin_rpc_codegen::serde_json::Value> {
+        self.call("getblockhash", &[height])
+    }
 }
 
 #[test]
@@ -89,6 +95,24 @@ fn e2e_test_getblockcount() -> Result<()> {
     // For regtest mode, the block count should be >= 0
     assert!(block_count >= 0, "Block count should be non-negative");
     println!("End-to-end test succeeded!");
+
+    Ok(())
+}
+
+#[test]
+fn e2e_test_getblockhash() -> Result<()> {
+    // Hardcoded connection details for your regtest bitcoind instance.
+    let rpc_url = "http://127.0.0.1:18443";
+    let rpc_user = "rpcuser";
+    let rpc_pass = "rpcpassword";
+
+    // Instantiate the client.
+    let client =
+        Client::new(rpc_url, rpc_user, rpc_pass).expect("Failed to create client instance");
+    let block_hash = client
+        .getblockhash(0)
+        .expect("RPC call to getblockhash failed");
+    println!("Block hash: {}", block_hash);
 
     Ok(())
 }
