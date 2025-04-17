@@ -190,13 +190,7 @@ fn generate_method_args(method: &ApiMethod) -> String {
         let arg_name = &arg.names[0];
         let arg_type = match arg.type_.as_str() {
             "hex" => "String".to_string(),
-            "string" => {
-                if method.name == "addnode" && arg_name == "command" {
-                    "AddNodeCommand".to_string()
-                } else {
-                    "String".to_string()
-                }
-            }
+            "string" => "String".to_string(),
             "number" => "i64".to_string(),
             "boolean" => "bool".to_string(),
             "array" => {
@@ -208,8 +202,7 @@ fn generate_method_args(method: &ApiMethod) -> String {
                     "Vec<String>".to_string()
                 }
             }
-            "object" => "serde_json::Value".to_string(),
-            "object-named-parameters" => "serde_json::Value".to_string(),
+            "object" | "object-named-parameters" => "serde_json::Value".to_string(),
             _ => arg.type_.clone(),
         };
         if arg.optional {
