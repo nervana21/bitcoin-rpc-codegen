@@ -5,6 +5,10 @@
 pub mod serde_json;
 pub use serde_json::*;
 
+// Export parser for integration tests
+pub mod parser;
+pub use parser::{ApiMethod, parse_api_json};
+
 // Re-export bitcoincore_rpc types for idiomatic use
 pub use bitcoincore_rpc::{Auth, Error as RpcError, RpcApi};
 
@@ -22,7 +26,7 @@ impl Client {
         let auth = Auth::UserPass(user.to_string(), pass.to_string());
         let rpc = bitcoincore_rpc::Client::new(url, auth)?;
         // Probe version
-        let info: serde_json::Value = rpc.call("getnetworkinfo", &[])?;
+        let info = rpc.call::<serde_json::Value>("getnetworkinfo", &[])?;
         let ver_num = info
             .get("version")
             .and_then(|v| v.as_u64())
@@ -37,13 +41,25 @@ impl Client {
         Ok(Self { inner: rpc })
     }
 
-    /// Generic raw JSON-RPC call
+    /// Generic raw JSON-RPC call (returns serde_json::Value)
     pub fn call_json(
         &self,
         method: &str,
         params: &[serde_json::Value],
     ) -> Result<serde_json::Value> {
         self.inner.call(method, params)
+    }
+
+    /// Try to load the named wallet, or create it if it doesn’t exist (regtest only).
+    pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
+        // loadwallet will fail if it doesn't exist; in that case create it
+        match self.call_json("loadwallet", &[json!(wallet_name)]) {
+            Ok(_) => Ok(()),
+            Err(_) => {
+                self.call_json("createwallet", &[json!(wallet_name)])?;
+                Ok(())
+            }
+        }
     }
 
     /// Ergonomic: get the current block height
