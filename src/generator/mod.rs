@@ -16,102 +16,116 @@ pub struct {} {{{}}}"#,
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let method_name = sanitize_method_name(&method.name);
     let macro_name = format!("impl_client_{}__{}", version, method_name);
-    // Generate a doc comment from the method description.
     let description = format_doc_comment(&method.description);
     let mut function_defs = Vec::new();
 
+    // Compute return type once
+    let return_ty = get_return_type_from_results(&method.results);
+
+    // Helper to format the call expression with correct empty‑slice cast
+    let make_call = |req: &str, opt: &str| {
+        if req.is_empty() && opt.is_empty() {
+            // no required, no optional
+            format!(
+                "self.call(\"{}\", &[] as &[serde_json::Value])",
+                method.name
+            )
+        } else if !opt.is_empty() {
+            // required + optional
+            format!(
+                "let mut params = vec![{}];\n{}\n    self.call(\"{}\", &params)",
+                req, opt, method.name
+            )
+        } else {
+            // only required
+            format!("self.call(\"{}\", &[{}])", method.name, req)
+        }
+    };
+
     if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
-        // When all arguments are optional, generate two variants.
-        let default_doc = format!(
-            "{} with default parameters.",
-            format_doc_comment(&method.description)
-        );
+        // 1) default‐params variant
+        let default_doc = format!("{} with default parameters.", description);
         let default_fn = format!(
-            "/// {}\npub fn {}_default(&self) -> Result<{}> {{
-    self.call(\"{}\", &[])
+            "/// {doc}\npub fn {name}_default(&self) -> Result<{ret}> {{
+    {call}
 }}",
-            default_doc,
-            method_name,
-            get_return_type_from_results(&method.results),
-            method.name
+            doc = default_doc,
+            name = method_name,
+            ret = return_ty,
+            call = make_call("", "")
         );
-        let param_doc = format!(
-            "{} with specified parameters.",
-            format_doc_comment(&method.description)
-        );
+
+        // 2) specified‐params variant
+        let param_doc = format!("{} with specified parameters.", description);
         let method_args = generate_method_args(method);
-        let (required_args, optional_args) = generate_args(method);
-        let optional_args = optional_args
+        let (required_args, optional_body_raw) = generate_args(method);
+        let optional_body = optional_body_raw
             .lines()
             .map(|line| format!("    {}", line))
             .collect::<Vec<_>>()
             .join("\n");
-        let base_call = if !optional_args.is_empty() {
-            format!(
-                "let mut params = vec![{}];\n{}\n    self.call(\"{}\", &params)",
-                required_args, optional_args, method.name
-            )
-        } else {
-            format!("self.call(\"{}\", &[{}])", method.name, required_args)
-        };
+        let param_call = make_call(&required_args, &optional_body);
         let param_fn = format!(
-            "/// {}\npub fn {}(&self{}) -> Result<{}> {{
-    {}
+            "/// {doc}\npub fn {name}(&self{args}) -> Result<{ret}> {{
+    {call}
 }}",
-            param_doc,
-            method_name,
-            method_args,
-            get_return_type_from_results(&method.results),
-            base_call
+            doc = param_doc,
+            name = method_name,
+            args = method_args,
+            ret = return_ty,
+            call = param_call
         );
+
         function_defs.push(default_fn);
         function_defs.push(param_fn);
     } else {
-        // Default: generate a single function.
+        // Single‐method variant
         let method_args = generate_method_args(method);
-        let (required_args, optional_args) = generate_args(method);
-        let base_call = if !optional_args.is_empty() {
-            format!(
-                "let mut params = vec![{}];
-    {}
-    self.call(\"{}\", &params)",
-                required_args, optional_args, method.name
-            )
-        } else {
-            format!("self.call(\"{}\", &[{}])", method.name, required_args)
-        };
-        let is_none = method
+        let (required_args, optional_body_raw) = generate_args(method);
+        let optional_body = optional_body_raw
+            .lines()
+            .map(|line| format!("    {}", line))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let raw_call = make_call(&required_args, &optional_body);
+
+        // If this RPC returns `null`, wrap it in a match
+        let call_body = if method
             .results
             .iter()
-            .any(|r| r.type_.to_lowercase() == "none");
-        let call_body = if is_none {
+            .any(|r| r.type_.eq_ignore_ascii_case("none"))
+        {
             format!(
-                "match {} {{
+                "match {call} {{
     Ok(serde_json::Value::Null) => Ok(()),
     Ok(ref val) if val.is_null() => Ok(()),
-    Ok(other) => Err(crate::client_sync::Error::Returned(format!(\"{} expected null, got: {{}}\", other))),
+    Ok(other) => Err(crate::client_sync::Error::Returned(format!(\"{method} expected null, got: {{}}\", other))),
     Err(e) => Err(e.into()),
 }}",
-                base_call, method.name
+                call = raw_call,
+                method = method.name
             )
         } else {
-            base_call
+            raw_call
         };
+
         let fn_def = format!(
-            "pub fn {}(&self{}) -> Result<{}> {{
-    {}
+            "pub fn {name}(&self{args}) -> Result<{ret}> {{
+    {body}
 }}",
-            method_name,
-            method_args,
-            get_return_type_from_results(&method.results),
-            call_body
+            name = method_name,
+            args = method_args,
+            ret = return_ty,
+            body = call_body
         );
+
         function_defs.push(fn_def);
     }
 
     let impl_block = function_defs.join("\n\n");
     format!(
-        "/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}\n{}\n#[macro_export]\nmacro_rules! {} {{\n    () => {{\n        impl Client {{\n{}\n        }}\n    }};\n}}",
+        "/// Implements Bitcoin Core JSON-RPC API method `{}` for version {}\n{}\n#[macro_export]\n\
+         macro_rules! {} {{\n    () => {{\n        impl Client {{\n{}\n        }}\n    }};\n}}",
         method.name,
         version,
         description,
@@ -157,14 +171,13 @@ pub fn generate_type_conversion(method: &ApiMethod, _version: &str) -> Option<St
 
 fn map_type_to_rust(type_str: &str) -> String {
     match type_str {
-        "boolean" => "bool".to_string(),
         "string" => "String".to_string(),
         "number" => "f64".to_string(),
-        "hex" => "Hex".to_string(),
-        "amount" => "Amount".to_string(),
-        "time" => "Time".to_string(),
-        "object" | "elision" => "serde_json::Value".to_string(),
-        _ => type_str.replace("-", "_").to_string(),
+        "boolean" => "bool".to_string(),
+        "hex" => "String".to_string(),
+        "object" => "serde_json::Value".to_string(),
+        "object_dynamic" => "serde_json::Value".to_string(),
+        _ => "serde_json::Value".to_string(),
     }
 }
 
@@ -276,7 +289,11 @@ fn get_field_type(field: &ApiResult) -> String {
     if field.type_.as_str() == "array" || field.type_.as_str() == "array-fixed" {
         format!("Vec<{}>", generate_array_type(field))
     } else if field.type_.as_str() == "object" && !field.inner.is_empty() {
-        generate_object_type(field)
+        if field.key_name == "object_dynamic" {
+            "serde_json::Value".to_string()
+        } else {
+            generate_object_type(field)
+        }
     } else {
         map_type_to_rust(field.type_.as_str())
     }
@@ -309,6 +326,8 @@ fn capitalize(s: &str) -> String {
 fn generate_object_type(result: &ApiResult) -> String {
     if result.inner.is_empty() {
         "serde_json::Value".to_string()
+    } else if result.key_name == "object_dynamic" {
+        "serde_json::Value".to_string()
     } else {
         let base_name = if result.key_name.is_empty() {
             "Value".to_string()
@@ -324,13 +343,8 @@ fn generate_array_type(result: &ApiResult) -> String {
         match inner.type_.as_str() {
             "string" => "String".to_string(),
             "number" => "f64".to_string(),
-            "boolean" => "bool".to_string(),
-            "object" => generate_object_type(inner),
-            "hex" => "Hex".to_string(),
-            "amount" => "Amount".to_string(),
-            "time" => "Time".to_string(),
-            "elision" => "serde_json::Value".to_string(),
-            _ => inner.type_.clone(),
+            "hex" => "String".to_string(),
+            _ => "serde_json::Value".to_string(),
         }
     } else {
         "serde_json::Value".to_string()

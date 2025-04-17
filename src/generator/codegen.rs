@@ -52,12 +52,8 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
         fs::create_dir_all(dir)?;
     }
 
-    // Modified type_imports: we now use the fully-qualified paths for both bitcoin and the patched serde_json.
-    let type_imports = r#"use bitcoin_rpc_codegen::bitcoin::amount::Amount;
-use bitcoin_rpc_codegen::bitcoin::hex::Hex;
-use bitcoin_rpc_codegen::bitcoin::time::Time;
-use bitcoin_rpc_codegen::serde_json;
-use serde::{Deserialize, Serialize};
+    // Modified type_imports: only include necessary imports
+    let type_imports = r#"use serde::{Deserialize, Serialize};
 "#;
 
     let mut methods_by_category: HashMap<String, Vec<&ApiMethod>> = HashMap::new();
