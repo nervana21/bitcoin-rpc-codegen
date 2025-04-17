@@ -16,3 +16,8 @@ pub mod hex {
 pub mod time {
     pub type Time = u64;
 }
+
+// Re-export the types at the module level for easier access
+pub use amount::Amount;
+pub use hex::Hex;
+pub use time::Time;
