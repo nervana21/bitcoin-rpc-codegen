@@ -45,8 +45,12 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     let client_dir = root_dir.join("client/src").join(version);
     let types_dir = root_dir.join("types/src").join(version);
 
-    fs::create_dir_all(&client_dir)?;
-    fs::create_dir_all(&types_dir)?;
+    for dir in &[&client_dir, &types_dir] {
+        if dir.exists() {
+            fs::remove_dir_all(dir)?;
+        }
+        fs::create_dir_all(dir)?;
+    }
 
     // Modified type_imports: we now use the fully-qualified paths for both bitcoin and the patched serde_json.
     let type_imports = r#"use bitcoin_rpc_codegen::bitcoin::amount::Amount;
