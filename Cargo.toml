@@ -7,13 +7,8 @@ edition = "2024"
 anyhow = "1.0.98"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-bitcoin = "0.32.5"
+external_bitcoin = { version = "0.32.5", package = "bitcoin" }
 bitcoincore-rpc = "0.19.0"
-
-
-[[bin]]
-name = "bitcoin-rpc-codegen"
-path = "src/main.rs"
 
 [build-dependencies]
 anyhow = "1.0"
