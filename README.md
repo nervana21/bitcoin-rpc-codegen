@@ -1,30 +1,31 @@
 # Bitcoin RPC Code Generator
 
-A tool for generating type-safe Rust RPC client code for Bitcoin Core's JSON-RPC API. This project parses Bitcoin Core's API documentation (from a JSON file) and automatically produces both client methods and Rust types for interacting with the node.
+A **Universal Adapter** for Bitcoin RPC communication, seamlessly translating your Rust applications' requests into the native language of your Bitcoin nodes.
+
+No more compatibility headaches—simply tell your application, "Connect to my Bitcoin node," and the adapter intelligently handles the rest.
+
+## What Does "Universal Adapter" Mean?
+
+- **Automatic Version Detection:** It queries your Bitcoin node, asking, "Which language (version) do you speak?"
+- **Dynamic Client Generation:** It responds with, "Great, I speak that language too!" and automatically generates type-safe Rust RPC client methods tailored specifically for your node's Bitcoin Core version.
+- **Type-safe and Secure:** The generated Rust methods and response types ensure compile-time validation, drastically reducing runtime errors.
 
 ## Features
 
-- **Type-safe Code Generation:** Automatically produces Rust client methods and strongly typed response structures based on Bitcoin Core's RPC API documentation.
-- **Support for Multiple Versions:** Generate clients for Bitcoin Core versions from v17 through v28. (Currently, the default configuration targets v28.)
-- **Automatic Parameter Validation:** Generated methods include basic input validation and enforce type safety at compile time.
-- **Error Handling:** Uses `anyhow` for comprehensive error reporting, ensuring that RPC errors and parsing issues are clear.
-- **Integration with Bitcoin Libraries:** Leverages industry-standard crates such as `bitcoin` and `bitcoincore-rpc` for Bitcoin types and connecting to a Bitcoin Core node.
-- **Build Process Integration:** Generated code is produced into Cargo's build directory via `OUT_DIR` at compile time, making integration with your Rust projects seamless.
+- **Version-Agnostic:** Supports Bitcoin Core RPC versions v17 to v28, adapting automatically based on your node's capabilities.
+- **Strongly Typed API:** Eliminates guesswork and manual parsing, improving maintainability and security.
+- **Robust Error Handling:** Uses idiomatic Rust error handling (`anyhow`) to clearly communicate issues during RPC calls.
+- **Seamless Integration:** Generated code is easily integrated into your Rust projects, fitting naturally into your build process via Cargo's `OUT_DIR`.
 
-## Supported Versions
+## Quick Start
 
-- Bitcoin Core versions: v17 to v28  
-  (The code generation supports all versions, though v28 is the default target.)
-
-## Installation
-
-You can install the code generator using Cargo:
+Install the generator with Cargo:
 
 ```bash
 cargo install bitcoin-rpc-codegen
 ```
 
-Alternatively, clone the repository for local development:
+Or clone the repository:
 
 ```bash
 git clone https://github.com/yourusername/bitcoin-rpc-codegen.git
@@ -32,106 +33,47 @@ cd bitcoin-rpc-codegen
 cargo build --release
 ```
 
-## How It Works
+Try out the basic example:
 
-The library operates through several key components:
-
-1. **Parser Module (`src/parser/mod.rs`):** Reads and parses Bitcoin Core's RPC API definition from the JSON file, converting it into Rust data structures.
-
-2. **Generator Module (`src/generator/mod.rs`):** Takes the parsed API definitions and generates:
-
-   - Rust client methods as macros for each RPC call
-   - Type definitions for request parameters and response structures
-   - Organized by Bitcoin Core category (blockchain, wallet, network, etc.)
-
-3. **Codegen Process (`src/generator/codegen.rs`):** Orchestrates the code generation process, writing the generated files to Cargo's build directory at compile time.
-
-4. **NodeClient (`src/node_client/mod.rs`):** Provides a simple client implementation for connecting to a Bitcoin Core node.
-
-## Usage
-
-The code generation happens at compile time via Cargo's build script system. The process reads the API definition from `resources/api.json` and generates client methods and type definitions for all supported Bitcoin Core versions.
-
-### Using the Generated Code
-
-In your Rust project, you can include the generated code using the `include!` macro:
-
-```rust
-// Include the generated client methods for a specific version and category
-include!(concat!(env!("OUT_DIR"), "/client/src/v28/blockchain.rs"));
-
-// Include the generated type definitions
-include!(concat!(env!("OUT_DIR"), "/types/src/v28/blockchain.rs"));
+```bash
+bitcoind -regtest -daemon
+cargo run --example basic_client
 ```
 
-### Example: Connecting to a Bitcoin Node
+## How It Works
+
+The generator automatically parses Bitcoin Core's RPC API definitions and creates:
+
+- **Rust macros** for each RPC method.
+- **Type-safe Rust structs** for request and response payloads.
+- **Dynamic adapters** to seamlessly match your node's version.
+
+## Example Usage
+
+Here's how you connect your Rust application to your Bitcoin node:
 
 ```rust
-use anyhow::Result;
-use bitcoin_rpc_codegen::client::v28::blockchain::impl_client_v28__getblockchaininfo;
-use bitcoin_rpc_codegen::types::v28::blockchain::GetblockchaininfoResponse;
-use serde_json::Value;
+use bitcoin_rpc_codegen::Client;
 
-// Define a client type that will be extended with generated methods
-pub struct Client {
-    rpc: bitcoincore_rpc::Client,
-}
+fn main() -> anyhow::Result<()> {
+    // Connect to your Bitcoin node. The client auto-detects version.
+    let client = Client::new_auto("http://127.0.0.1:18443", "rpcuser", "rpcpassword")?;
 
-impl Client {
-    pub fn new(rpc_url: &str, user: &str, password: &str) -> Result<Self> {
-        let auth = bitcoincore_rpc::Auth::UserPass(user.to_owned(), password.to_owned());
-        let rpc = bitcoincore_rpc::Client::new(rpc_url, auth)?;
-        Ok(Self { rpc })
-    }
+    // Make an RPC call without worrying about compatibility.
+    let blockchain_info = client.getblockchaininfo()?;
 
-    pub fn call<T>(&self, method: &str, params: &[Value]) -> Result<T>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        Ok(self.rpc.call(method, params)?)
-    }
-}
-
-// Implement getblockchaininfo method on Client
-impl_client_v28__getblockchaininfo!();
-
-fn main() -> Result<()> {
-    // Connect to a regtest node
-    let client = Client::new("http://127.0.0.1:18443", "rpcuser", "rpcpassword")?;
-
-    // Call the generated method
-    let info = client.getblockchaininfo()?;
-    println!("Chain: {}, Blocks: {}", info.chain, info.blocks);
+    println!("Blockchain info: {:?}", blockchain_info);
 
     Ok(())
 }
 ```
 
-## Development
+Your application never needs to manage compatibility again—the universal adapter ensures communication is always fluent and effective.
 
-### Project Structure
+## Development and Contributions
 
-```
-bitcoin-rpc-codegen/
-├── src/
-│   ├── generator/           # Code generation logic
-│   ├── parser/              # API JSON parsing logic
-│   ├── node_client/         # Bitcoin Core connection utilities
-│   ├── bin/                 # Example binaries
-│   ├── lib.rs               # Library entry point
-│   └── main.rs              # CLI entry point
-├── resources/
-│   └── api.json             # Bitcoin Core API definition
-└── build.rs                 # Build script for code generation
-```
+We welcome contributions! Please check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
-### Contributing
+## License
 
-Contributions are welcome! Please feel free to submit pull requests or open issues to improve the project.
-
-### Testing
-
-To test the generated code with a local Bitcoin Core node:
-
-1. Start a Bitcoin Core node in regtest mode
-2. Run the example client: `cargo run --bin bitcoin_client`
+MIT License—see [LICENSE](LICENSE) for details.
