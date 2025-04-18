@@ -17,10 +17,10 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
+2. If you've added code that should be tested, add tests to the `tests/` directory.
+3. If you've changed APIs or the generation process, update the documentation (like this file or `README.md`).
+4. Ensure the test suite passes using `cargo test`.
+5. Make sure your code adheres to the standard Rust style (`cargo fmt`) and passes linter checks (`cargo clippy`).
 6. Issue that pull request!
 
 ## Any contributions you make will be under the MIT Software License
@@ -29,7 +29,7 @@ In short, when you submit code changes, your submissions are understood to be un
 
 ## Report bugs using GitHub's [issue tracker](https://github.com/yourusername/bitcoin-rpc-codegen/issues)
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/bitcoin-rpc-codegen/issues/new); it's that easy!
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/bitcoin-rpc-codegen/issues/new); it's that easy! **Please replace `yourusername` with the actual GitHub organization or username if different.**
 
 ## Write bug reports with detail, background, and sample code
 
@@ -45,8 +45,8 @@ We use GitHub issues to track public bugs. Report a bug by [opening a new issue]
 
 ## Use a Consistent Coding Style
 
-- Use 4 spaces for indentation rather than tabs
-- You can try running `npm run lint` for style unification
+- We follow standard Rust formatting conventions. Run `cargo fmt` to format your code.
+- We use Clippy for linting. Run `cargo clippy -- -D warnings` to check for issues.
 
 ## License
 
@@ -59,15 +59,18 @@ By contributing, you agree that your contributions will be licensed under its MI
 2. **Clone the repository**:
 
    ```bash
+   # Replace 'yourusername' with the correct GitHub username/organization
    git clone https://github.com/yourusername/bitcoin-rpc-codegen.git
    cd bitcoin-rpc-codegen
    ```
 
-3. **Build the project**:
+3. **Build the project**: The core code generation happens during the build.
 
    ```bash
    cargo build
    ```
+
+   This will parse `resources/api.json` and generate Rust code.
 
 4. **Run the tests**:
 
@@ -75,31 +78,28 @@ By contributing, you agree that your contributions will be licensed under its MI
    cargo test
    ```
 
-5. **Run the code generator**:
-   ```bash
-   cargo run --bin bitcoin-rpc-codegen
-   ```
-
 ## Project Structure
 
--`resources/` - Location of resources such as `api.json`
-
-- `src/` - Source code for the generator
-  - `generator/` - Code generation logic
-  - `node_client/` - Node that might be used for testing
-  - `parser/` - API documentation parsing
-  - `lib.rs` - Shared library code
-  - `main.rs` - Entry point and orchestration
-  - `schema.json` - JSON schema file
-- `api.json` - JSON file containing API definitions
+- `resources/`: Contains the source `api.json` file defining the Bitcoin RPC methods.
+- `src/`: Source code for the generator library and binary.
+  - `parser/`: Logic for parsing `resources/api.json`.
+  - `generator/`: Code generation logic, invoked by `build.rs`.
+  - `lib.rs`: Shared library code.
+  - `main.rs`: Entry point for the binary executable (may have limited use).
+  - `schema.json`: JSON schema file for validating `api.json`.
+- `tests/`: Integration and unit tests. Run with `cargo test`.
+- `examples/`: Example usage.
+- `build.rs`: Build script that orchestrates the code generation process.
+- `Cargo.toml`: Project manifest defining dependencies and metadata.
+- `target/`: Build artifacts and generated code (usually ignored by git).
 
 ## Guidelines for Pull Requests
 
 1. **Keep it focused**: Each pull request should address a single issue or feature.
-2. **Write tests**: Include tests for any new functionality.
-3. **Update documentation**: Update the README.md and other documentation as needed.
-4. **Follow the code style**: Use the same code style as the rest of the project.
-5. **Squash commits**: Before submitting a pull request, squash your commits into a single commit.
+2. **Write tests**: Include tests in the `tests/` directory for any new functionality or bug fixes.
+3. **Update documentation**: Update `README.md`, `CONTRIBUTING.md`, and code comments as needed.
+4. **Follow the code style**: Run `cargo fmt` and `cargo clippy`.
+5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`). Try to keep commits logical, squashing is not strictly required if the history is clean.
 
 ## Questions and Discussions
 
