@@ -33,12 +33,20 @@ cd bitcoin-rpc-codegen
 cargo build --release
 ```
 
-Try out the basic example:
+Try out the simple example:
 
 ```bash
-bitcoind -regtest -daemon
-cargo run --example basic_client
+# Ensure you have `bitcoind` on your PATH
+# The example will automatically start bitcoind in regtest mode if not running
+cargo run --example auto_client
 ```
+
+The example demonstrates:
+
+- Auto-starting bitcoind in regtest mode if not running
+- Auto-detecting the Bitcoin Core version
+- Making basic RPC calls
+- Clean shutdown of bitcoind **only if** it was spawned by the example (no effect if an instance was already running)
 
 ## How It Works
 
@@ -50,25 +58,32 @@ The generator automatically parses Bitcoin Core's RPC API definitions and create
 
 ## Example Usage
 
-Here's how you connect your Rust application to your Bitcoin node:
+When writing regtest‑based tests (or any RPC code), you don’t need messy scripts or version‑sniffers. Just import our `Client` and call:
 
 ```rust
 use bitcoin_rpc_codegen::Client;
 
 fn main() -> anyhow::Result<()> {
-    // Connect to your Bitcoin node. The client auto-detects version.
-    let client = Client::new_auto("http://127.0.0.1:18443", "rpcuser", "rpcpassword")?;
+    // No need to ask “which version am I talking to?”
+    // Client::new_auto always “just knows” your node’s RPC version.
+    let client = Client::new_auto(
+        "http://127.0.0.1:18443",
+        "rpcuser",
+        "rpcpassword",
+    )?;
 
-    // Make an RPC call without worrying about compatibility.
-    let blockchain_info = client.getblockchaininfo()?;
+    // Now call any RPC method directly:
+    let height = client.getblockcount()?;
+    println!("Regtest block height: {}", height);
 
-    println!("Blockchain info: {:?}", blockchain_info);
+    let info = client.getblockchaininfo()?;
+    println!("Chain info: {:?}", info);
 
     Ok(())
 }
 ```
 
-Your application never needs to manage compatibility again—the universal adapter ensures communication is always fluent and effective.
+Key benefit: in your integration tests or scripts, you never implement manual version‑detection logic—this library handles it for you every time.
 
 ## Development and Contributions
 
