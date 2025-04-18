@@ -60,7 +60,7 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     for method in methods {
         methods_by_category
             .entry(method.category.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(method);
     }
 

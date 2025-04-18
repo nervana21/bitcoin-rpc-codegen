@@ -60,7 +60,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>> {
 
         let results = command_obj["results"]
             .as_array()
-            .map(|results| results.iter().map(|result| parse_result(result)).collect())
+            .map(|results| results.iter().map(parse_result).collect())
             .unwrap_or_default();
 
         let category = command_obj["category"]
@@ -92,7 +92,7 @@ fn parse_result(value: &serde_json::Value) -> ApiResult {
         key_name: obj["key_name"].as_str().unwrap_or("").to_string(),
         inner: obj["inner"]
             .as_array()
-            .map(|props| props.iter().map(|prop| parse_result(prop)).collect())
+            .map(|props| props.iter().map(parse_result).collect())
             .unwrap_or_default(),
     }
 }
