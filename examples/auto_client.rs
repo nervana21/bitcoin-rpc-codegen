@@ -1,6 +1,6 @@
 // examples/auto_client.rs
 
-use bitcoin_rpc_codegen::{Client, Result};
+use bitcoin_rpc_codegen::{Client, Result, RpcApi};
 use std::{
     net::TcpStream,
     process::{Child, Command},
@@ -54,7 +54,7 @@ fn wait_for_rpc_ready() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    // 1) Start bitcoind if not already running
+    // Start bitcoind if not already running
     let maybe_child = if !rpc_listening() {
         println!("RPC not up, spawning regtest bitcoind...");
         let child = spawn_bitcoind()?;
@@ -65,27 +65,31 @@ fn main() -> Result<()> {
         None
     };
 
-    // 2) connect (auto-detects version)
+    // Connect (auto-detects version)
     let client = Client::new_auto(RPC_URL, RPC_USER, RPC_PASS)?;
 
-    // 3) get block count
-    let count = client.getblockcount()?;
+    // Get block count
+    let count = client.get_block_count()?;
     println!("block count = {}", count);
 
-    // 4) get the genesis-block hash
-    let hash = client.getblockhash(0)?;
+    // Get genesis-block hash
+    let hash = client.get_block_hash(0)?;
     println!("genesis hash = {}", hash);
 
-    // 5) get full blockchain info
-    let info = client.getblockchaininfo()?;
+    // Get full blockchain info
+    let info = client.get_blockchain_info()?;
     println!("chain info: {:?}", info);
 
-    // 6) If we spawned bitcoind, shut it down cleanly
+    // Get list of wallets
+    let list_wallets: Vec<String> = client.list_wallets()?;
+    println!("wallets: {:?}", list_wallets);
+
+    // If we spawned bitcoind, shut it down cleanly
     if let Some(mut child) = maybe_child {
         println!("Stopping bitcoind via RPC...");
         let _ = client.call_json("stop", &[]);
 
-        // wait up to 10s for the RPC port to go away
+        // Wait up to 10s for the RPC port to go away
         let stop_start = Instant::now();
         while stop_start.elapsed() < Duration::from_secs(10) {
             if !rpc_listening() {
@@ -94,7 +98,7 @@ fn main() -> Result<()> {
             sleep(Duration::from_millis(200));
         }
 
-        // finally reap the process
+        // Finally reap the process
         let status = child.wait()?;
         println!("bitcoind exited with {}", status);
     }

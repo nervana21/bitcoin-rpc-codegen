@@ -7,7 +7,7 @@ pub use serde_json::*;
 
 // Export parser for integration tests
 pub mod parser;
-pub use parser::{ApiMethod, parse_api_json};
+pub use parser::{parse_api_json, ApiMethod};
 
 // Re-export bitcoincore_rpc types for idiomatic use
 pub use bitcoincore_rpc::{Auth, Error as RpcError, RpcApi};
@@ -61,20 +61,15 @@ impl Client {
             }
         }
     }
+}
 
-    /// Ergonomic: get the current block height
-    pub fn getblockcount(&self) -> Result<u64> {
-        self.inner.call("getblockcount", &[])
-    }
-
-    /// Ergonomic: get block hash at a given height
-    pub fn getblockhash(&self, height: i64) -> Result<String> {
-        self.inner
-            .call("getblockhash", &[serde_json::Value::Number(height.into())])
-    }
-
-    /// Ergonomic: fetch full getblockchaininfo JSON
-    pub fn getblockchaininfo(&self) -> Result<serde_json::Value> {
-        self.inner.call("getblockchaininfo", &[])
+impl RpcApi for Client {
+    fn call<T: for<'de> serde::Deserialize<'de>>(
+        &self,
+        cmd: &str,
+        params: &[serde_json::Value],
+    ) -> bitcoincore_rpc::Result<T> {
+        // Delegate straight to the inner bitcoincore_rpc::Client
+        self.inner.call(cmd, params)
     }
 }
