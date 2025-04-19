@@ -20,6 +20,11 @@ pub struct Client {
     inner: bitcoincore_rpc::Client,
 }
 
+/// A helper for regtest: spawns `bitcoind`, loads a wallet, tears down on Drop.
+pub use crate::regtest::RegtestClient;
+
+mod regtest;
+
 impl Client {
     /// Connects, auto-detects Core version via getnetworkinfo, and errors if unsupported.
     pub fn new_auto(url: &str, user: &str, pass: &str) -> Result<Self> {
@@ -52,14 +57,20 @@ impl Client {
 
     /// Try to load the named wallet, or create it if it doesn’t exist (regtest only).
     pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
-        // loadwallet will fail if it doesn't exist; in that case create it
-        match self.call_json("loadwallet", &[json!(wallet_name)]) {
-            Ok(_) => Ok(()),
-            Err(_) => {
-                self.call_json("createwallet", &[json!(wallet_name)])?;
-                Ok(())
+        // skip if already loaded
+        let loaded = self.call_json("listwallets", &[])?;
+        if let Some(arr) = loaded.as_array() {
+            if arr.iter().any(|v| v.as_str() == Some(wallet_name)) {
+                return Ok(());
             }
         }
+
+        // not yet loaded: try load, else create → load
+        if self.call_json("loadwallet", &[json!(wallet_name)]).is_err() {
+            let _ = self.call_json("createwallet", &[json!(wallet_name)]);
+            self.call_json("loadwallet", &[json!(wallet_name)])?;
+        }
+        Ok(())
     }
 }
 
