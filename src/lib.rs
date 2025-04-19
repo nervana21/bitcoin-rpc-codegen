@@ -55,22 +55,33 @@ impl Client {
         self.inner.call(method, params)
     }
 
-    /// Try to load the named wallet, or create it if it doesn’t exist (regtest only).
+    /// Try to load the named wallet, or create it if it doesn't exist (regtest only).
     pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
-        // skip if already loaded
-        let loaded = self.call_json("listwallets", &[])?;
-        if let Some(arr) = loaded.as_array() {
-            if arr.iter().any(|v| v.as_str() == Some(wallet_name)) {
-                return Ok(());
+        // 1) Attempt to load the wallet
+        match self.call_json("loadwallet", &[json!(wallet_name)]) {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                let msg = e.to_string();
+                // If it's already loaded, treat as success
+                if msg.contains("already loaded") {
+                    return Ok(());
+                }
             }
         }
 
-        // not yet loaded: try load, else create → load
-        if self.call_json("loadwallet", &[json!(wallet_name)]).is_err() {
-            let _ = self.call_json("createwallet", &[json!(wallet_name)]);
-            self.call_json("loadwallet", &[json!(wallet_name)])?;
+        // 2) Attempt to create the wallet
+        match self.call_json("createwallet", &[json!(wallet_name)]) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                let msg = e.to_string();
+                // If it already exists or is already loaded, treat as success
+                if msg.contains("already exists") || msg.contains("already loaded") {
+                    return Ok(());
+                }
+                // Otherwise propagate the error
+                return Err(e);
+            }
         }
-        Ok(())
     }
 }
 
