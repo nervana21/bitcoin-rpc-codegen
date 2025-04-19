@@ -60,11 +60,13 @@ impl RegtestClient {
             sleep(Duration::from_millis(200));
         }
 
-        // connect
-        let client = Client::new_auto(url, user, pass)?;
+        // root client to load/create the wallet
+        let root = Client::new_auto(url, user, pass)?;
+        root.load_or_create_wallet(wallet_name)?;
 
-        // load or create the wallet via our helper
-        client.load_or_create_wallet(wallet_name)?;
+        // now switch to wallet-scoped RPC endpoint
+        let wallet_url = format!("{}{}{}", url.trim_end_matches('/'), "/wallet/", wallet_name);
+        let client = Client::new_auto(&wallet_url, user, pass)?;
 
         Ok(RegtestClient { client, child })
     }
