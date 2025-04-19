@@ -1,128 +1,133 @@
-// src/regtest.rs
-//
-// Step 1: use a fresh TempDir for every node and bind RPC on an
-//         OS‑allocated free port instead of the fixed 18443.
+// src/regtest.rs – step 1 (dynamic port + tempdir with robust teardown)
+// SPDX‑License‑Identifier: CC0‑1.0
 
-use crate::{Client, Result};
-use serde::de::Error as SerdeError;
+//! Spawn a **private regtest `bitcoind`** on an **ephemeral datadir** and a
+//! **random free RPC port**, auto‑load (or create) a wallet, expose a typed
+//! [`Client`], and guarantee clean shutdown on `Drop`.
+//!
+
+use crate::{Client, Result, RpcError};
 use std::{
-    net::{TcpListener, TcpStream},
+    net::{SocketAddr, TcpStream},
     process::{Child, Command, Stdio},
     thread::sleep,
     time::{Duration, Instant},
 };
+
 use tempfile::TempDir;
 
-/// Pick an unused local TCP port by binding to 0 and asking the OS.
-fn get_available_port() -> u16 {
-    TcpListener::bind(("127.0.0.1", 0))
-        .expect("bind(0)")
-        .local_addr()
-        .unwrap()
-        .port()
-}
-
-/// Minimal URL parser for "http://host:port[/...]".
-fn host_port_from_url(url: &str) -> Option<(&str, u16)> {
-    let url = url.strip_prefix("http://")?.split('/').next()?;
-    let mut parts = url.split(':');
-    let host = parts.next()?;
-    let port = parts.next()?.parse().ok()?;
-    Some((host, port))
-}
-
-/// A helper that spawns a regtest `bitcoind`, auto‑loads/creates a wallet,
-/// and tears everything down on `Drop`.
+/// A helper that spawns a regtest node and cleans everything up automatically.
 pub struct RegtestClient {
-    /// The ready‑to‑use RPC client.
+    /// Ready‑to‑use JSON‑RPC client (already wallet‑loaded).
     pub client: Client,
-    /// Child handle if *we* spawned bitcoind.
     child: Option<Child>,
-    /// Keeps the temp datadir alive for the lifetime of the node.
-    _datadir: Option<TempDir>,
+    _datadir: TempDir, // keeps the directory alive for the lifetime
+    rpc_port: u16,     // needed to poll for shutdown
 }
 
 impl RegtestClient {
-    /// If nothing is already listening at `url`, spin up a private
-    /// regtest `bitcoind` in a temp directory on a free RPC port.
-    pub fn new_auto(url: &str, user: &str, pass: &str, wallet: &str) -> Result<Self> {
-        let (need_spawn, host, port) = match host_port_from_url(url) {
-            Some((h, p)) if TcpStream::connect((h, p)).is_ok() => (false, h.to_string(), p),
-            _ => (true, "127.0.0.1".into(), get_available_port()),
-        };
+    /// Start (or attach to) a regtest node and ensure `wallet_name` exists.
+    ///
+    /// *If an RPC server is already listening on the requested URL we **do not**
+    /// spawn a new daemon.*  This lets callers reuse a shared dev node.
+    pub fn new_auto(url: &str, user: &str, pass: &str, wallet_name: &str) -> Result<Self> {
+        let default_port = 18443u16;
+        let wants_spawn = !Self::rpc_listening(default_port);
 
-        // Spawn bitcoind if required
-        let (child, datadir) = if need_spawn {
-            let dir = TempDir::new()?;
-            let child = Command::new("bitcoind")
-                .args([
-                    "-regtest",
-                    &format!("-datadir={}", dir.path().display()),
-                    &format!("-rpcuser={}", user),
-                    &format!("-rpcpassword={}", pass),
-                    &format!("-rpcport={}", port),
-                    "-fallbackfee=0.0002",
-                ])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .spawn()?;
-            (Some(child), Some(dir))
+        // Always create a fresh temp dir even if we don't end up spawning; this
+        // simplifies lifetimes and keeps the type non‑`Option`.
+        let datadir = TempDir::new()?;
+        let mut child = None;
+        let rpc_port;
+        let rpc_url;
+
+        if wants_spawn {
+            rpc_port = get_available_port()?;
+            rpc_url = format!("http://127.0.0.1:{rpc_port}");
+
+            child = Some(
+                Command::new("bitcoind")
+                    .args([
+                        "-regtest",
+                        &format!("-datadir={}", datadir.path().display()),
+                        &format!("-rpcuser={user}"),
+                        &format!("-rpcpassword={pass}"),
+                        &format!("-rpcport={rpc_port}"),
+                        "-fallbackfee=0.0002",
+                    ])
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()?,
+            );
         } else {
-            (None, None)
-        };
+            // Re‑use the caller‑provided URL & port.
+            rpc_url = url.to_string();
+            rpc_port = url
+                .rsplit(':')
+                .next()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(default_port);
+        }
 
-        let rpc_url = format!("http://{}:{}", host, port);
-
-        // Wait for RPC to come up (max 15 s)
+        // Wait up to 15 s for the RPC server to come up.
         let start = Instant::now();
-        loop {
+        while start.elapsed() < Duration::from_secs(15) {
             if let Ok(c) = Client::new_auto(&rpc_url, user, pass) {
                 if c.call_json("getnetworkinfo", &[]).is_ok() {
-                    // load/create wallet, then return
-                    c.load_or_create_wallet(wallet)?;
+                    // Ensure wallet
+                    c.load_or_create_wallet(wallet_name)?;
                     return Ok(RegtestClient {
                         client: c,
                         child,
                         _datadir: datadir,
+                        rpc_port,
                     });
                 }
             }
-            if start.elapsed() > Duration::from_secs(15) {
-                return Err(bitcoincore_rpc::Error::Json(serde_json::Error::custom(
-                    format!("bitcoind RPC never became ready on {}", rpc_url),
-                )));
-            }
-            sleep(Duration::from_millis(200));
+            sleep(Duration::from_millis(250));
         }
+        Err(RpcError::ReturnedError(
+            "regtest RPC did not become ready within 15 seconds".into(),
+        ))
     }
 
-    /// Stop the node (if we started it) via RPC and reap the process.
+    /// Cleanly stop the node we spawned (if any).
     pub fn teardown(&mut self) -> Result<()> {
         if let Some(mut child) = self.child.take() {
+            // Request shutdown via RPC.
             let _ = self.client.call_json("stop", &[]);
 
-            // give bitcoind up to 10 s to exit
+            // Poll the port for up to 10 s; exit sooner if closed.
             let t0 = Instant::now();
-            loop {
-                if let Some(status) = child.try_wait()? {
-                    // exited
-                    let _ = status;
-                    break;
-                }
-                if t0.elapsed() > Duration::from_secs(10) {
-                    let _ = child.kill();
+            while t0.elapsed() < Duration::from_secs(10) {
+                if !Self::rpc_listening(self.rpc_port) {
                     break;
                 }
                 sleep(Duration::from_millis(200));
             }
+
+            // If still alive, force‑kill.
+            if child.try_wait()?.is_none() {
+                let _ = child.kill();
+            }
+            let _ = child.wait();
         }
         Ok(())
+    }
+
+    /*‑‑‑ helpers ‑‑‑*/
+    fn rpc_listening(port: u16) -> bool {
+        TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], port))).is_ok()
     }
 }
 
 impl Drop for RegtestClient {
     fn drop(&mut self) {
         let _ = self.teardown();
-        // `TempDir` cleans itself up automatically.
     }
+}
+
+/// Bind port 0 to let the OS pick a free port, then return it.
+fn get_available_port() -> std::io::Result<u16> {
+    std::net::TcpListener::bind(("127.0.0.1", 0)).map(|l| l.local_addr().unwrap().port())
 }
