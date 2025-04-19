@@ -79,7 +79,7 @@ impl Client {
                     return Ok(());
                 }
                 // Otherwise propagate the error
-                return Err(e);
+                Err(e)
             }
         }
     }
