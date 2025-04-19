@@ -9,44 +9,38 @@ pub use serde_json::*;
 pub mod parser;
 pub use parser::{parse_api_json, ApiMethod};
 
-// Re-export bitcoincore_rpc types for idiomatic use
+// Re‑export bitcoincore_rpc types for ergonomic use
 pub use bitcoincore_rpc::{Auth, Error as RpcError, RpcApi};
 
-/// Alias Result<T, RpcError> for simplicity
+/// Alias used throughout this crate
 pub type Result<T> = std::result::Result<T, RpcError>;
 
-/// Batteries-included RPC client with runtime version dispatch (v17–v28)
+/// Thin wrapper around `bitcoincore_rpc::Client` that **auto‑detects Core
+/// version** (v17 → v28) so callers don’t have to.
 pub struct Client {
     inner: bitcoincore_rpc::Client,
 }
 
-/// A helper for regtest: spawns `bitcoind`, loads a wallet, tears down on Drop.
+/// Disposable regtest helper (defined in `src/regtest.rs`)
 pub use crate::regtest::RegtestClient;
 
 mod regtest;
 
 impl Client {
-    /// Connects, auto-detects Core version via getnetworkinfo, and errors if unsupported.
-    pub fn new_auto(url: &str, user: &str, pass: &str) -> Result<Self> {
-        let auth = Auth::UserPass(user.to_string(), pass.to_string());
+    pub fn new_with_auth(url: &str, auth: Auth) -> Result<Self> {
         let rpc = bitcoincore_rpc::Client::new(url, auth)?;
-        // Probe version
-        let info = rpc.call::<serde_json::Value>("getnetworkinfo", &[])?;
-        let ver_num = info
-            .get("version")
-            .and_then(|v| v.as_u64())
-            .ok_or_else(|| RpcError::ReturnedError("missing version".into()))?;
-        let major = (ver_num / 10_000) as u32;
-        if !(17..=28).contains(&major) {
-            return Err(RpcError::ReturnedError(format!(
-                "unsupported Core v{}",
-                major
-            )));
-        }
+        version_probe(&rpc)?;
         Ok(Self { inner: rpc })
     }
 
-    /// Generic raw JSON-RPC call (returns serde_json::Value)
+    /// Back‑compat helper used by older examples/tests that still pass
+    /// explicit user/pass credentials.
+    pub fn new_auto(url: &str, user: &str, pass: &str) -> Result<Self> {
+        let auth = Auth::UserPass(user.to_string(), pass.to_string());
+        Self::new_with_auth(url, auth)
+    }
+
+    /// Raw JSON call returning untyped `serde_json::Value`
     pub fn call_json(
         &self,
         method: &str,
@@ -55,32 +49,17 @@ impl Client {
         self.inner.call(method, params)
     }
 
-    /// Try to load the named wallet, or create it if it doesn't exist (regtest only).
+    /// Load `wallet_name` or create it if missing (regtest convenience).
     pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
-        // 1) Attempt to load the wallet
-        match self.call_json("loadwallet", &[json!(wallet_name)]) {
-            Ok(_) => return Ok(()),
-            Err(e) => {
-                let msg = e.to_string();
-                // If it's already loaded, treat as success
-                if msg.contains("already loaded") {
-                    return Ok(());
-                }
-            }
+        // 1) try to load
+        if self.call_json("loadwallet", &[json!(wallet_name)]).is_ok() {
+            return Ok(());
         }
-
-        // 2) Attempt to create the wallet
+        // 2) otherwise create (ignore “already exists / already loaded” errors)
         match self.call_json("createwallet", &[json!(wallet_name)]) {
             Ok(_) => Ok(()),
-            Err(e) => {
-                let msg = e.to_string();
-                // If it already exists or is already loaded, treat as success
-                if msg.contains("already exists") || msg.contains("already loaded") {
-                    return Ok(());
-                }
-                // Otherwise propagate the error
-                Err(e)
-            }
+            Err(e) if wallet_exists_err(&e) => Ok(()),
+            Err(e) => Err(e),
         }
     }
 }
@@ -91,7 +70,28 @@ impl RpcApi for Client {
         cmd: &str,
         params: &[serde_json::Value],
     ) -> bitcoincore_rpc::Result<T> {
-        // Delegate straight to the inner bitcoincore_rpc::Client
         self.inner.call(cmd, params)
     }
+}
+
+/// Fail early if the connected Core version is outside 17 – 28.
+fn version_probe(rpc: &bitcoincore_rpc::Client) -> Result<()> {
+    let info = rpc.call::<serde_json::Value>("getnetworkinfo", &[])?;
+    let ver = info
+        .get("version")
+        .and_then(|v| v.as_u64())
+        .ok_or_else(|| RpcError::ReturnedError("missing version".into()))?;
+    let major = (ver / 10_000) as u32;
+    if !(17..=28).contains(&major) {
+        return Err(RpcError::ReturnedError(format!(
+            "unsupported Core v{major}"
+        )));
+    }
+    Ok(())
+}
+
+/// Returns true if `e` is a *wallet already exists / loaded* error from Core.
+fn wallet_exists_err(e: &RpcError) -> bool {
+    let s = e.to_string();
+    s.contains("already exists") || s.contains("already loaded")
 }
