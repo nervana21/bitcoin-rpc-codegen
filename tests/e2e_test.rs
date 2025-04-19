@@ -1,10 +1,10 @@
 // tests/e2e_test.rs
 
 use anyhow::{Context, Result};
+use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod};
 use bitcoin_rpc_codegen::Client;
-use bitcoin_rpc_codegen::parser::{ApiMethod, parse_api_json};
 use bitcoincore_rpc::{Auth as RpcAuth, Client as RawClient, RpcApi};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
 use std::{
     net::TcpStream,
