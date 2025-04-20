@@ -4,7 +4,7 @@ use std::{collections::HashMap, fs, path::Path};
 use crate::generator::{generate_client_macro, generate_mod_rs, generate_return_type};
 use crate::parser::{parse_api_json, ApiMethod};
 
-const SUPPORTED_VERSIONS: &[&str] = &[
+pub const SUPPORTED_VERSIONS: &[&str] = &[
     "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28",
 ];
 
