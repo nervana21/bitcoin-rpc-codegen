@@ -75,7 +75,7 @@ impl RegtestClient {
         })
     }
 
-    /// Convenience for `new_with_conf(&Conf::default())`.
+    /// Convenience for `new_with_conf`, using default config except for the wallet name.
     pub fn new_auto(wallet_name: &str) -> Result<Self> {
         // Initialize wallet_name directly, inheriting all other defaults
         let conf = Conf {
