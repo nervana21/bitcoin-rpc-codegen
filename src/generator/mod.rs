@@ -1,6 +1,5 @@
-mod codegen;
-
 use crate::parser::{ApiMethod, ApiResult};
+
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -529,5 +528,3 @@ pub fn generate_top_level_types_mod(versions: &[String], src_dir: &Path) -> io::
     fs::write(&types_mod_path, types_mod_rs)?;
     Ok(())
 }
-
-pub use self::codegen::SUPPORTED_VERSIONS;
