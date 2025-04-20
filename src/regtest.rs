@@ -125,6 +125,8 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
             "-regtest",
             &format!("-datadir={}", datadir.path().display()),
             &format!("-rpcport={}", port),
+            &format!("-rpcbind=127.0.0.1:{}", port),
+            "-rpcallowip=127.0.0.1",
             "-fallbackfee=0.0002",
         ]);
         if conf.enable_txindex {
