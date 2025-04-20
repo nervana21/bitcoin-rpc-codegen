@@ -17,6 +17,7 @@ use std::{
     thread::sleep,
     time::{Duration, Instant},
 };
+
 use tempfile::TempDir;
 
 /// 127.0.0.1 for every regtest instance.
@@ -106,31 +107,60 @@ impl Drop for RegtestClient {
     }
 }
 
-/// Spawn a fresh bitcoind regtest node.
+/// Spawn a fresh bitcoind regtest node, retrying up to `conf.attempts` times
+/// if it exits early or never becomes ready.
 fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
-    let port = get_available_port()?;
-    let datadir = TempDir::new()?;
-    let mut cmd = Command::new("bitcoind");
-    cmd.args([
-        "-regtest",
-        &format!("-datadir={}", datadir.path().display()),
-        &format!("-rpcport={}", port),
-        "-fallbackfee=0.0002",
-    ]);
-    if conf.enable_txindex {
-        cmd.arg("-txindex");
+    let mut last_err = None;
+
+    for attempt in 1..=conf.attempts {
+        // prepare a fresh datadir and a new port
+        let datadir = TempDir::new()?;
+        let port = get_available_port()?;
+        let url = format!("http://{}:{}", LOCALHOST, port);
+        let cookie = datadir.path().join("regtest").join(".cookie");
+
+        // build the command
+        let mut cmd = Command::new("bitcoind");
+        cmd.args([
+            "-regtest",
+            &format!("-datadir={}", datadir.path().display()),
+            &format!("-rpcport={}", port),
+            "-fallbackfee=0.0002",
+        ]);
+        if conf.enable_txindex {
+            cmd.arg("-txindex");
+        }
+        cmd.args(&conf.extra_args);
+        if conf.view_stdout {
+            cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+        } else {
+            cmd.stdout(Stdio::null()).stderr(Stdio::null());
+        }
+
+        // spawn and wait for RPC
+        let mut child = cmd.spawn()?;
+        match wait_for_rpc_ready(&url, &cookie, &mut child) {
+            Ok(()) => {
+                // Success: return the running child + its datadir/url/cookie
+                return Ok((child, datadir, cookie, url));
+            }
+            Err(e) => {
+                // Failed: kill the child, reap it, record the error
+                let _ = child.kill();
+                let _ = child.wait();
+                last_err = Some(e);
+
+                // If there’s going to be another attempt, back off briefly
+                if attempt < conf.attempts {
+                    sleep(Duration::from_millis(RETRY_SLEEP_MS));
+                    continue;
+                }
+            }
+        }
     }
-    cmd.args(&conf.extra_args);
-    if conf.view_stdout {
-        cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
-    } else {
-        cmd.stdout(Stdio::null()).stderr(Stdio::null());
-    }
-    let mut child = cmd.spawn()?;
-    let url = format!("http://{}:{}", LOCALHOST, port);
-    let cookie = datadir.path().join("regtest").join(".cookie");
-    wait_for_rpc_ready(&url, &cookie, &mut child)?;
-    Ok((child, datadir, cookie, url))
+
+    // All attempts exhausted: return the last observed error
+    Err(last_err.unwrap())
 }
 
 /// Wait until cookie exists and RPC responds.
