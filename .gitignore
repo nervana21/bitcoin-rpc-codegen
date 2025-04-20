@@ -25,4 +25,5 @@ Thumbs.db
 *.old
 *.orig
 
-
+# Marker file used by catchup script
+.gpt_marker_commit
