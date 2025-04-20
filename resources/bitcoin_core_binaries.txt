@@ -37,9 +37,6 @@ bitcoin-29.0-x86_64-linux-gnu.tar.gz               14-Apr-2025 17:52            
 bitcoin-29.0.tar.gz                                14-Apr-2025 17:51            12935061
 bitcoin-29.0.torrent                               14-Apr-2025 17:53               19947
 
-
-
-
 https://bitcoincore.org/bin/bitcoin-core-28.1/
 Index of /bin/bitcoin-core-28.1/
 
