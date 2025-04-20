@@ -6,6 +6,7 @@ pub mod serde_json;
 pub use serde_json::*;
 
 // Export parser for integration tests
+pub mod generator;
 pub mod parser;
 pub use parser::{parse_api_json, ApiMethod};
 
