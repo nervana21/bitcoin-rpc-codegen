@@ -139,7 +139,7 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
         }
     }
 
-    Err(last_err.unwrap().into())
+    Err(last_err.unwrap())
 }
 
 pub fn get_available_port() -> Result<u16> {
