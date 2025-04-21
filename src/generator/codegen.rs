@@ -56,34 +56,21 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     let type_imports = r#"use serde::{Deserialize, Serialize};
 "#;
 
-    let mut methods_by_category: HashMap<String, Vec<&ApiMethod>> = HashMap::new();
-    for method in methods {
-        methods_by_category
-            .entry(method.category.clone())
-            .or_default()
-            .push(method);
-    }
+    let mut client_code = String::new();
+    let mut types_code = String::from(type_imports);
 
-    for (category, category_methods) in &methods_by_category {
-        let mut client_code = String::new();
-        for method in category_methods {
+    for method in methods {
             client_code.push_str(&generate_client_macro(method, version));
             client_code.push_str("\n\n");
-        }
-        let client_path = format!("{}/{}.rs", client_dir.display(), category);
-        fs::write(&client_path, client_code)?;
 
-        let mut types_code = String::new();
-        types_code.push_str(type_imports);
-        for method in category_methods {
             if let Some(type_code) = generate_return_type(method) {
                 types_code.push_str(&type_code);
                 types_code.push_str("\n\n");
             }
         }
-        let types_path = format!("{}/{}.rs", types_dir.display(), category);
-        fs::write(types_path, types_code)?;
-    }
+
+    fs::write(client_dir.join("methods.rs"), client_code)?;
+    fs::write(types_dir.join("types.rs"), types_code)?;
 
     if version == "v17" {
         let traits_content = r#"// SPDX-License-Identifier: CC0-1.0

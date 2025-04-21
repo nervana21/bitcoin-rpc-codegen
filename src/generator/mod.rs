@@ -406,7 +406,6 @@ mod tests {
                 key_name: "".to_string(),
                 inner: vec![],
             }],
-            category: "test-category".to_string(),
         }
     }
 

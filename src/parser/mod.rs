@@ -69,12 +69,6 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>> {
                 .map(|results| results.iter().map(parse_result).collect())
                 .unwrap_or_default();
 
-            let category = command_obj
-                .get("category")
-                .and_then(|c| c.as_str())
-                .unwrap_or("unknown")
-                .to_string();
-
             parsed_methods.push(ApiMethod {
                 name: name.clone(),
                 description: command_obj
@@ -84,7 +78,6 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>> {
                     .to_string(),
                 arguments,
                 results,
-                category,
             });
         }
     }
