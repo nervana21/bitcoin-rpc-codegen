@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{collections::HashMap, fs, path::Path};
+use std::{fs, path::Path};
 
 use crate::generator::{generate_client_macro, generate_mod_rs, generate_return_type};
 use crate::parser::{parse_api_json, ApiMethod};
@@ -60,14 +60,14 @@ fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) ->
     let mut types_code = String::from(type_imports);
 
     for method in methods {
-            client_code.push_str(&generate_client_macro(method, version));
-            client_code.push_str("\n\n");
+        client_code.push_str(&generate_client_macro(method, version));
+        client_code.push_str("\n\n");
 
-            if let Some(type_code) = generate_return_type(method) {
-                types_code.push_str(&type_code);
-                types_code.push_str("\n\n");
-            }
+        if let Some(type_code) = generate_return_type(method) {
+            types_code.push_str(&type_code);
+            types_code.push_str("\n\n");
         }
+    }
 
     fs::write(client_dir.join("methods.rs"), client_code)?;
     fs::write(types_dir.join("types.rs"), types_code)?;
