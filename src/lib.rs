@@ -33,7 +33,7 @@ pub struct Client {
     inner: Arc<bitcoincore_rpc::Client>,
 }
 
-mod regtest;
+pub mod regtest;
 pub use crate::regtest::{Conf, RegtestClient};
 
 impl Client {
