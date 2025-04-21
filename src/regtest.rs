@@ -11,7 +11,6 @@ use crate::{Client, Error, Result};
 use bitcoincore_rpc::{Auth, RpcApi};
 use serde_json::Value;
 use std::{
-    net::TcpListener,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     thread::sleep,
@@ -30,15 +29,10 @@ const RETRY_SLEEP_MS: u64 = 200;
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct Conf<'a> {
-    /// Wallet that must exist (will be auto‑created).
     pub wallet_name: &'a str,
-    /// Extra `bitcoind` flags (e.g. `-deprecatedrpc=addresses`).
     pub extra_args: Vec<&'a str>,
-    /// Forward Core's stdout/stderr to the terminal.
     pub view_stdout: bool,
-    /// Enable `-txindex` on the node.
     pub enable_txindex: bool,
-    /// How many times to retry spawning `bitcoind` if it exits immediately.
     pub attempts: usize,
 }
 
@@ -54,8 +48,6 @@ impl Default for Conf<'_> {
     }
 }
 
-/// Helper that spawns a regtest bitcoind, auto-loads/creates a wallet,
-/// and tears down on Drop.
 pub struct RegtestClient {
     pub client: Client,
     child: Child,
@@ -63,7 +55,6 @@ pub struct RegtestClient {
 }
 
 impl RegtestClient {
-    /// Spawns a fresh node with the given config.
     pub fn new_with_conf(conf: &Conf<'_>) -> Result<Self> {
         let (child, datadir, cookie, rpc_url) = spawn_node(conf)?;
         let client = Client::new_with_auth(&rpc_url, Auth::CookieFile(cookie))?;
@@ -75,9 +66,7 @@ impl RegtestClient {
         })
     }
 
-    /// Convenience for `new_with_conf`, using default config except for the wallet name.
     pub fn new_auto(wallet_name: &str) -> Result<Self> {
-        // Initialize wallet_name directly, inheriting all other defaults
         let conf = Conf {
             wallet_name,
             ..Default::default()
@@ -85,7 +74,6 @@ impl RegtestClient {
         Self::new_with_conf(&conf)
     }
 
-    /// Gracefully stop then kill after timeout.
     pub fn teardown(&mut self) -> Result<()> {
         let _ = self.client.call_json("stop", &[]);
         let start = Instant::now();
@@ -107,19 +95,16 @@ impl Drop for RegtestClient {
     }
 }
 
-/// Spawn a fresh bitcoind regtest node, retrying up to `conf.attempts` times
-/// if it exits early or never becomes ready.
 fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
+    use super::regtest::{get_available_port, wait_for_rpc_ready};
     let mut last_err = None;
 
     for attempt in 1..=conf.attempts {
-        // prepare a fresh datadir and a new port
         let datadir = TempDir::new()?;
         let port = get_available_port()?;
         let url = format!("http://{}:{}", LOCALHOST, port);
         let cookie = datadir.path().join("regtest").join(".cookie");
 
-        // build the command
         let mut cmd = Command::new("bitcoind");
         cmd.args([
             "-regtest",
@@ -139,20 +124,13 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
             cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
 
-        // spawn and wait for RPC
         let mut child = cmd.spawn()?;
         match wait_for_rpc_ready(&url, &cookie, &mut child) {
-            Ok(()) => {
-                // Success: return the running child + its datadir/url/cookie
-                return Ok((child, datadir, cookie, url));
-            }
+            Ok(()) => return Ok((child, datadir, cookie, url)),
             Err(e) => {
-                // Failed: kill the child, reap it, record the error
                 let _ = child.kill();
                 let _ = child.wait();
                 last_err = Some(e);
-
-                // If there’s going to be another attempt, back off briefly
                 if attempt < conf.attempts {
                     sleep(Duration::from_millis(RETRY_SLEEP_MS));
                     continue;
@@ -161,12 +139,16 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
         }
     }
 
-    // All attempts exhausted: return the last observed error
-    Err(last_err.unwrap())
+    Err(last_err.unwrap().into())
 }
 
-/// Wait until cookie exists and RPC responds.
-fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result<()> {
+pub fn get_available_port() -> Result<u16> {
+    use std::net::TcpListener;
+    let listener = TcpListener::bind((LOCALHOST, 0))?;
+    Ok(listener.local_addr()?.port())
+}
+
+pub fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result<()> {
     let start = Instant::now();
     loop {
         if let Some(status) = child.try_wait()? {
@@ -189,10 +171,4 @@ fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result<()>
         }
         sleep(Duration::from_millis(RETRY_SLEEP_MS));
     }
-}
-
-/// Bind to port 0 to let OS allocate a free port.
-fn get_available_port() -> Result<u16> {
-    let listener = TcpListener::bind((LOCALHOST, 0))?;
-    Ok(listener.local_addr()?.port())
 }
