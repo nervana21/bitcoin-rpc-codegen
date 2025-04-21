@@ -1,5 +1,4 @@
 use anyhow::Result;
-use bitcoin_rpc_codegen::generator::SUPPORTED_VERSIONS;
 use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod};
 use bitcoin_rpc_codegen::{Client, RegtestClient};
 
