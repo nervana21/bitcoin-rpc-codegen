@@ -16,13 +16,12 @@ use std::{
     thread::sleep,
     time::{Duration, Instant},
 };
-
 use tempfile::TempDir;
 
 /// 127.0.0.1 for every regtest instance.
 const LOCALHOST: &str = "127.0.0.1";
 /// Seconds to wait for RPC to come up or shut down.
-const WAIT_SECS: u64 = 15;
+const WAIT_SECS: u64 = 5;
 /// Milliseconds between retries.
 const RETRY_SLEEP_MS: u64 = 200;
 
@@ -96,18 +95,16 @@ impl Drop for RegtestClient {
 }
 
 fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
-    use super::regtest::{get_available_port, wait_for_rpc_ready};
     let mut last_err = None;
-
     for attempt in 1..=conf.attempts {
         let datadir = TempDir::new()?;
         let port = get_available_port()?;
         let url = format!("http://{}:{}", LOCALHOST, port);
         let cookie = datadir.path().join("regtest").join(".cookie");
-
         let mut cmd = Command::new("bitcoind");
         cmd.args([
             "-regtest",
+            "-listen=0",
             &format!("-datadir={}", datadir.path().display()),
             &format!("-rpcport={}", port),
             &format!("-rpcbind=127.0.0.1:{}", port),
@@ -126,7 +123,9 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
 
         let mut child = cmd.spawn()?;
         match wait_for_rpc_ready(&url, &cookie, &mut child) {
-            Ok(()) => return Ok((child, datadir, cookie, url)),
+            Ok(()) => {
+                return Ok((child, datadir, cookie, url));
+            }
             Err(e) => {
                 let _ = child.kill();
                 let _ = child.wait();
@@ -138,13 +137,11 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
             }
         }
     }
-
     Err(last_err.unwrap())
 }
 
 pub fn get_available_port() -> Result<u16> {
-    use std::net::TcpListener;
-    let listener = TcpListener::bind((LOCALHOST, 0))?;
+    let listener = std::net::TcpListener::bind((LOCALHOST, 0))?;
     Ok(listener.local_addr()?.port())
 }
 
@@ -152,9 +149,8 @@ pub fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result
     let start = Instant::now();
     loop {
         if let Some(status) = child.try_wait()? {
-            return Err(Error::Rpc(bitcoincore_rpc::Error::ReturnedError(format!(
-                "bitcoind exited early with {status}"
-            ))));
+            let msg = format!("bitcoind exited early with {}", status);
+            return Err(Error::Rpc(bitcoincore_rpc::Error::ReturnedError(msg)));
         }
         if cookie.exists() {
             let auth = Auth::CookieFile(cookie.to_path_buf());
@@ -165,9 +161,8 @@ pub fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result
             }
         }
         if start.elapsed() > Duration::from_secs(WAIT_SECS) {
-            return Err(Error::Rpc(bitcoincore_rpc::Error::ReturnedError(format!(
-                "bitcoind RPC never became ready at {url}"
-            ))));
+            let msg = format!("bitcoind RPC never became ready at {}", url);
+            return Err(Error::Rpc(bitcoincore_rpc::Error::ReturnedError(msg)));
         }
         sleep(Duration::from_millis(RETRY_SLEEP_MS));
     }
