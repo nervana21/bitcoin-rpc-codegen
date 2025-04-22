@@ -5,12 +5,13 @@ use bitcoin_rpc_codegen::{Client, RegtestClient};
 use bitcoincore_rpc::RpcApi;
 use std::fs;
 
-fn assert_method_presence(_client: &Client, _name: &str) {} // TODO: implement
-
-fn run_all_methods_from_source(client: &Client, src: &str) -> Result<usize> {
+fn check_and_count_methods(client: &Client, src: &str) -> Result<usize> {
     let api: Vec<ApiMethod> = parse_api_json(src)?;
     for m in &api {
-        assert_method_presence(client, &m.name);
+        // this both checks existence (via "help") and will Err if missing
+        client
+            .call::<String>("help", &[json!(m.name)])
+            .unwrap_or_else(|e| panic!("RPC method `{}` missing or broken: {}", m.name, e));
     }
     Ok(api.len())
 }
@@ -47,14 +48,14 @@ fn e2e_all_methods() -> Result<()> {
 
     // current version's methods
     let current_api = include_str!("../resources/api.json");
-    let current_count = run_all_methods_from_source(client, current_api)?;
+    let current_count = check_and_count_methods(client, current_api)?;
 
     // prior version's methods (by going down one major version)
     let prior_major = current_major - 1;
     let filename = format!("resources/api_{}00.json", prior_major);
     let prior_count = fs::read_to_string(&filename)
         .ok()
-        .and_then(|src| run_all_methods_from_source(client, &src).ok());
+        .and_then(|src| check_and_count_methods(client, &src).ok());
 
     println!("🧠 Cool detail:");
     println!(
