@@ -1,9 +1,5 @@
 // src/lib.rs
-
-// Export our patched serde_json (local_serde_json.rs)
-#[path = "local_serde_json.rs"]
-pub mod serde_json;
-pub use serde_json::*;
+pub extern crate serde_json;
 
 // Export parser for integration tests
 pub mod generator;
