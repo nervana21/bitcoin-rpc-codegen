@@ -1,14 +1,11 @@
-// use std::{env, fs, path::PathBuf};
-
-// Make these modules public so they are visible as crate::parser and crate::generator
+// These modules are public so they are visible as crate::parser, crate::generator
 #[path = "src/parser/mod.rs"]
 pub mod parser;
 
 #[path = "src/generator/mod.rs"]
 pub mod generator;
 
-#[path = "src/generator/codegen.rs"]
-pub mod codegen;
+use generator::codegen;
 
 fn main() {
     // Instruct Cargo to re-run this build script when the API JSON changes.

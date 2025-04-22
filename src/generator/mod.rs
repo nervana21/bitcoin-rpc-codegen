@@ -1,11 +1,11 @@
 use crate::parser::{ApiMethod, ApiResult};
 
+pub mod codegen;
+pub use codegen::SUPPORTED_VERSIONS;
+
 use std::fs;
 use std::io;
 use std::path::Path;
-
-/// Hardcoded list of supported client versions (corresponds to generated files).
-pub const SUPPORTED_VERSIONS: &[&str] = &["v27", "v28"];
 
 /// Generates a struct definition string from a type name, a description, and its fields.
 pub fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
