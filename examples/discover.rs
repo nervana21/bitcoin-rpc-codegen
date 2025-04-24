@@ -1,4 +1,4 @@
-// examples/discover.rs
+// examples/sanity_check.rs
 
 use anyhow::Result;
 use bitcoin_rpc_codegen::Conf;
