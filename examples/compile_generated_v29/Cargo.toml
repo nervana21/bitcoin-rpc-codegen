@@ -16,7 +16,7 @@ serde_json = "1.0"
 name = "compile_generated_v29"
 path = "src/lib.rs"
 
-[[example]]
+[[bin]]
 name = "compile_generated_v29"
 path = "src/main.rs"
 
