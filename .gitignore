@@ -1,5 +1,15 @@
 # Compiled output
-/target/
+**/target/debug/
+**/target/release/
+**/target/doc/
+**/target/package/
+**/target/tmp/
+**/target/.rustc_info.json
+**/target/.rustdoc_fingerprint.json
+**/target/.cargo-lock
+
+# But keep the generated code
+!**/target/generated/
 
 # Rust/Cargo specific files
 **/*.rs.bk
