@@ -75,14 +75,16 @@ fn main() -> Result<()> {
         output_path.display()
     );
 
-    let _ = rpc.call::<Value>("stop", &[]); // attempt clean shutdown
+    let _ = rpc.call::<Value>("stop", &[]);
     let _ = child.wait();
 
     Ok(())
 }
 
 fn extract_description(doc: &str) -> String {
-    doc.lines()
+    // Skip the first signature line and any following blank lines
+    let lines = doc.lines().skip(1).skip_while(|l| l.trim().is_empty());
+    lines
         .take_while(|l| {
             !l.trim_start().starts_with("Arguments:")
                 && !l.trim_start().starts_with("Result:")
@@ -115,42 +117,24 @@ fn infer_arguments(doc: &str) -> Vec<ApiArgument> {
             continue;
         }
 
-        if line.starts_with("Result")
+        // Stop at next section header
+        if (line.starts_with("Result")
             || line.starts_with("Returns")
-            || line.starts_with("Examples:")
-            || line.starts_with("1.")
+            || line.starts_with("Examples:"))
+            && capture
         {
-            if capture {
-                break;
-            }
+            break;
         }
 
         if capture {
             if let Some(caps) = name_re.captures(line) {
                 let name = caps[2].to_string();
-                let typ = caps[3].to_lowercase();
+                let typ = caps[3].to_string().to_lowercase();
                 let desc = caps[4].to_string();
-
-                let mapped_type = if typ.contains("string") {
-                    "string"
-                } else if typ.contains("hex") {
-                    "hex"
-                } else if typ.contains("bool") {
-                    "boolean"
-                } else if typ.contains("number") || typ.contains("numeric") {
-                    "number"
-                } else if typ.contains("array") {
-                    "array"
-                } else if typ.contains("object") {
-                    "object"
-                } else {
-                    "string"
-                };
-
                 args.push(ApiArgument {
                     names: vec![name],
-                    type_: mapped_type.to_string(),
-                    optional: typ.contains("optional"),
+                    type_: typ,
+                    optional: caps[3].contains("optional"),
                     description: desc,
                 });
             }
@@ -194,8 +178,8 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
         let mut key_name = String::new();
 
         if let Some(cap) = key_re.captures(trimmed) {
-            key_name = cap[1].to_string().trim().to_string();
-            desc = cap[2].to_string().trim().to_string();
+            key_name = cap[1].trim().to_string();
+            desc = cap[2].trim().to_string();
         }
 
         if desc.contains("(boolean)") {
@@ -250,7 +234,7 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
     let final_results = stack.pop().unwrap().1;
     if final_results.is_empty() {
         vec![ApiResult {
-            type_: "string".to_string(),
+            type_: "none".to_string(),
             description: "".to_string(),
             key_name: "".to_string(),
             inner: vec![],
