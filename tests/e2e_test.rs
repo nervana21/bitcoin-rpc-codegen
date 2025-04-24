@@ -3,6 +3,7 @@ use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod};
 use bitcoin_rpc_codegen::{Client, RegtestClient};
 
 use bitcoincore_rpc::RpcApi;
+use serde_json::json;
 use std::fs;
 
 fn check_and_count_methods(client: &Client, src: &str) -> Result<usize> {
