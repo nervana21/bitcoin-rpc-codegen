@@ -1,6 +1,6 @@
 //src/generator/mod.rs
 
-use crate::parser::{ApiMethod, ApiResult};
+use crate::parser::ApiMethod;
 
 pub mod codegen;
 pub use codegen::SUPPORTED_VERSIONS;
@@ -36,49 +36,6 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     codegen::generate_return_type(method)
 }
 
-/// Retrieves the Rust type for a nested ApiResult, with strict fallback.
-fn get_return_type(result: &ApiResult) -> String {
-    if result.type_.eq_ignore_ascii_case("object") && !result.inner.is_empty() {
-        "serde_json::Value".to_string()
-    } else {
-        codegen::map_type_to_rust(&result.type_)
-    }
-}
-
-/// Fallback to a default return type if no results.
-fn get_return_type_from_results(results: &[ApiResult]) -> String {
-    results.first().map_or("()".into(), get_return_type)
-}
-
-/// Determine each field's Rust type, now with strict fallback for arrays/objects.
-fn get_field_type(field: &ApiResult) -> String {
-    match field.type_.as_str() {
-        "array" | "array-fixed" => "Vec<serde_json::Value>".to_string(),
-        "object" if !field.inner.is_empty() => "serde_json::Value".to_string(),
-        _ => codegen::map_type_to_rust(&field.type_),
-    }
-}
-
-/// Generate struct fields for nested JSON results (delegated/fallback).
-fn generate_struct_fields(_result: &ApiResult) -> String {
-    codegen::generate_struct_fields(_result)
-}
-
-/// Generate inline object types, now always fallback.
-fn generate_object_type(_result: &ApiResult) -> String {
-    "serde_json::Value".to_string()
-}
-
-fn sanitize_method_name(name: &str) -> String {
-    codegen::sanitize_method_name(name)
-}
-
-/// Convert an arbitrary JSON key into a valid Rust field name by
-/// keeping only ASCII alphanumeric characters and underscores.
-fn sanitize_field_name(name: &str) -> String {
-    codegen::sanitize_field_name(name)
-}
-
 fn capitalize(s: &str) -> String {
     codegen::capitalize(s)
 }
@@ -106,74 +63,6 @@ pub fn generate_type_conversion(method: &ApiMethod, _version: &str) -> Option<St
 }}"#,
         type_name, model_type, type_name
     ))
-}
-
-fn generate_method_args(method: &ApiMethod) -> String {
-    let mut args = String::new();
-    for arg in &method.arguments {
-        let arg_name = &arg.names[0];
-        let arg_type = match arg.type_.as_str() {
-            "hex" => "String".to_string(),
-            "string" => "String".to_string(),
-            "number" => "i64".to_string(),
-            "boolean" => "bool".to_string(),
-            "array" => {
-                if arg_name == "inputs" {
-                    "Vec<Input>".to_string()
-                } else if arg_name == "outputs" {
-                    "Vec<Output>".to_string()
-                } else {
-                    "Vec<String>".to_string()
-                }
-            }
-            "object" | "object-named-parameters" => "serde_json::Value".to_string(),
-            _ => arg.type_.clone(),
-        };
-        if arg.optional {
-            args.push_str(&format!(", {}: Option<{}>", arg_name, arg_type));
-        } else {
-            args.push_str(&format!(", {}: {}", arg_name, arg_type));
-        }
-    }
-    args
-}
-
-fn generate_args(method: &ApiMethod) -> (String, String) {
-    let mut required_args = Vec::new();
-    let mut optional_args = Vec::new();
-    for arg in &method.arguments {
-        let arg_name = &arg.names[0];
-        let arg_expr = if method.name == "addnode" && arg_name == "command" {
-            "serde_json::to_value(command)?".to_string()
-        } else {
-            format!("into_json({})?", arg_name)
-        };
-        if arg.optional {
-            optional_args.push(format!(
-                "if let Some({}) = {} {{\n    params.push(into_json({})?);\n}}",
-                arg_name, arg_name, arg_name
-            ));
-        } else {
-            required_args.push(arg_expr);
-        }
-    }
-    (required_args.join(", "), optional_args.join("\n"))
-}
-
-fn format_doc_comment(description: &str) -> String {
-    codegen::format_doc_comment(description)
-}
-
-fn format_struct_field(field_name: &str, field_type: &str, description: &str) -> String {
-    codegen::format_struct_field(field_name, field_type, description)
-}
-
-fn indent(s: &str, spaces: usize) -> String {
-    let pad = " ".repeat(spaces);
-    s.lines()
-        .map(|line| format!("{}{}", pad, line))
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 pub fn generate_client_mod_rs(versions: &[String], out_dir: &Path) -> io::Result<()> {
