@@ -2370,6 +2370,21 @@
           }
         ]
       }
+    ],
+    "uptime": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "uptime",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
     ]
   }
 }
