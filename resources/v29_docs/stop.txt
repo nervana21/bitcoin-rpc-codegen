@@ -1,0 +1,6 @@
+stop
+
+Request a graceful shutdown of Bitcoin Core.
+
+Result:
+"str"    (string) A string with the content 'Bitcoin Core stopping'
