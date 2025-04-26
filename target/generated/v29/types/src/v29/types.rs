@@ -305,3 +305,11 @@ pub struct StopResponse {
 
 
 
+/// Response for the UptimeResponse RPC call.
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct UptimeResponse {
+    pub result: f64,
+}
+
+
+
