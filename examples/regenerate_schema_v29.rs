@@ -1,95 +1,100 @@
 // examples/regenerate_schema_v29.rs
 
 use anyhow::Result;
-use bitcoin_rpc_codegen::parser::{ApiMethod, ApiResult};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::{collections::HashMap, fs};
-
-/// Mirror the top-level shape of resources/api_v29.json
-#[derive(Serialize, Deserialize)]
-struct Schema {
-    commands: HashMap<String, Vec<ApiMethod>>,
-}
+use bitcoin_rpc_codegen::parser::{ApiArgument, ApiMethod, ApiResult};
+use serde_json::{json, Value};
+use std::{fs, path::PathBuf};
 
 fn main() -> Result<()> {
-    // 1. Load the existing file into our Schema struct
-    let mut schema: Schema = serde_json::from_str(include_str!("../resources/api_v29.json"))?;
+    let feedback_dir = PathBuf::from("feedback");
+    let mut methods = Vec::<ApiMethod>::new();
 
-    // 2. For each dump in feedback/, parse and replace that method’s `results`
-    for entry in fs::read_dir("feedback")? {
+    for entry in fs::read_dir(&feedback_dir)? {
         let path = entry?.path();
         if path.extension().and_then(|e| e.to_str()) != Some("json") {
             continue;
         }
-        let cmd = path.file_stem().unwrap().to_string_lossy().to_string();
+        let name = path.file_stem().unwrap().to_string_lossy().into_owned();
         let raw: Value = serde_json::from_str(&fs::read_to_string(&path)?)?;
 
-        if let Some(methods) = schema.commands.get_mut(&cmd) {
-            for m in methods.iter_mut() {
-                m.results = parse_rpc_json(&raw);
-            }
-            println!("  • updated results for `{}`", cmd);
-        } else {
-            eprintln!("  ⚠️ no existing schema for `{}`, skipping", cmd);
-        }
+        // Infer the result schema from the live JSON
+        let results: Vec<ApiResult> = parse_rpc_json(&raw);
+
+        methods.push(ApiMethod {
+            name: name.clone(),
+            arguments: Vec::<ApiArgument>::new(),
+            results,
+            description: String::new(),
+        });
     }
 
-    // 3. Write back with the exact same “commands” wrapper
-    let out = serde_json::to_string_pretty(&schema)?;
-    fs::write("resources/api_v29.json", &out)?;
-    println!("\n✅ Wrote updated schema to resources/api_v29.json");
+    // Group methods under a top-level `commands` map
+    let mut commands = serde_json::Map::new();
+    for m in methods {
+        commands.insert(m.name.clone(), json!([m]));
+    }
+
+    let wrapped = json!({ "commands": commands });
+    fs::write(
+        "resources/api_v29.json",
+        serde_json::to_string_pretty(&wrapped)?,
+    )?;
+    println!("💾 Wrote updated schema to resources/api_v29.json");
 
     Ok(())
 }
 
-/// Recursively convert a serde_json::Value into your Vec<ApiResult> tree.
-fn parse_rpc_json(raw: &Value) -> Vec<ApiResult> {
-    match raw {
+/// Recursively build an `ApiResult` tree from live JSON data.
+fn parse_rpc_json(value: &Value) -> Vec<ApiResult> {
+    match value {
         Value::Object(map) => {
-            let mut fields = Vec::with_capacity(map.len());
+            let mut fields = Vec::new();
             for (k, v) in map {
+                let inner = parse_rpc_json(v);
                 fields.push(ApiResult {
-                    type_: infer_type(v),
-                    key_name: k.clone(),
+                    type_: "object".to_string(),
                     description: String::new(),
-                    inner: parse_rpc_json(v),
+                    key_name: k.clone(),
+                    inner,
                 });
             }
             vec![ApiResult {
-                type_: "object".into(),
-                key_name: String::new(),
+                type_: "object".to_string(),
                 description: String::new(),
+                key_name: String::new(),
                 inner: fields,
             }]
         }
         Value::Array(arr) => {
-            // Sample the first element if present
-            let elem_schema = arr.get(0).map_or_else(Vec::new, parse_rpc_json);
-            vec![ApiResult {
-                type_: "array".into(),
-                key_name: String::new(),
-                description: String::new(),
-                inner: elem_schema,
-            }]
+            if arr.is_empty() {
+                vec![ApiResult {
+                    type_: "array".to_string(),
+                    description: String::new(),
+                    key_name: String::new(),
+                    inner: Vec::new(),
+                }]
+            } else {
+                let elem_schema = parse_rpc_json(&arr[0]);
+                vec![ApiResult {
+                    type_: "array".to_string(),
+                    description: String::new(),
+                    key_name: String::new(),
+                    inner: elem_schema,
+                }]
+            }
         }
-        _ => vec![ApiResult {
-            type_: infer_type(raw),
-            key_name: String::new(),
-            description: String::new(),
-            inner: Vec::new(),
-        }],
+        Value::String(_) => vec![primitive("string")],
+        Value::Number(_) => vec![primitive("number")],
+        Value::Bool(_) => vec![primitive("boolean")],
+        Value::Null => vec![primitive("none")],
     }
 }
 
-/// Map a JSON Value to your schema’s `type_` string
-fn infer_type(v: &Value) -> String {
-    match v {
-        Value::String(_) => "string".into(),
-        Value::Number(_) => "number".into(),
-        Value::Bool(_) => "boolean".into(),
-        Value::Null => "none".into(),
-        Value::Object(_) => "object".into(),
-        Value::Array(_) => "array".into(),
+fn primitive(t: &str) -> ApiResult {
+    ApiResult {
+        type_: t.to_string(),
+        description: String::new(),
+        key_name: String::new(),
+        inner: Vec::new(),
     }
 }
