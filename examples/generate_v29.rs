@@ -1,40 +1,32 @@
 // examples/generate_v29.rs
 
 use anyhow::Result;
-use bitcoin_rpc_codegen::generator::{
-    generate_client_mod_rs, generate_types_mod_rs, generate_version_code,
-};
-use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod};
+use bitcoin_rpc_codegen::generator::{generate_mod_rs, generate_version_code};
+use bitcoin_rpc_codegen::parser::parse_api_json;
 use std::{fs, path::PathBuf};
 
 fn main() -> Result<()> {
-    println!("🔧 Generating client + types for v29 from api_v29.json...");
+    println!("🔧 Generating client + types for v29 from resources/api_v29.json...");
 
-    // Step 1: Parse schema
-    let schema = fs::read_to_string("resources/api_v29.json")?;
-    let methods: Vec<ApiMethod> = parse_api_json(&schema)?;
+    // 1. Read and parse the v29 schema
+    let schema_src = fs::read_to_string("resources/api_v29.json")?;
+    let methods = parse_api_json(&schema_src)?;
 
-    // Step 2: Set output path
+    // 2. Prepare a clean output directory
     let out_root = PathBuf::from("target/generated/v29");
-    let client_dir = out_root.join("client");
-    let types_dir = out_root.join("types");
-
-    // Step 3: Run codegen
-    if client_dir.exists() {
-        fs::remove_dir_all(&client_dir)?;
+    if out_root.exists() {
+        fs::remove_dir_all(&out_root)?;
     }
-    if types_dir.exists() {
-        fs::remove_dir_all(&types_dir)?;
-    }
+    fs::create_dir_all(&out_root)?;
 
-    fs::create_dir_all(&client_dir)?;
-    fs::create_dir_all(&types_dir)?;
+    println!("📦 Writing code to {}", out_root.display());
 
-    println!("📦 Output: {}", out_root.display());
+    // 3. Emit per‐method code under client/src/v29 and types/src/v29
     generate_version_code("v29", &methods, out_root.to_str().unwrap())?;
-    generate_client_mod_rs(&vec!["v29".to_string()], &client_dir)?;
-    generate_types_mod_rs(&vec!["v29".to_string()], &types_dir)?;
 
-    println!("✅ Codegen complete.");
+    // 4. Wire up the `mod.rs` files so you can `pub use v29::*;`
+    generate_mod_rs(out_root.to_str().unwrap(), &["v29"])?;
+
+    println!("✅ Codegen complete!");
     Ok(())
 }
