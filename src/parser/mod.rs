@@ -74,7 +74,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, Error> {
                 .context(format!("Deserializing ApiMethod for `{}` failed", name))?;
             method.name = name.clone();
             all.push(method);
-    }
+        }
     }
     Ok(all)
 }
