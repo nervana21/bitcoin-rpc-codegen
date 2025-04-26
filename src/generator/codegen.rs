@@ -90,54 +90,91 @@ pub fn get_field_type(field: &ApiResult) -> String {
     }
 }
 
+/// Generate the client‐side macro for a single RPC method,
+/// pulling in *all* of its help‐text from resources/<version>_docs/<method>.txt
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
-    let method_name = sanitize_method_name(&method.name);
-    let macro_name = format!("impl_client_{}__{}", version, method_name);
+    let name = &method.name;
+    let func_name = sanitize_method_name(name);
+    let macro_name = format!("impl_client_{}__{}", version, func_name);
 
-    // Build the /// doc comments for this RPC
-    let doc_comment = format_doc_comment(&method.description);
-
-    let params = method
+    // 1) Typed params list: `foo: String, bar: bool`
+    let params_decl = method
         .arguments
         .iter()
         .map(|arg| format!("{}: {}", arg.names[0], map_type_to_rust(&arg.type_)))
         .collect::<Vec<_>>()
         .join(", ");
 
-    let mut func = String::new();
+    // 2) JSON array: `json!([foo, bar])`
+    let params_json = if method.arguments.is_empty() {
+        "json!([])".to_string()
+    } else {
+        let args = method
+            .arguments
+            .iter()
+            .map(|arg| arg.names[0].clone())
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("json!([{}])", args)
+    };
 
-    // If we have any doc lines, emit them now:
-    if !doc_comment.trim().is_empty() {
-        func.push_str(&doc_comment);
-        func.push('\n');
+    // 3) Try to load the full help‐text dump: resources/<version>_docs/<method>.txt
+    let mut docs = String::new();
+    let docs_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("resources")
+        .join(format!("{}_docs", version))
+        .join(format!("{}.txt", name));
+    if let Ok(contents) = fs::read_to_string(&docs_path) {
+        // skip the signature line, then emit every line as a doc‐comment
+        for line in contents.lines().skip(1) {
+            docs.push_str("        ///");
+            if !line.is_empty() {
+                docs.push(' ');
+                docs.push_str(line);
+            }
+            docs.push('\n');
+        }
+        docs.push('\n');
+    } else if !method.description.trim().is_empty() {
+        // fallback: use the short schema description
+        for line in method.description.lines() {
+            let line = line.trim();
+            if !line.is_empty() {
+                docs.push_str("        /// ");
+                docs.push_str(line);
+                docs.push('\n');
+            }
+        }
+        docs.push('\n');
     }
 
-    writeln!(func, "macro_rules! {} {{", macro_name).unwrap();
-    writeln!(func, "    () => {{").unwrap();
+    // 4) Compose the macro itself
+    let mut out = String::new();
+    writeln!(out, "/// client impl for `{}` RPC ({})", name, version).unwrap();
+    writeln!(out, "macro_rules! {} {{", macro_name).unwrap();
+    writeln!(out, "    () => {{").unwrap();
+    // insert the scraped docs (or fallback)
+    out.push_str(&docs);
+    // the fn signature
     writeln!(
-        func,
-        "        pub fn {}(\n            &self{},\n        ) -> RpcResult<{}Response> {{",
-        method_name,
-        if params.is_empty() {
+        out,
+        "        pub fn {}(&self{}) -> RpcResult<{}Response> {{",
+        func_name,
+        if params_decl.is_empty() {
             "".to_string()
         } else {
-            format!(", {}", params)
+            format!(", {}", params_decl)
         },
-        capitalize(&method.name),
+        capitalize(name)
     )
     .unwrap();
-    writeln!(
-        func,
-        "            self.call(\"{}\", json!([{}]))",
-        method.name,
-        if params.is_empty() { "" } else { &params }
-    )
-    .unwrap();
-    writeln!(func, "        }}").unwrap();
-    writeln!(func, "    }};").unwrap();
-    writeln!(func, "}}").unwrap();
+    // the call itself
+    writeln!(out, "            self.call(\"{}\", {})", name, params_json).unwrap();
+    writeln!(out, "        }}").unwrap();
+    writeln!(out, "    }};").unwrap();
+    writeln!(out, "}}").unwrap();
 
-    func
+    out
 }
 
 pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
