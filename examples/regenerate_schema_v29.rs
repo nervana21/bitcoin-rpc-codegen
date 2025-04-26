@@ -7,6 +7,19 @@ use std::{fs, path::PathBuf};
 
 fn main() -> Result<()> {
     let feedback_dir = PathBuf::from("feedback");
+    let output_path = PathBuf::from("resources/api_v29.json");
+
+    println!("🔍 Checking if feedback/ directory exists...");
+    if !feedback_dir.exists() {
+        panic!("❌ Missing feedback/ directory! Did you run verify_all_methods_v29 first?");
+    }
+
+    // 🛡️ Ensure the output directory exists
+    if let Some(parent) = output_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    println!("📂 Reading feedback/...");
     let mut methods = Vec::<ApiMethod>::new();
 
     for entry in fs::read_dir(&feedback_dir)? {
@@ -15,9 +28,9 @@ fn main() -> Result<()> {
             continue;
         }
         let name = path.file_stem().unwrap().to_string_lossy().into_owned();
-        let raw: Value = serde_json::from_str(&fs::read_to_string(&path)?)?;
+        println!("🔎 Found feedback sample: {}", name);
 
-        // Infer the result schema from the live JSON
+        let raw: Value = serde_json::from_str(&fs::read_to_string(&path)?)?;
         let results: Vec<ApiResult> = parse_rpc_json(&raw);
 
         methods.push(ApiMethod {
@@ -35,11 +48,9 @@ fn main() -> Result<()> {
     }
 
     let wrapped = json!({ "commands": commands });
-    fs::write(
-        "resources/api_v29.json",
-        serde_json::to_string_pretty(&wrapped)?,
-    )?;
-    println!("💾 Wrote updated schema to resources/api_v29.json");
+    fs::write(&output_path, serde_json::to_string_pretty(&wrapped)?)?;
+
+    println!("💾 Wrote updated schema to {}", output_path.display());
 
     Ok(())
 }
