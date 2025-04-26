@@ -2,8 +2,7 @@
 
 use anyhow::Result;
 use bitcoin_rpc_codegen::parser::{parse_api_json, ApiArgument};
-use bitcoin_rpc_codegen::RegtestClient;
-use bitcoin_rpc_codegen::RpcApi;
+use bitcoin_rpc_codegen::{RegtestClient, RpcApi};
 use serde_json::{json, Value};
 
 /// Return a Vec of placeholder JSON values for each argument,
@@ -33,24 +32,19 @@ fn default_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> V
 #[test]
 fn roundtrip_generated_v29() -> Result<()> {
     // 1. Spin up a regtest node and client
-    let rt = RegtestClient::new_auto("test")?;
+    let mut rt = RegtestClient::new_auto("test")?;
     let client = &rt.client;
 
-    // 2. Pre-generate a new address and mine to it for funds & blockhash
+    // 2. Prepare a funded chain and valid txid
     let new_addr: String = client.call("getnewaddress", &[])?;
     let _: Vec<String> =
         client.call("generatetoaddress", &[json!(101), json!(new_addr.clone())])?;
     let best_block: String = client.call("getbestblockhash", &[])?;
-
-    // 3. Send some satoshis to obtain a valid txid
     let dummy_txid: String = client.call("sendtoaddress", &[json!(new_addr), json!(0.0001)])?;
 
-    // 4. Load the v29 schema and parse into ApiMethod structs
-    let schema = include_str!("../resources/api_v29.json");
-    let methods = parse_api_json(schema)?;
-
-    // 5. Iterate through each RPC method
-    for m in methods {
+    // 3. Load schema and iterate all methods except "stop"
+    let methods = parse_api_json(include_str!("../resources/api_v29.json"))?;
+    for m in methods.into_iter().filter(|m| m.name != "stop") {
         let params = if m.arguments.is_empty() {
             Vec::new()
         } else {
@@ -61,15 +55,34 @@ fn roundtrip_generated_v29() -> Result<()> {
 
         println!("🔁 Calling RPC method '{}'", m.name);
         match client.call_json(&m.name, &params) {
-            Ok(resp) => {
-                println!("   → got {} bytes", resp.to_string().len());
-            }
+            Ok(resp) => println!("   → got {} bytes", resp.to_string().len()),
             Err(err) => {
                 println!("⚠️ skipping '{}' due to RPC error: {}", m.name, err);
                 continue;
             }
         }
     }
+
+    // 4. Explicitly test the stop RPC
+    println!("🔁 Calling RPC method 'stop'");
+    let stop_resp: Value = client.call_json("stop", &[])?;
+    println!(
+        "   → stop RPC returned {} bytes",
+        stop_resp.to_string().len()
+    );
+
+    // 5. Drop the immutable borrow before mutable teardown
+    let _ = client;
+
+    // 6. Wait for the node to exit cleanly
+    rt.teardown()?;
+
+    // 7. Verify that further RPCs now error
+    println!("🌟 Verifying shutdown: subsequent RPCs should fail");
+    assert!(
+        rt.client.call_json("getblockcount", &[]).is_err(),
+        "Expected RPC error after shutdown"
+    );
 
     Ok(())
 }
