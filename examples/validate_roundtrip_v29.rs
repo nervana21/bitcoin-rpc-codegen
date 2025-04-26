@@ -13,26 +13,30 @@ fn main() -> Result<()> {
     let methods: Vec<ApiMethod> =
         parse_api_json(&schema_src).context("Failed to parse api_v29.json")?;
 
-    // 2. Extract zero-argument RPCs in schema order
-    let zero_arg: Vec<_> = methods
+    // 2. Extract zero-arg names from schema
+    let mut zero_arg: Vec<_> = methods
         .iter()
         .filter(|m| m.arguments.is_empty())
         .map(|m| m.name.clone())
         .collect();
 
-    eprintln!("\n🔍 Zero-arg RPCs (schema order):");
+    // 3. Sort them (help output is already alphabetical, but explicit is clearer):
+    zero_arg.sort();
+
+    // 4. Pull out "stop" (we know it must exist) and push to the end:
+    if let Some(pos) = zero_arg.iter().position(|n| n == "stop") {
+        let stop = zero_arg.remove(pos);
+        zero_arg.push(stop);
+    } else {
+        panic!("Schema did not contain a zero-arg `stop` RPC");
+    }
+
+    eprintln!("\n🔍 Zero-arg RPCs (alphabetical, with `stop` last):");
     for (i, name) in zero_arg.iter().enumerate() {
         eprintln!("  {:>2}. {}", i + 1, name);
     }
-    // 3. Assert that "stop" is last
-    assert_eq!(
-        zero_arg.last().map(String::as_str),
-        Some("stop"),
-        "Expected 'stop' to be the last zero-arg RPC, but found `{}`",
-        zero_arg.last().unwrap_or(&"<none>".into())
-    );
 
-    // 4. Start regtest node
+    // 5. Spin up your regtest node
     let mut conf = Conf::default();
     conf.extra_args.push("-fallbackfee=0.0002");
     let rt = RegtestClient::new_with_conf(&conf).context("Failed to start regtest node")?;
@@ -40,12 +44,12 @@ fn main() -> Result<()> {
 
     println!("\nLoaded {} RPC methods from schema", methods.len());
 
-    // 5. Call each zero-arg RPC except "stop"
+    // 6. Call every zero-arg *except* the last (`stop`), skipping on RPC error
     for name in &zero_arg[..zero_arg.len() - 1] {
         println!("\nCalling `{}`...", name);
         let v: Value = match client.call_json(name, &[]) {
             Ok(v) => {
-                // dump for later regeneration
+                // dump for later schema regeneration
                 fs::create_dir_all("feedback")?;
                 fs::write(
                     format!("feedback/{}.json", name),
@@ -64,7 +68,7 @@ fn main() -> Result<()> {
             }
         };
 
-        // validate shape
+        // 7. Validate shape against schema
         let method = methods.iter().find(|m| &m.name == name).unwrap();
         let mut errors = Vec::new();
         compare_value(&v, &method.results, &mut Vec::new(), &mut errors);
@@ -79,7 +83,7 @@ fn main() -> Result<()> {
         }
     }
 
-    // 6. Finally call `stop`
+    // 8. Finally call `stop`
     println!("\nCalling `stop` (last)...");
     let stop_response: Value = client.call_json("stop", &[]).context("stop RPC failed")?;
     println!(
@@ -87,7 +91,7 @@ fn main() -> Result<()> {
         stop_response.to_string().len()
     );
 
-    // 7. Prove the node has shut down by calling any RPC and expecting an error
+    // 9. Prove the node has shut down
     println!("\n🔒 Verifying shutdown: next RPC must fail.");
     match client.call_json("getblockcount", &[]) {
         Ok(_) => panic!("Expected RPC to fail after stop, but it succeeded"),
@@ -115,7 +119,6 @@ fn compare_value(
                         let field = obj_schema.inner.iter().find(|f| &f.key_name == k).unwrap();
                         compare_value(v, &field.inner, path, errors);
                     }
-                    // else ignore
                     path.pop();
                 }
             }
