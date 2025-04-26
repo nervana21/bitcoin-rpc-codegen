@@ -1,7 +1,6 @@
 /// client impl for `abortrescan` RPC (v29)
 macro_rules! impl_client_v29__abortrescan {
     () => {
-        ///
         /// Stops current wallet rescan triggered by an RPC call, e.g. by an importprivkey call.
         /// Note: Use "getwalletinfo" to query the scanning progress.
         ///
@@ -18,7 +17,6 @@ macro_rules! impl_client_v29__abortrescan {
         ///
         /// As a JSON-RPC call
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "abortrescan", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn abortrescan(&self) -> RpcResult<AbortrescanResponse> {
             self.call("abortrescan", json!([]))
         }
@@ -29,7 +27,6 @@ macro_rules! impl_client_v29__abortrescan {
 /// client impl for `clearbanned` RPC (v29)
 macro_rules! impl_client_v29__clearbanned {
     () => {
-        ///
         /// Clear all banned IPs.
         ///
         /// Result:
@@ -38,7 +35,6 @@ macro_rules! impl_client_v29__clearbanned {
         /// Examples:
         /// > bitcoin-cli clearbanned 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "clearbanned", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn clearbanned(&self) -> RpcResult<ClearbannedResponse> {
             self.call("clearbanned", json!([]))
         }
@@ -49,7 +45,6 @@ macro_rules! impl_client_v29__clearbanned {
 /// client impl for `getaddrmaninfo` RPC (v29)
 macro_rules! impl_client_v29__getaddrmaninfo {
     () => {
-        ///
         /// Provides information about the node's address manager by returning the number of addresses in the `new` and `tried` tables and their sum for all networks.
         ///
         /// Result:
@@ -65,7 +60,6 @@ macro_rules! impl_client_v29__getaddrmaninfo {
         /// Examples:
         /// > bitcoin-cli getaddrmaninfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getaddrmaninfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getaddrmaninfo(&self) -> RpcResult<GetaddrmaninfoResponse> {
             self.call("getaddrmaninfo", json!([]))
         }
@@ -76,7 +70,6 @@ macro_rules! impl_client_v29__getaddrmaninfo {
 /// client impl for `getbalances` RPC (v29)
 macro_rules! impl_client_v29__getbalances {
     () => {
-        ///
         /// Returns an object with all balances in BTC.
         ///
         /// Result:
@@ -101,7 +94,6 @@ macro_rules! impl_client_v29__getbalances {
         /// Examples:
         /// > bitcoin-cli getbalances 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getbalances", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getbalances(&self) -> RpcResult<GetbalancesResponse> {
             self.call("getbalances", json!([]))
         }
@@ -112,7 +104,6 @@ macro_rules! impl_client_v29__getbalances {
 /// client impl for `getbestblockhash` RPC (v29)
 macro_rules! impl_client_v29__getbestblockhash {
     () => {
-        ///
         /// Returns the hash of the best (tip) block in the most-work fully-validated chain.
         ///
         /// Result:
@@ -121,7 +112,6 @@ macro_rules! impl_client_v29__getbestblockhash {
         /// Examples:
         /// > bitcoin-cli getbestblockhash 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getbestblockhash", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getbestblockhash(&self) -> RpcResult<GetbestblockhashResponse> {
             self.call("getbestblockhash", json!([]))
         }
@@ -132,7 +122,6 @@ macro_rules! impl_client_v29__getbestblockhash {
 /// client impl for `getblockchaininfo` RPC (v29)
 macro_rules! impl_client_v29__getblockchaininfo {
     () => {
-        ///
         /// Returns an object containing various state info regarding blockchain processing.
         ///
         /// Result:
@@ -164,7 +153,6 @@ macro_rules! impl_client_v29__getblockchaininfo {
         /// Examples:
         /// > bitcoin-cli getblockchaininfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getblockchaininfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getblockchaininfo(&self) -> RpcResult<GetblockchaininfoResponse> {
             self.call("getblockchaininfo", json!([]))
         }
@@ -175,7 +163,6 @@ macro_rules! impl_client_v29__getblockchaininfo {
 /// client impl for `getblockcount` RPC (v29)
 macro_rules! impl_client_v29__getblockcount {
     () => {
-        ///
         /// Returns the height of the most-work fully-validated chain.
         /// The genesis block has height 0.
         ///
@@ -185,7 +172,6 @@ macro_rules! impl_client_v29__getblockcount {
         /// Examples:
         /// > bitcoin-cli getblockcount 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getblockcount", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getblockcount(&self) -> RpcResult<GetblockcountResponse> {
             self.call("getblockcount", json!([]))
         }
@@ -196,7 +182,6 @@ macro_rules! impl_client_v29__getblockcount {
 /// client impl for `getchainstates` RPC (v29)
 macro_rules! impl_client_v29__getchainstates {
     () => {
-        ///
         /// Return information about chainstates.
         ///
         /// Result:
@@ -222,7 +207,6 @@ macro_rules! impl_client_v29__getchainstates {
         /// Examples:
         /// > bitcoin-cli getchainstates 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getchainstates", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getchainstates(&self) -> RpcResult<GetchainstatesResponse> {
             self.call("getchainstates", json!([]))
         }
@@ -233,7 +217,6 @@ macro_rules! impl_client_v29__getchainstates {
 /// client impl for `getchaintips` RPC (v29)
 macro_rules! impl_client_v29__getchaintips {
     () => {
-        ///
         /// Return information about all known tips in the block tree, including the main chain as well as orphaned branches.
         ///
         /// Result:
@@ -256,7 +239,6 @@ macro_rules! impl_client_v29__getchaintips {
         /// Examples:
         /// > bitcoin-cli getchaintips 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getchaintips", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getchaintips(&self) -> RpcResult<GetchaintipsResponse> {
             self.call("getchaintips", json!([]))
         }
@@ -267,7 +249,6 @@ macro_rules! impl_client_v29__getchaintips {
 /// client impl for `getconnectioncount` RPC (v29)
 macro_rules! impl_client_v29__getconnectioncount {
     () => {
-        ///
         /// Returns the number of connections to other nodes.
         ///
         /// Result:
@@ -276,7 +257,6 @@ macro_rules! impl_client_v29__getconnectioncount {
         /// Examples:
         /// > bitcoin-cli getconnectioncount 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getconnectioncount", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getconnectioncount(&self) -> RpcResult<GetconnectioncountResponse> {
             self.call("getconnectioncount", json!([]))
         }
@@ -287,7 +267,6 @@ macro_rules! impl_client_v29__getconnectioncount {
 /// client impl for `getdifficulty` RPC (v29)
 macro_rules! impl_client_v29__getdifficulty {
     () => {
-        ///
         /// Returns the proof-of-work difficulty as a multiple of the minimum difficulty.
         ///
         /// Result:
@@ -296,7 +275,6 @@ macro_rules! impl_client_v29__getdifficulty {
         /// Examples:
         /// > bitcoin-cli getdifficulty 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getdifficulty", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getdifficulty(&self) -> RpcResult<GetdifficultyResponse> {
             self.call("getdifficulty", json!([]))
         }
@@ -307,7 +285,6 @@ macro_rules! impl_client_v29__getdifficulty {
 /// client impl for `getmempoolinfo` RPC (v29)
 macro_rules! impl_client_v29__getmempoolinfo {
     () => {
-        ///
         /// Returns details on the active state of the TX memory pool.
         ///
         /// Result:
@@ -328,7 +305,6 @@ macro_rules! impl_client_v29__getmempoolinfo {
         /// Examples:
         /// > bitcoin-cli getmempoolinfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getmempoolinfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getmempoolinfo(&self) -> RpcResult<GetmempoolinfoResponse> {
             self.call("getmempoolinfo", json!([]))
         }
@@ -339,7 +315,6 @@ macro_rules! impl_client_v29__getmempoolinfo {
 /// client impl for `getmininginfo` RPC (v29)
 macro_rules! impl_client_v29__getmininginfo {
     () => {
-        ///
         /// Returns a json object containing mining-related information.
         ///
         /// Result:
@@ -369,7 +344,6 @@ macro_rules! impl_client_v29__getmininginfo {
         /// Examples:
         /// > bitcoin-cli getmininginfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getmininginfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getmininginfo(&self) -> RpcResult<GetmininginfoResponse> {
             self.call("getmininginfo", json!([]))
         }
@@ -380,7 +354,6 @@ macro_rules! impl_client_v29__getmininginfo {
 /// client impl for `getnettotals` RPC (v29)
 macro_rules! impl_client_v29__getnettotals {
     () => {
-        ///
         /// Returns information about network traffic, including bytes in, bytes out,
         /// and current system time.
         ///
@@ -402,7 +375,6 @@ macro_rules! impl_client_v29__getnettotals {
         /// Examples:
         /// > bitcoin-cli getnettotals 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getnettotals", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getnettotals(&self) -> RpcResult<GetnettotalsResponse> {
             self.call("getnettotals", json!([]))
         }
@@ -413,7 +385,6 @@ macro_rules! impl_client_v29__getnettotals {
 /// client impl for `getnetworkinfo` RPC (v29)
 macro_rules! impl_client_v29__getnetworkinfo {
     () => {
-        ///
         /// Returns an object containing various state info regarding P2P networking.
         ///
         /// Result:
@@ -461,7 +432,6 @@ macro_rules! impl_client_v29__getnetworkinfo {
         /// Examples:
         /// > bitcoin-cli getnetworkinfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getnetworkinfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getnetworkinfo(&self) -> RpcResult<GetnetworkinfoResponse> {
             self.call("getnetworkinfo", json!([]))
         }
@@ -472,7 +442,6 @@ macro_rules! impl_client_v29__getnetworkinfo {
 /// client impl for `getpeerinfo` RPC (v29)
 macro_rules! impl_client_v29__getpeerinfo {
     () => {
-        ///
         /// Returns data about each connected network peer as a json array of objects.
         ///
         /// Result:
@@ -526,7 +495,7 @@ macro_rules! impl_client_v29__getpeerinfo {
         ///                                           mempool (allow requesting BIP35 mempool contents),
         ///                                           download (allow getheaders during IBD, no disconnect after maxuploadtarget limit),
         ///                                           addr (responses to GETADDR avoid hitting the cache and contain random records with the most up-to-date info).
-        ///                                           
+        ///
         ///       ...
         ///     ],
         ///     "minfeefilter" : n,                   (numeric) The minimum fee rate for transactions this peer accepts
@@ -556,9 +525,9 @@ macro_rules! impl_client_v29__getpeerinfo {
         ///                                           detecting (peer could be v1 or v2),
         ///                                           v1 (plaintext transport protocol),
         ///                                           v2 (BIP324 encrypted transport protocol).
-        ///                                           
+        ///
         ///     "session_id" : "str"                  (string) The session ID for this connection, or "" if there is none ("v2" transport protocol only).
-        ///                                           
+        ///
         ///   },
         ///   ...
         /// ]
@@ -566,7 +535,6 @@ macro_rules! impl_client_v29__getpeerinfo {
         /// Examples:
         /// > bitcoin-cli getpeerinfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getpeerinfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getpeerinfo(&self) -> RpcResult<GetpeerinfoResponse> {
             self.call("getpeerinfo", json!([]))
         }
@@ -577,7 +545,6 @@ macro_rules! impl_client_v29__getpeerinfo {
 /// client impl for `getprioritisedtransactions` RPC (v29)
 macro_rules! impl_client_v29__getprioritisedtransactions {
     () => {
-        ///
         /// Returns a map of all user-created (see prioritisetransaction) fee deltas by txid, and whether the tx is present in mempool.
         ///
         /// Result:
@@ -593,7 +560,6 @@ macro_rules! impl_client_v29__getprioritisedtransactions {
         /// Examples:
         /// > bitcoin-cli getprioritisedtransactions 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getprioritisedtransactions", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getprioritisedtransactions(&self) -> RpcResult<GetprioritisedtransactionsResponse> {
             self.call("getprioritisedtransactions", json!([]))
         }
@@ -604,7 +570,6 @@ macro_rules! impl_client_v29__getprioritisedtransactions {
 /// client impl for `getrpcinfo` RPC (v29)
 macro_rules! impl_client_v29__getrpcinfo {
     () => {
-        ///
         /// Returns details of the RPC server.
         ///
         /// Result:
@@ -622,7 +587,6 @@ macro_rules! impl_client_v29__getrpcinfo {
         /// Examples:
         /// > bitcoin-cli getrpcinfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getrpcinfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getrpcinfo(&self) -> RpcResult<GetrpcinfoResponse> {
             self.call("getrpcinfo", json!([]))
         }
@@ -633,13 +597,11 @@ macro_rules! impl_client_v29__getrpcinfo {
 /// client impl for `getunconfirmedbalance` RPC (v29)
 macro_rules! impl_client_v29__getunconfirmedbalance {
     () => {
-        ///
         /// DEPRECATED
         /// Identical to getbalances().mine.untrusted_pending
         ///
         /// Result:
         /// n    (numeric) The balance
-
         pub fn getunconfirmedbalance(&self) -> RpcResult<GetunconfirmedbalanceResponse> {
             self.call("getunconfirmedbalance", json!([]))
         }
@@ -650,7 +612,6 @@ macro_rules! impl_client_v29__getunconfirmedbalance {
 /// client impl for `getwalletinfo` RPC (v29)
 macro_rules! impl_client_v29__getwalletinfo {
     () => {
-        ///
         /// Returns an object containing various wallet state info.
         ///
         /// Result:
@@ -687,7 +648,6 @@ macro_rules! impl_client_v29__getwalletinfo {
         /// Examples:
         /// > bitcoin-cli getwalletinfo 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getwalletinfo", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getwalletinfo(&self) -> RpcResult<GetwalletinfoResponse> {
             self.call("getwalletinfo", json!([]))
         }
@@ -698,7 +658,6 @@ macro_rules! impl_client_v29__getwalletinfo {
 /// client impl for `getzmqnotifications` RPC (v29)
 macro_rules! impl_client_v29__getzmqnotifications {
     () => {
-        ///
         /// Returns information about the active ZeroMQ notifications.
         ///
         /// Result:
@@ -714,7 +673,6 @@ macro_rules! impl_client_v29__getzmqnotifications {
         /// Examples:
         /// > bitcoin-cli getzmqnotifications 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "getzmqnotifications", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn getzmqnotifications(&self) -> RpcResult<GetzmqnotificationsResponse> {
             self.call("getzmqnotifications", json!([]))
         }
@@ -725,7 +683,6 @@ macro_rules! impl_client_v29__getzmqnotifications {
 /// client impl for `listaddressgroupings` RPC (v29)
 macro_rules! impl_client_v29__listaddressgroupings {
     () => {
-        ///
         /// Lists groups of addresses which have had their common ownership
         /// made public by common use as inputs or as the resulting change
         /// in past transactions
@@ -746,7 +703,6 @@ macro_rules! impl_client_v29__listaddressgroupings {
         /// Examples:
         /// > bitcoin-cli listaddressgroupings 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "listaddressgroupings", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn listaddressgroupings(&self) -> RpcResult<ListaddressgroupingsResponse> {
             self.call("listaddressgroupings", json!([]))
         }
@@ -757,7 +713,6 @@ macro_rules! impl_client_v29__listaddressgroupings {
 /// client impl for `listbanned` RPC (v29)
 macro_rules! impl_client_v29__listbanned {
     () => {
-        ///
         /// List all manually banned IPs/Subnets.
         ///
         /// Result:
@@ -775,7 +730,6 @@ macro_rules! impl_client_v29__listbanned {
         /// Examples:
         /// > bitcoin-cli listbanned 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "listbanned", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn listbanned(&self) -> RpcResult<ListbannedResponse> {
             self.call("listbanned", json!([]))
         }
@@ -786,7 +740,6 @@ macro_rules! impl_client_v29__listbanned {
 /// client impl for `listlockunspent` RPC (v29)
 macro_rules! impl_client_v29__listlockunspent {
     () => {
-        ///
         /// Returns list of temporarily unspendable outputs.
         /// See the lockunspent call to lock and unlock transactions for spending.
         ///
@@ -815,7 +768,6 @@ macro_rules! impl_client_v29__listlockunspent {
         ///
         /// As a JSON-RPC call
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "listlockunspent", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn listlockunspent(&self) -> RpcResult<ListlockunspentResponse> {
             self.call("listlockunspent", json!([]))
         }
@@ -826,7 +778,6 @@ macro_rules! impl_client_v29__listlockunspent {
 /// client impl for `listwalletdir` RPC (v29)
 macro_rules! impl_client_v29__listwalletdir {
     () => {
-        ///
         /// Returns a list of wallets in the wallet directory.
         ///
         /// Result:
@@ -842,7 +793,6 @@ macro_rules! impl_client_v29__listwalletdir {
         /// Examples:
         /// > bitcoin-cli listwalletdir 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "listwalletdir", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn listwalletdir(&self) -> RpcResult<ListwalletdirResponse> {
             self.call("listwalletdir", json!([]))
         }
@@ -853,7 +803,6 @@ macro_rules! impl_client_v29__listwalletdir {
 /// client impl for `listwallets` RPC (v29)
 macro_rules! impl_client_v29__listwallets {
     () => {
-        ///
         /// Returns a list of currently loaded wallets.
         /// For full information on the wallet, use "getwalletinfo"
         ///
@@ -866,7 +815,6 @@ macro_rules! impl_client_v29__listwallets {
         /// Examples:
         /// > bitcoin-cli listwallets 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "listwallets", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn listwallets(&self) -> RpcResult<ListwalletsResponse> {
             self.call("listwallets", json!([]))
         }
@@ -877,7 +825,6 @@ macro_rules! impl_client_v29__listwallets {
 /// client impl for `ping` RPC (v29)
 macro_rules! impl_client_v29__ping {
     () => {
-        ///
         /// Requests that a ping be sent to all other nodes, to measure ping time.
         /// Results provided in getpeerinfo, pingtime and pingwait fields are decimal seconds.
         /// Ping command is handled in queue with all other commands, so it measures processing backlog, not just network ping.
@@ -888,7 +835,6 @@ macro_rules! impl_client_v29__ping {
         /// Examples:
         /// > bitcoin-cli ping 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "ping", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn ping(&self) -> RpcResult<PingResponse> {
             self.call("ping", json!([]))
         }
@@ -899,7 +845,6 @@ macro_rules! impl_client_v29__ping {
 /// client impl for `savemempool` RPC (v29)
 macro_rules! impl_client_v29__savemempool {
     () => {
-        ///
         /// Dumps the mempool to disk. It will fail until the previous dump is fully loaded.
         ///
         /// Result:
@@ -910,7 +855,6 @@ macro_rules! impl_client_v29__savemempool {
         /// Examples:
         /// > bitcoin-cli savemempool 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "savemempool", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn savemempool(&self) -> RpcResult<SavemempoolResponse> {
             self.call("savemempool", json!([]))
         }
@@ -921,12 +865,10 @@ macro_rules! impl_client_v29__savemempool {
 /// client impl for `stop` RPC (v29)
 macro_rules! impl_client_v29__stop {
     () => {
-        ///
         /// Request a graceful shutdown of Bitcoin Core.
         ///
         /// Result:
         /// "str"    (string) A string with the content 'Bitcoin Core stopping'
-
         pub fn stop(&self) -> RpcResult<StopResponse> {
             self.call("stop", json!([]))
         }
@@ -937,7 +879,6 @@ macro_rules! impl_client_v29__stop {
 /// client impl for `uptime` RPC (v29)
 macro_rules! impl_client_v29__uptime {
     () => {
-        ///
         /// Returns the total uptime of the server.
         ///
         /// Result:
@@ -946,7 +887,6 @@ macro_rules! impl_client_v29__uptime {
         /// Examples:
         /// > bitcoin-cli uptime 
         /// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "uptime", "params": []}' -H 'content-type: application/json' http://127.0.0.1:8332/
-
         pub fn uptime(&self) -> RpcResult<UptimeResponse> {
             self.call("uptime", json!([]))
         }
