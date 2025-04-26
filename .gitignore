@@ -8,8 +8,8 @@
 **/target/.rustdoc_fingerprint.json
 **/target/.cargo-lock
 
-# But keep the generated code
-!**/target/generated/
+# Keep only our top-level generated code
+!/target/generated/
 
 # Rust/Cargo specific files
 **/*.rs.bk
@@ -37,3 +37,13 @@ Thumbs.db
 
 # Marker file used by catchup script
 .gpt_marker_commit
+
+# -----------------------------------------------------------------------------
+# Pipeline outputs (ephemeral)
+# -----------------------------------------------------------------------------
+
+# We don’t want to check in the JSON “feedback” directory
+/feedback/
+
+# And in the examples folder, ignore their own build dirs completely
+/examples/**/target/
