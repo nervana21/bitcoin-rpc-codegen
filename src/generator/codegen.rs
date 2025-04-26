@@ -2,14 +2,13 @@
 
 use anyhow::Result;
 use std::collections::HashSet;
-use std::fmt::Write;
+use std::fmt::Write as FmtWrite;
 use std::{fs, path::Path};
 
 use crate::parser::{parse_api_json, ApiMethod, ApiResult};
 
 pub const SUPPORTED_MAJORS: &[u32] = &[17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29];
 
-// Add the missing functions that are referenced from mod.rs
 pub fn map_type_to_rust(type_str: &str) -> String {
     match type_str {
         "string" => "String".to_string(),
@@ -18,10 +17,7 @@ pub fn map_type_to_rust(type_str: &str) -> String {
         "hex" => "String".to_string(),
         "object" => "serde_json::Value".to_string(),
         "object_dynamic" => "serde_json::Value".to_string(),
-        _ => {
-            // Fallback unknown or custom types (e.g., Network, Mine) to String
-            "String".to_string()
-        }
+        _ => "String".to_string(),
     }
 }
 
@@ -42,7 +38,6 @@ pub fn capitalize(s: &str) -> String {
         .join("")
 }
 
-// Implement the functions that were previously imported from mod.rs
 pub fn format_doc_comment(description: &str) -> String {
     description
         .lines()
@@ -54,15 +49,15 @@ pub fn format_doc_comment(description: &str) -> String {
 }
 
 pub fn format_struct_field(field_name: &str, field_type: &str, description: &str) -> String {
-    let formatted_description = format_doc_comment(description);
-    format!(
-        "{}\n    pub {}: {},\n",
-        formatted_description, field_name, field_type
-    )
+    let desc = format_doc_comment(description);
+    if desc.is_empty() {
+        format!("    pub {}: {},\n", field_name, field_type)
+    } else {
+        format!("{}\n    pub {}: {},\n", desc, field_name, field_type)
+    }
 }
 
 pub fn sanitize_field_name(name: &str) -> String {
-    // Filter to alphanumeric or underscore, lowercase letters.
     let filtered: String = name
         .chars()
         .filter_map(|c| {
@@ -75,8 +70,6 @@ pub fn sanitize_field_name(name: &str) -> String {
             }
         })
         .collect();
-
-    // If the first character is a digit, prefix with underscore.
     if filtered
         .chars()
         .next()
@@ -100,7 +93,10 @@ pub fn get_field_type(field: &ApiResult) -> String {
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let method_name = sanitize_method_name(&method.name);
     let macro_name = format!("impl_client_{}__{}", version, method_name);
-    let description = format_doc_comment(&method.description);
+
+    // Build the /// doc comments for this RPC
+    let doc_comment = format_doc_comment(&method.description);
+
     let params = method
         .arguments
         .iter()
@@ -109,17 +105,38 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         .join(", ");
 
     let mut func = String::new();
-    writeln!(func, "/// {}", description).unwrap();
+
+    // If we have any doc lines, emit them now:
+    if !doc_comment.trim().is_empty() {
+        func.push_str(&doc_comment);
+        func.push('\n');
+    }
+
     writeln!(func, "macro_rules! {} {{", macro_name).unwrap();
     writeln!(func, "    () => {{").unwrap();
-    writeln!(func, "        pub fn {}(\n            &self,\n            {params}\n        ) -> RpcResult<{}Response> {{", method_name, capitalize(&method.name)).unwrap();
     writeln!(
         func,
-        "            self.call(\"{}\", json!([{}]))\n        }}",
-        method.name, params
+        "        pub fn {}(\n            &self{},\n        ) -> RpcResult<{}Response> {{",
+        method_name,
+        if params.is_empty() {
+            "".to_string()
+        } else {
+            format!(", {}", params)
+        },
+        capitalize(&method.name),
     )
     .unwrap();
-    writeln!(func, "    }};\n}}").unwrap();
+    writeln!(
+        func,
+        "            self.call(\"{}\", json!([{}]))",
+        method.name,
+        if params.is_empty() { "" } else { &params }
+    )
+    .unwrap();
+    writeln!(func, "        }}").unwrap();
+    writeln!(func, "    }};").unwrap();
+    writeln!(func, "}}").unwrap();
+
     func
 }
 
@@ -152,7 +169,9 @@ fn get_return_type(result: &ApiResult) -> String {
 fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
     let mut s = String::new();
     writeln!(s, "/// Response for the {} RPC call.", type_name).unwrap();
-    writeln!(s, "{}", description).unwrap();
+    if !description.trim().is_empty() {
+        write!(s, "{}\n", description).unwrap();
+    }
     writeln!(
         s,
         "#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]"
@@ -160,51 +179,41 @@ fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
     .unwrap();
     writeln!(s, "pub struct {} {{", type_name).unwrap();
     writeln!(s, "{}", fields).unwrap();
-    writeln!(s, "}}").unwrap();
+    writeln!(s, "}}\n").unwrap();
     s
 }
 
 pub fn generate_mod_rs(output_dir: &str, versions: &[&str]) -> std::io::Result<()> {
-    use std::fmt::Write; // Import the Write trait for writeln!
-    let mod_rs_content = "pub mod client;\npub mod types;\n";
-    fs::write(Path::new(output_dir).join("mod.rs"), mod_rs_content)?;
+    let mod_rs = "pub mod client;\npub mod types;\n";
+    fs::write(Path::new(output_dir).join("mod.rs"), mod_rs)?;
 
-    // Client mod.rs
-    let mut client_mod_rs = String::new();
-    for version in versions {
-        writeln!(client_mod_rs, "pub use self::{}::*;", version)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let mut client_mod = String::new();
+    for v in versions {
+        writeln!(client_mod, "pub use self::{}::*;", v).unwrap();
     }
-    let client_mod_path = Path::new(output_dir).join("client").join("mod.rs");
-    fs::create_dir_all(client_mod_path.parent().unwrap())?;
-    fs::write(client_mod_path, client_mod_rs)?;
+    let client_path = Path::new(output_dir).join("client").join("mod.rs");
+    fs::create_dir_all(client_path.parent().unwrap())?;
+    fs::write(client_path, client_mod)?;
 
-    // Types mod.rs
-    let mut types_mod_rs = String::new();
-    for version in versions {
-        writeln!(types_mod_rs, "pub use self::{}_types::*;", version)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let mut types_mod = String::new();
+    for v in versions {
+        writeln!(types_mod, "pub use self::{}_types::*;", v).unwrap();
     }
-    let types_mod_path = Path::new(output_dir).join("types").join("mod.rs");
-    fs::create_dir_all(types_mod_path.parent().unwrap())?;
-    fs::write(types_mod_path, types_mod_rs)?;
+    let types_path = Path::new(output_dir).join("types").join("mod.rs");
+    fs::create_dir_all(types_path.parent().unwrap())?;
+    fs::write(types_path, types_mod)?;
 
     Ok(())
 }
 
 pub fn run_codegen() -> Result<()> {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    let api_path = Path::new(manifest_dir).join("resources").join("api.json");
-    if !api_path.exists() {
-        return Err(anyhow::anyhow!(
-            "API JSON file not found at: {:?}",
-            api_path
-        ));
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let api = Path::new(manifest).join("resources").join("api.json");
+    if !api.exists() {
+        return Err(anyhow::anyhow!("API JSON not found at {:?}", api));
     }
-    println!("run_codegen: Using API JSON file at: {:?}", api_path);
-
-    let api_json = fs::read_to_string(api_path)?;
-    let methods = parse_api_json(&api_json)?;
+    let data = fs::read_to_string(&api)?;
+    let methods = parse_api_json(&data)?;
 
     let out_dir = std::env::var("OUT_DIR")?;
     if fs::metadata(&out_dir).is_ok() {
@@ -212,61 +221,46 @@ pub fn run_codegen() -> Result<()> {
     }
     fs::create_dir_all(&out_dir)?;
 
-    // Build a Vec<String> of "v17","v18",… from our &[u32]
-    let version_strings: Vec<String> = SUPPORTED_MAJORS
-        .iter()
-        .map(|major| format!("v{}", major))
-        .collect();
+    let vers: Vec<String> = SUPPORTED_MAJORS.iter().map(|m| format!("v{}", m)).collect();
+    let vers_refs: Vec<&str> = vers.iter().map(String::as_str).collect();
 
-    // A Vec<&str> pointing into those Strings, to satisfy the &str APIs
-    let version_slices: Vec<&str> = version_strings.iter().map(String::as_str).collect();
-
-    // Generate each version sub-module
-    for &version in &version_slices {
-        generate_version_code(version, &methods, &out_dir)?;
+    for &v in &vers_refs {
+        generate_version_code(v, &methods, &out_dir)?;
     }
-
-    // Emit client/types mod.rs with our vNN list
-    generate_mod_rs(&out_dir, &version_slices)?;
-    println!(
-        "run_codegen: Code generation complete. Files saved in {:?}",
-        out_dir
-    );
+    generate_mod_rs(&out_dir, &vers_refs)?;
+    println!("Codegen complete. Output in {}", out_dir);
     Ok(())
 }
 
 pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) -> Result<()> {
-    let root_dir = Path::new(out_dir);
-    let client_dir = root_dir.join("client/src").join(version);
-    let types_dir = root_dir.join("types/src").join(version);
+    let root = Path::new(out_dir);
+    let client_dir = root.join("client/src").join(version);
+    let types_dir = root.join("types/src").join(version);
 
-    for dir in &[&client_dir, &types_dir] {
+    for dir in [&client_dir, &types_dir] {
         if dir.exists() {
             fs::remove_dir_all(dir)?;
         }
         fs::create_dir_all(dir)?;
     }
 
-    // Modified type_imports: only include necessary imports
-    let type_imports = r#"use serde::{Deserialize, Serialize};
-"#;
+    let imports = "use serde::{Deserialize, Serialize};\n\n";
+    let mut client = String::new();
+    let mut types = String::from(imports);
 
-    let mut client_code = String::new();
-    let mut types_code = String::from(type_imports);
-
-    for method in methods {
-        client_code.push_str(&generate_client_macro(method, version));
-        client_code.push_str("\n\n");
-
-        if let Some(type_code) = generate_return_type(method) {
-            types_code.push_str(&type_code);
-            types_code.push_str("\n\n");
+    for m in methods {
+        client.push_str(&generate_client_macro(m, version));
+        client.push_str("\n\n");
+        if let Some(tc) = generate_return_type(m) {
+            types.push_str(&tc);
+            types.push_str("\n\n");
         }
     }
 
-    fs::write(client_dir.join("methods.rs"), client_code)?;
-    fs::write(types_dir.join("types.rs"), types_code)?;
+    fs::write(client_dir.join("methods.rs"), client)?;
+    fs::write(types_dir.join("types.rs"), types)?;
 
+    // Inline the v17 traits template rather than include_str!
     if version == "v17" {
         let traits_content = r#"// SPDX-License-Identifier: CC0-1.0
 
@@ -333,25 +327,62 @@ pub trait SignerResponse {
     Ok(())
 }
 
-/// Generate field definitions for complex types, deduping by key name.
 pub fn generate_struct_fields(result: &ApiResult) -> String {
-    let mut fields = String::new();
+    let mut out = String::new();
     let mut seen = HashSet::new();
-    for field in &result.inner {
-        let field_name = if field.key_name.is_empty() {
+    for f in &result.inner {
+        let name = if f.key_name.is_empty() {
             "result".to_string()
         } else {
-            sanitize_field_name(&field.key_name)
+            sanitize_field_name(&f.key_name)
         };
-        if !seen.insert(field_name.clone()) {
+        if !seen.insert(name.clone()) {
             continue;
         }
-        let field_type = get_field_type(field);
-        fields.push_str(&format_struct_field(
-            &field_name,
-            &field_type,
-            &field.description,
-        ));
+        let ty = get_field_type(f);
+        out.push_str(&format_struct_field(&name, &ty, &f.description));
     }
-    fields
+    out
+}
+
+pub fn generate_client_stubs(mod_path: &Path, methods: &[ApiMethod]) -> anyhow::Result<()> {
+    let mut out = String::new();
+    out.push_str("// AUTO-GENERATED by bitcoin-rpc-codegen — do not edit\n\n");
+    out.push_str("use serde_json::json;\nuse serde_json::Value;\nuse crate::regtest::RpcResult;\nuse crate::regtest::RpcClient;\n\nimpl RpcClient {\n");
+
+    for m in methods {
+        for line in m.description.lines().filter(|l| !l.trim().is_empty()) {
+            writeln!(out, "    /// {}", line.trim())?;
+        }
+        let fn_name = sanitize_method_name(&m.name);
+        let mut sigs = Vec::new();
+        let mut args = Vec::new();
+        for arg in &m.arguments {
+            let name = &arg.names[0];
+            sigs.push(format!("{}: {}", name, map_type_to_rust(&arg.type_)));
+            args.push(format!("json!({})", name));
+        }
+        let sig = if sigs.is_empty() {
+            "".into()
+        } else {
+            format!(", {}", sigs.join(", "))
+        };
+        let params = if args.is_empty() {
+            "&[]".into()
+        } else {
+            format!("&[{}]", args.join(", "))
+        };
+
+        writeln!(
+            out,
+            "    pub fn {}(&self{}) -> RpcResult<Value> {{",
+            fn_name, sig
+        )?;
+        writeln!(out, "        self.call_json(\"{}\", {})", m.name, params)?;
+        writeln!(out, "    }}\n")?;
+    }
+
+    out.push_str("}\n");
+    fs::write(mod_path, out)?;
+    Ok(())
 }
