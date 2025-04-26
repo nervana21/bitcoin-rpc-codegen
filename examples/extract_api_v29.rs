@@ -1,39 +1,33 @@
 // examples/extract_api_v29.rs
 
 use anyhow::Result;
-use bitcoin_rpc_codegen::parser::{ApiArgument, ApiMethod, ApiResult};
+use bitcoin_rpc_codegen::parser::{ApiArgument, ApiResult};
 use bitcoin_rpc_codegen::Conf;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use regex::Regex;
-use serde::Serialize;
-use serde_json::json;
+use serde_json::{json, Map, Value};
 use std::{
-    collections::BTreeMap,
-    fs::File,
+    fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
-    process::Child,
+    process::{Child, Command, Stdio},
 };
 
-#[derive(Serialize)]
-struct Schema {
-    commands: BTreeMap<String, Vec<ApiMethod>>,
-}
-
 fn main() -> Result<()> {
-    // 1) Launch a regtest node
     let home = std::env::var("HOME")?;
     let bin_path = PathBuf::from(&home).join("bitcoin-versions/v29/bitcoin-29.0/bin/bitcoind");
+
     let mut conf = Conf::default();
     conf.wallet_name = "dummy";
     conf.view_stdout = false;
     conf.extra_args.push("-listen=0");
+
     let (mut child, _datadir, cookie, rpc_url) = spawn_node_with_custom_bin(&bin_path, &conf)?;
     let rpc = Client::new(&rpc_url, Auth::CookieFile(cookie))?;
 
-    // 2) Discover all method names
     println!("📜 Fetching top-level help…");
     let help_output: String = rpc.call("help", &[])?;
+
     let mut method_names = Vec::new();
     for line in help_output.lines() {
         if let Some(name) = line.split_whitespace().next() {
@@ -42,89 +36,101 @@ fn main() -> Result<()> {
             }
         }
     }
-    println!("🔍 Found {} methods", method_names.len());
+    println!("🔍 Found {} methods; fetching details…", method_names.len());
 
-    // 3) For each method, fetch its help and infer schema
-    let mut commands = BTreeMap::new();
-    for name in method_names {
-        let doc: String = rpc.call("help", &[json!(name.clone())])?;
+    let docs_dir = Path::new("resources/v29_docs");
+    fs::create_dir_all(docs_dir)?;
 
-        let description = extract_description(&doc);
-        let arguments = infer_arguments(&doc);
-        let results = infer_results(&doc);
-
-        let m = ApiMethod {
-            name: name.clone(),
-            description,
-            arguments,
-            results,
-        };
-        commands.insert(name, vec![m]);
+    // Dump raw help text to disk
+    for method in &method_names {
+        match rpc.call::<String>("help", &[json!(method)]) {
+            Ok(doc) => {
+                let path = docs_dir.join(format!("{method}.txt"));
+                fs::write(&path, &doc)?;
+            }
+            Err(e) => {
+                eprintln!("⚠️  could not dump `{method}`: {e}");
+            }
+        }
     }
 
-    // 4) Serialize into resources/api_v29.json with the proper wrapper
-    let schema = Schema { commands };
-    let out = serde_json::to_string_pretty(&schema)?;
-    let mut file = File::create(Path::new("resources/api_v29.json"))?;
-    writeln!(file, "{}", out)?;
+    // Now parse each doc into our JSON schema
+    let mut commands = Map::new();
+    let arg_re = Regex::new(r#"^\s*\d+\.\s+"?([^"\s]+)"?\s*\(([^)]+)\)\s*(.*)$"#).unwrap();
+    for method in &method_names {
+        let doc = fs::read_to_string(docs_dir.join(format!("{method}.txt")))?;
+        let description = extract_description(&doc);
+        let arguments = infer_arguments(&doc, &arg_re);
+        let results = infer_results(&doc);
+
+        let entry = json!({
+            "name": method,
+            "description": description,
+            "arguments": arguments,
+            "results": results,
+        });
+        commands.insert(method.clone(), json!([entry]));
+    }
+
+    // Write the final schema
+    let out = serde_json::to_string_pretty(&json!({ "commands": commands }))?;
+    let mut file = File::create("resources/api_v29.json")?;
+    writeln!(file, "{out}")?;
+
+    // Clean shutdown
+    let _ = rpc.call::<Value>("stop", &[]);
+    let _ = child.wait();
+
     println!(
         "✅ Wrote {} methods to resources/api_v29.json",
-        schema.commands.len()
+        commands.len()
     );
-
-    // 5) Shutdown
-    let _ = rpc.call::<serde_json::Value>("stop", &[]);
-    let _ = child.wait();
     Ok(())
 }
 
-/// Skip the signature line, capture up to the next section header.
+/// Skip the first signature line, then grab everything until the next section.
 fn extract_description(doc: &str) -> String {
     doc.lines()
         .skip(1)
         .skip_while(|l| l.trim().is_empty())
         .take_while(|l| {
-            let t = l.trim_start();
-            !t.starts_with("Arguments:")
-                && !t.starts_with("Result")
-                && !t.starts_with("Returns")
-                && !t.starts_with("Examples:")
+            !l.starts_with("Arguments:")
+                && !l.starts_with("Result:")
+                && !l.starts_with("Returns:")
+                && !l.starts_with("Examples:")
         })
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-fn infer_arguments(doc: &str) -> Vec<ApiArgument> {
+/// Pull out numbered `.1 (name) (type) description…` lines
+fn infer_arguments(doc: &str, re: &Regex) -> Vec<ApiArgument> {
     let mut args = Vec::new();
     let mut in_args = false;
-    let name_re = Regex::new(r#"^(\d+)\.\s+"?([a-zA-Z0-9_]+)"?\s+\(([^)]+)\)\s+(.*)$"#).unwrap();
-
     for line in doc.lines() {
         let t = line.trim();
         if t.starts_with("Arguments:") {
             in_args = true;
             continue;
         }
-        if in_args
-            && (t.starts_with("Result") || t.starts_with("Returns") || t.starts_with("Examples:"))
-        {
-            break;
-        }
         if in_args {
-            if let Some(caps) = name_re.captures(t) {
-                let name = caps[2].to_string();
-                let typ = caps[3].to_lowercase();
-                let desc = caps[4].to_string();
+            if t.is_empty() || t.ends_with(':') {
+                break; // end of Arguments section
+            }
+            if let Some(c) = re.captures(line) {
+                let name = c[1].to_string();
+                let typ = c[2].to_lowercase();
+                let desc = c[3].trim().to_string();
+                let optional = typ.contains("optional");
                 args.push(ApiArgument {
                     names: vec![name],
-                    type_: typ.clone(),
-                    optional: typ.contains("optional"),
+                    type_: typ,
+                    optional,
                     description: desc,
                 });
             }
         }
     }
-
     args
 }
 
@@ -215,7 +221,7 @@ fn spawn_node_with_custom_bin(
     conf: &Conf<'_>,
 ) -> Result<(Child, tempfile::TempDir, PathBuf, String)> {
     use bitcoin_rpc_codegen::regtest::{get_available_port, wait_for_rpc_ready};
-    use std::{process::Command, process::Stdio, thread::sleep, time::Duration};
+    use std::{thread::sleep, time::Duration};
 
     let mut last_err = None;
     for attempt in 1..=conf.attempts {
