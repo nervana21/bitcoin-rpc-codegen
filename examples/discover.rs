@@ -2,7 +2,7 @@
 //
 // Fully deterministic Bitcoin Core RPC method discovery for a given version.
 // Spawns a fresh regtest node, ensures dummy wallet is available,
-// dumps all `help <method>` outputs into resources/v29_docs/.
+// dumps all `help <method>` outputs into resources/{version}_docs/.
 
 use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::Conf;
@@ -10,13 +10,32 @@ use bitcoincore_rpc::{Auth, Client, RpcApi};
 use serde_json::json;
 use std::{
     collections::BTreeSet,
+    env,
     fs::{self, write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 fn main() -> Result<()> {
-    let home = std::env::var("HOME").context("Missing $HOME env var")?;
-    let bin_path = PathBuf::from(&home).join("bitcoin-versions/v29/bitcoin-29.0/bin/bitcoind");
+    // --- 🛎 Parse CLI args ---
+    let args = env::args().skip(1);
+    let parsed: Vec<String> = args.collect();
+
+    let version = if parsed.is_empty() {
+        println!("⚠️  Warning: No arguments provided, defaulting to v29");
+        "v29".to_string()
+    } else if parsed.len() == 2 && parsed[0] == "--version" {
+        parsed[1].clone()
+    } else {
+        anyhow::bail!("Expected usage: --version v29");
+    };
+
+
+
+
+    let bin_path = bin_path_for_version(&version)?;
+    if !bin_path.exists() {
+        anyhow::bail!("Missing bitcoind binary at {} — did you download Bitcoin Core {}?", bin_path.display(), version);
+    }
 
     let mut conf = Conf::default();
     conf.wallet_name = "dummy";
@@ -29,9 +48,7 @@ fn main() -> Result<()> {
     println!("🚀 Hello, world!");
     println!("📜 Fetching full method list from `help`…");
 
-    let info = rpc
-        .get_network_info()
-        .context("Failed to get network info")?;
+    let info = rpc.get_network_info().context("Failed to get network info")?;
     println!("  version     = {}", info.version);
     println!("  subversion  = {}", info.subversion);
     println!("  protocol    = {}", info.protocol_version);
@@ -49,8 +66,9 @@ fn main() -> Result<()> {
 
     println!("✅ Found {} RPC methods", method_names.len());
 
-    let output_dir = PathBuf::from("resources/v29_docs");
+    let output_dir = PathBuf::from(format!("resources/{}_docs", version));
     fs::create_dir_all(&output_dir).context("Failed to create output dir")?;
+
     let mut successful_methods = Vec::new();
 
     for method in &method_names {
@@ -82,15 +100,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Computes expected path to bitcoind for a given version.
+fn bin_path_for_version(version: &str) -> Result<PathBuf> {
+    let home = env::var("HOME").context("Missing $HOME env var")?;
+    Ok(Path::new(&home)
+        .join("bitcoin-versions")
+        .join(&version[1..])
+        .join(format!("bitcoin-{}.0/bin/bitcoind", &version[1..])))
+}
+
 /// Spawns a regtest node with given bitcoind binary and Conf.
 /// Ensures dummy wallet is preloaded at startup.
 fn spawn_node_with_custom_bin(
-    bin_path: &std::path::Path,
+    bin_path: &Path,
     conf: &Conf<'_>,
 ) -> Result<(
     std::process::Child,
     tempfile::TempDir,
-    std::path::PathBuf,
+    PathBuf,
     String,
 )> {
     use bitcoin_rpc_codegen::regtest::{get_available_port, wait_for_rpc_ready};
@@ -114,7 +141,7 @@ fn spawn_node_with_custom_bin(
             "-rpcallowip=127.0.0.1",
             "-fallbackfee=0.0002",
             "-listen=0",
-            &format!("-wallet={}", conf.wallet_name), // 🆕 Always preload dummy wallet!
+            &format!("-wallet={}", conf.wallet_name),
         ]);
         if conf.enable_txindex {
             cmd.arg("-txindex");
