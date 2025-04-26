@@ -1,7 +1,7 @@
 // examples/regenerate_schema_v29.rs
 
 use anyhow::Result;
-use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod, ApiResult};
+use bitcoin_rpc_codegen::parser::{ApiMethod, ApiResult};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fs};

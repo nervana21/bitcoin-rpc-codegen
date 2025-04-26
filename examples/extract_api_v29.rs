@@ -9,7 +9,6 @@ use serde::Serialize;
 use serde_json::json;
 use std::{
     collections::BTreeMap,
-    fs,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -171,7 +170,7 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
             typ = "none";
         }
 
-        let mut result = ApiResult {
+        let result = ApiResult {
             type_: typ.to_string(),
             description: desc.clone(),
             key_name,

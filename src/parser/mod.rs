@@ -68,7 +68,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, Error> {
     for (name, raw_methods) in commands {
         let arr = raw_methods
             .as_array()
-            .expect(&format!("Methods for `{}` not an array", name));
+            .unwrap_or_else(|| panic!("Methods for `{}` not an array", name));
         for raw in arr {
             let mut method: ApiMethod = serde_json::from_value(raw.clone())
                 .context(format!("Deserializing ApiMethod for `{}` failed", name))?;
