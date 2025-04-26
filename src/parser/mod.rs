@@ -27,53 +27,56 @@ pub struct ApiResult {
     pub inner: Vec<ApiResult>,
 }
 
-pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>> {
-    let api: serde_json::Value = serde_json::from_str(json)?;
-    let commands = api["commands"].as_object().unwrap();
+// use crate::parser::ApiMethod;
+use anyhow::{Context, Error};
+use serde_json::Value;
 
-    let mut parsed_methods = Vec::new();
+/// Parses your `api_v29.json` into a Vec<ApiMethod>,
+/// with verbose logging to stderr to show exactly what’s happening.
+pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, Error> {
+    // 1) parse the raw JSON
+    let v: Value = serde_json::from_str(json).context("Invalid API JSON schema")?;
 
-    for (name, command_array) in commands {
-        let command = &command_array.as_array().unwrap()[0];
-        let command_obj = command.as_object().unwrap();
-
-        let arguments = command_obj["arguments"]
-            .as_array()
-            .map(|params| {
-                params
-                    .iter()
-                    .map(|param| ApiArgument {
-                        names: param["names"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|n| n.as_str().unwrap().to_string())
-                            .collect(),
-                        type_: param["type"].as_str().unwrap().to_string(),
-                        optional: param["optional"].as_bool().unwrap_or(false),
-                        description: param["description"].as_str().unwrap_or("").to_string(),
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        let results = command_obj["results"]
-            .as_array()
-            .map(|results| results.iter().map(parse_result).collect())
-            .unwrap_or_default();
-
-        parsed_methods.push(ApiMethod {
-            name: name.clone(),
-            description: command_obj["description"]
-                .as_str()
-                .unwrap_or("")
-                .to_string(),
-            arguments,
-            results,
-        });
+    // 🔍 DEBUG #1: top‐level keys
+    if let Value::Object(o) = &v {
+        let keys: Vec<String> = o.keys().cloned().collect();
+        eprintln!("[parse_api_json] top‐level keys = {:?}", keys);
+    } else {
+        eprintln!("[parse_api_json] top‐level is not an object: {:?}", v);
     }
 
-    Ok(parsed_methods)
+    // 🔍 DEBUG #2: inspect `commands`
+    match v.get("commands") {
+        Some(cmds) => {
+            let cnt = cmds.as_object().map(|m| m.len()).unwrap_or(0);
+            eprintln!("[parse_api_json] found `commands` with {} entries", cnt);
+        }
+        None => {
+            eprintln!("[parse_api_json] *** MISSING `commands` key! ***");
+        }
+    }
+
+    // 2) now safely grab the commands map (or panic with our debug hint)
+    let commands = v
+        .get("commands")
+        .expect("`commands` key missing—see debug above")
+        .as_object()
+        .expect("`commands` was not an object");
+
+    // 3) build your Vec<ApiMethod> as before
+    let mut all = Vec::new();
+    for (name, raw_methods) in commands {
+        let arr = raw_methods
+            .as_array()
+            .expect(&format!("Methods for `{}` not an array", name));
+        for raw in arr {
+            let mut method: ApiMethod = serde_json::from_value(raw.clone())
+                .context(format!("Deserializing ApiMethod for `{}` failed", name))?;
+            method.name = name.clone();
+            all.push(method);
+    }
+    }
+    Ok(all)
 }
 
 fn parse_result(value: &serde_json::Value) -> ApiResult {
