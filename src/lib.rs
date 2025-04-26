@@ -11,6 +11,8 @@ pub use bitcoincore_rpc::RpcApi;
 use std::{ops::Deref, sync::Arc};
 use thiserror::Error;
 
+use crate::generator::versions::Version; // bring Version into scope
+
 /// Unified error type for this crate.
 #[derive(Error, Debug)]
 pub enum Error {
@@ -105,11 +107,14 @@ fn version_probe(rpc: &bitcoincore_rpc::Client) -> Result<()> {
             ))
         })?;
     let major = (ver / 10_000) as u32;
-    if !(17..=28).contains(&major) {
-        return Err(Error::Rpc(bitcoincore_rpc::Error::ReturnedError(format!(
+
+    // Convert to our Version enum (error if unsupported)
+    Version::try_from(major).map_err(|_| {
+        Error::Rpc(bitcoincore_rpc::Error::ReturnedError(format!(
             "unsupported Core v{major}"
-        ))));
-    }
+        )))
+    })?;
+
     Ok(())
 }
 

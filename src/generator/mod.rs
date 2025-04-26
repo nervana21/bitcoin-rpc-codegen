@@ -3,7 +3,7 @@
 use crate::parser::ApiMethod;
 
 pub mod codegen;
-pub use codegen::SUPPORTED_VERSIONS;
+pub mod versions;
 
 use std::fmt::Write;
 use std::fs;

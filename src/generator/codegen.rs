@@ -1,3 +1,5 @@
+// src/generator/codegen.rs
+
 use anyhow::Result;
 use std::collections::HashSet;
 use std::fmt::Write;
@@ -5,9 +7,7 @@ use std::{fs, path::Path};
 
 use crate::parser::{parse_api_json, ApiMethod, ApiResult};
 
-pub const SUPPORTED_VERSIONS: &[&str] = &[
-    "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28",
-];
+pub const SUPPORTED_MAJORS: &[u32] = &[17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29];
 
 // Add the missing functions that are referenced from mod.rs
 pub fn map_type_to_rust(type_str: &str) -> String {
@@ -212,11 +212,22 @@ pub fn run_codegen() -> Result<()> {
     }
     fs::create_dir_all(&out_dir)?;
 
-    for version in SUPPORTED_VERSIONS {
+    // Build a Vec<String> of "v17","v18",… from our &[u32]
+    let version_strings: Vec<String> = SUPPORTED_MAJORS
+        .iter()
+        .map(|major| format!("v{}", major))
+        .collect();
+
+    // A Vec<&str> pointing into those Strings, to satisfy the &str APIs
+    let version_slices: Vec<&str> = version_strings.iter().map(String::as_str).collect();
+
+    // Generate each version sub-module
+    for &version in &version_slices {
         generate_version_code(version, &methods, &out_dir)?;
     }
 
-    generate_mod_rs(&out_dir, SUPPORTED_VERSIONS)?;
+    // Emit client/types mod.rs with our vNN list
+    generate_mod_rs(&out_dir, &version_slices)?;
     println!(
         "run_codegen: Code generation complete. Files saved in {:?}",
         out_dir

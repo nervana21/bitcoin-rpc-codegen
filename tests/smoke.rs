@@ -1,12 +1,11 @@
-//! Smoke-test: ensure generator and parser modules exist
+// tests/smoke.rs
+//! Smoke-test: ensure generator’s version logic and parser exist
 
 #[test]
 fn smoke() {
-    // Verify that the codegen generator and parser modules compile and link
-    use bitcoin_rpc_codegen::generator;
+    use anyhow::Result;
+    use bitcoin_rpc_codegen::generator::versions::Version;
     use bitcoin_rpc_codegen::parser;
-
-    // Access constants and functions to assert presence
-    let _versions: &[&str] = generator::SUPPORTED_VERSIONS;
-    let _parse_fn: fn(&str) -> Result<_, _> = parser::parse_api_json;
+    let _versions: &[Version] = Version::SUPPORTED;
+    let _parse_fn: fn(&str) -> Result<Vec<parser::ApiMethod>> = parser::parse_api_json;
 }
