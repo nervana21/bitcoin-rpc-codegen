@@ -79,20 +79,6 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, Error> {
     Ok(all)
 }
 
-fn parse_result(value: &serde_json::Value) -> ApiResult {
-    let obj = value.as_object().unwrap();
-
-    ApiResult {
-        type_: obj["type"].as_str().unwrap_or("").to_string(),
-        description: obj["description"].as_str().unwrap_or("").to_string(),
-        key_name: obj["key_name"].as_str().unwrap_or("").to_string(),
-        inner: obj["inner"]
-            .as_array()
-            .map(|props| props.iter().map(parse_result).collect())
-            .unwrap_or_default(),
-    }
-}
-
 #[test]
 fn parses_nested_inner_fields() {
     let json = r#"
