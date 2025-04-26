@@ -125,50 +125,50 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         .join(format!("{}_docs", version))
         .join(format!("{}.txt", name));
     if let Ok(contents) = fs::read_to_string(&docs_path) {
-        // skip the signature line, then emit every line as a doc‐comment
-        for line in contents.lines().skip(1) {
+        // skip the signature line and any further leading blank lines:
+        for line in contents.lines().skip(1).skip_while(|l| l.trim().is_empty()) {
             docs.push_str("        ///");
-            if !line.is_empty() {
+            if !line.trim().is_empty() {
                 docs.push(' ');
                 docs.push_str(line);
             }
             docs.push('\n');
         }
-        docs.push('\n');
     } else if !method.description.trim().is_empty() {
-        // fallback: use the short schema description
-        for line in method.description.lines() {
-            let line = line.trim();
-            if !line.is_empty() {
-                docs.push_str("        /// ");
-                docs.push_str(line);
-                docs.push('\n');
-            }
+        // fallback to the short JSON‐schema description
+        for line in method.description.lines().filter(|l| !l.trim().is_empty()) {
+            docs.push_str("        /// ");
+            docs.push_str(line.trim());
+            docs.push('\n');
         }
-        docs.push('\n');
     }
 
-    // 4) Compose the macro itself
+    // Step 4: assemble the macro
     let mut out = String::new();
     writeln!(out, "/// client impl for `{}` RPC ({})", name, version).unwrap();
     writeln!(out, "macro_rules! {} {{", macro_name).unwrap();
     writeln!(out, "    () => {{").unwrap();
-    // insert the scraped docs (or fallback)
+    // inject our docs block (no leading empty comment, no trailing blank)
     out.push_str(&docs);
-    // the fn signature
-    writeln!(
-        out,
-        "        pub fn {}(&self{}) -> RpcResult<{}Response> {{",
-        func_name,
-        if params_decl.is_empty() {
-            "".to_string()
-        } else {
-            format!(", {}", params_decl)
-        },
-        capitalize(name)
-    )
-    .unwrap();
-    // the call itself
+    // now the actual function
+    if params_decl.is_empty() {
+        writeln!(
+            out,
+            "        pub fn {}(&self) -> RpcResult<{}Response> {{",
+            func_name,
+            capitalize(name)
+        )
+        .unwrap();
+    } else {
+        writeln!(
+            out,
+            "        pub fn {}(&self, {}) -> RpcResult<{}Response> {{",
+            func_name,
+            params_decl,
+            capitalize(name)
+        )
+        .unwrap();
+    }
     writeln!(out, "            self.call(\"{}\", {})", name, params_json).unwrap();
     writeln!(out, "        }}").unwrap();
     writeln!(out, "    }};").unwrap();
