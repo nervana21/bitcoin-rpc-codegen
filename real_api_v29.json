@@ -1,0 +1,1737 @@
+{
+  "commands": [
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:06.565435 UTC",
+      "name": "abortrescan",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:06.568005 UTC",
+      "name": "clearbanned",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "none"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The pass phrase to encrypt the wallet with. It must be at least 1 character, but should be long.",
+          "names": [
+            "passphrase"
+          ],
+          "optional": false,
+          "type": "string, required"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.581880 UTC",
+      "name": "encryptwallet",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "Confirmation target in blocks (1 - 1008)",
+          "names": [
+            "conf_target"
+          ],
+          "optional": false,
+          "type": "numeric, required"
+        },
+        {
+          "description": "The fee estimate mode.",
+          "names": [
+            "estimate_mode"
+          ],
+          "optional": true,
+          "type": "string, optional, default=\"economical\""
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.582955 UTC",
+      "name": "estimatesmartfee",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "blocks",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "errors",
+              "type": "array"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "If provided, return information about this specific node, otherwise all nodes are returned.",
+          "names": [
+            "node"
+          ],
+          "optional": true,
+          "type": "string, optional, default=all nodes"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.583860 UTC",
+      "name": "getaddednodeinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.584873 UTC",
+      "name": "getaddrmaninfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "all_networks",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "cjdns",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "i2p",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "ipv4",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "ipv6",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "onion",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "Remains for backward compatibility. Must be excluded or set to \"*\".",
+          "names": [
+            "dummy"
+          ],
+          "optional": true,
+          "type": "string, optional"
+        },
+        {
+          "description": "Only include transactions confirmed at least this many times.",
+          "names": [
+            "minconf"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=0"
+        },
+        {
+          "description": "Also include balance in watch-only addresses (see 'importaddress')",
+          "names": [
+            "include_watchonly"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=true for watch-only wallets, otherwise false"
+        },
+        {
+          "description": "(only available if avoid_reuse wallet flag is set) Do not include balance in dirty outputs; addresses are considered dirty if they have previously been used in a transaction.",
+          "names": [
+            "avoid_reuse"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=true"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.585117 UTC",
+      "name": "getbalance",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.585369 UTC",
+      "name": "getbalances",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "lastprocessedblock",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "mine",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.585559 UTC",
+      "name": "getbestblockhash",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.586285 UTC",
+      "name": "getblockchaininfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "bestblockhash",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "bits",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "blocks",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "chain",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "chainwork",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "difficulty",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "headers",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "initialblockdownload",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "mediantime",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "pruned",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "size_on_disk",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "target",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "time",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "verificationprogress",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "warnings",
+              "type": "array"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.586456 UTC",
+      "name": "getblockcount",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.589070 UTC",
+      "name": "getchainstates",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "chainstates",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "headers",
+              "type": "number"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.589334 UTC",
+      "name": "getchaintips",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.589769 UTC",
+      "name": "getconnectioncount",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.591482 UTC",
+      "name": "getdifficulty",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "Options object that can be used to pass named arguments, listed below.",
+          "names": [
+            "options"
+          ],
+          "optional": true,
+          "type": "json object, optional"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.594467 UTC",
+      "name": "gethdkeys",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "determines what kind of information is returned.",
+          "names": [
+            "mode"
+          ],
+          "optional": true,
+          "type": "string, optional, default=\"stats\""
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.594969 UTC",
+      "name": "getmemoryinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "locked",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.596024 UTC",
+      "name": "getmempoolinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "bytes",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "fullrbf",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "incrementalrelayfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "loaded",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "maxmempool",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "mempoolminfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "minrelaytxfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "size",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "total_fee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "unbroadcastcount",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "usage",
+              "type": "number"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.596353 UTC",
+      "name": "getmininginfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "bits",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "blocks",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "chain",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "difficulty",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "networkhashps",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "next",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "pooledtx",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "target",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "warnings",
+              "type": "array"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.596608 UTC",
+      "name": "getnettotals",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "timemillis",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "totalbytesrecv",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "totalbytessent",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "uploadtarget",
+              "type": "object"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.597429 UTC",
+      "name": "getnetworkinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "connections",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "connections_in",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "connections_out",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "incrementalfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "localaddresses",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "localrelay",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "localservices",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "localservicesnames",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "networkactive",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "networks",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "protocolversion",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "relayfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "subversion",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "timeoffset",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "version",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "warnings",
+              "type": "array"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The maximum number of addresses to return. Specify 0 to return all known addresses.",
+          "names": [
+            "count"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=1"
+        },
+        {
+          "description": "Return only addresses of the specified network. Can be one of: ipv4, ipv6, onion, i2p, cjdns.",
+          "names": [
+            "network"
+          ],
+          "optional": true,
+          "type": "string, optional, default=all networks"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.598195 UTC",
+      "name": "getnodeaddresses",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.598422 UTC",
+      "name": "getpeerinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.598596 UTC",
+      "name": "getprioritisedtransactions",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "True for a json object, false for array of transaction ids",
+          "names": [
+            "verbose"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        },
+        {
+          "description": "If verbose=false, returns a json object with transaction list and mempool sequence number attached.",
+          "names": [
+            "mempool_sequence"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.599214 UTC",
+      "name": "getrawmempool",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.603799 UTC",
+      "name": "getrpcinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "active_commands",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "logpath",
+              "type": "string"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.606912 UTC",
+      "name": "getunconfirmedbalance",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.607287 UTC",
+      "name": "getwalletinfo",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "avoid_reuse",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "balance",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "birthtime",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "blank",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "descriptors",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "external_signer",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "format",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "immature_balance",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "keypoolsize",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "keypoolsize_hd_internal",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "lastprocessedblock",
+              "type": "object"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "paytxfee",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "private_keys_enabled",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "scanning",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "txcount",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "unconfirmed_balance",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "unlocked_until",
+              "type": "number"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "walletname",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "walletversion",
+              "type": "number"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.607461 UTC",
+      "name": "getzmqnotifications",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.616289 UTC",
+      "name": "listaddressgroupings",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.616455 UTC",
+      "name": "listbanned",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "Show private descriptors.",
+          "names": [
+            "private"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.618267 UTC",
+      "name": "listdescriptors",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "descriptors",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "wallet_name",
+              "type": "string"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "Address purpose to list labels for ('send','receive'). An empty string is the same as not providing this argument.",
+          "names": [
+            "purpose"
+          ],
+          "optional": true,
+          "type": "string, optional"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.618508 UTC",
+      "name": "listlabels",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.618699 UTC",
+      "name": "listlockunspent",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The minimum number of confirmations before payments are included.",
+          "names": [
+            "minconf"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=1"
+        },
+        {
+          "description": "Whether to include addresses that haven't received any payments.",
+          "names": [
+            "include_empty"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        },
+        {
+          "description": "Whether to include watch-only addresses (see 'importaddress')",
+          "names": [
+            "include_watchonly"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=true for watch-only wallets, otherwise false"
+        },
+        {
+          "description": "If present and non-empty, only return information on this address.",
+          "names": [
+            "address_filter"
+          ],
+          "optional": true,
+          "type": "string, optional"
+        },
+        {
+          "description": "Include immature coinbase transactions.",
+          "names": [
+            "include_immature_coinbase"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.618938 UTC",
+      "name": "listreceivedbyaddress",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The minimum number of confirmations before payments are included.",
+          "names": [
+            "minconf"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=1"
+        },
+        {
+          "description": "Whether to include labels that haven't received any payments.",
+          "names": [
+            "include_empty"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        },
+        {
+          "description": "Whether to include watch-only addresses (see 'importaddress')",
+          "names": [
+            "include_watchonly"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=true for watch-only wallets, otherwise false"
+        },
+        {
+          "description": "Include immature coinbase transactions.",
+          "names": [
+            "include_immature_coinbase"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=false"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.619123 UTC",
+      "name": "listreceivedbylabel",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "If set, should be a valid label name to return only incoming transactions",
+          "names": [
+            "label"
+          ],
+          "optional": true,
+          "type": "string, optional"
+        },
+        {
+          "description": "The number of transactions to return",
+          "names": [
+            "count"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=10"
+        },
+        {
+          "description": "The number of transactions to skip",
+          "names": [
+            "skip"
+          ],
+          "optional": true,
+          "type": "numeric, optional, default=0"
+        },
+        {
+          "description": "Include transactions to watch-only addresses (see 'importaddress')",
+          "names": [
+            "include_watchonly"
+          ],
+          "optional": true,
+          "type": "boolean, optional, default=true for watch-only wallets, otherwise false"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.619836 UTC",
+      "name": "listtransactions",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.620974 UTC",
+      "name": "listwalletdir",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "wallets",
+              "type": "array"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.621135 UTC",
+      "name": "listwallets",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "",
+              "type": "string"
+            }
+          ],
+          "key_name": "",
+          "type": "array"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The categories to add to debug logging",
+          "names": [
+            "include"
+          ],
+          "optional": true,
+          "type": "json array, optional"
+        },
+        {
+          "description": "The categories to remove from debug logging",
+          "names": [
+            "exclude"
+          ],
+          "optional": true,
+          "type": "json array, optional"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.622344 UTC",
+      "name": "logging",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "addrman",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "bench",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "blockstorage",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "cmpctblock",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "coindb",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "estimatefee",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "http",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "i2p",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "ipc",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "leveldb",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "libevent",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "mempool",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "mempoolrej",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "net",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "proxy",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "prune",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "qt",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "rand",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "reindex",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "rpc",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "scan",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "selectcoins",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "tor",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "txpackages",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "txreconciliation",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "validation",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "walletdb",
+              "type": "boolean"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "zmq",
+              "type": "boolean"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.624680 UTC",
+      "name": "ping",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "none"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.639240 UTC",
+      "name": "savemempool",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "filename",
+              "type": "string"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The transaction fee rate in BTC/kvB",
+          "names": [
+            "amount"
+          ],
+          "optional": false,
+          "type": "numeric or string, required"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.645501 UTC",
+      "name": "settxfee",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.648759 UTC",
+      "name": "uptime",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The bitcoin address to validate",
+          "names": [
+            "address"
+          ],
+          "optional": false,
+          "type": "string, required"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.649269 UTC",
+      "name": "validateaddress",
+      "results": [
+        {
+          "description": "",
+          "inner": [
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "error",
+              "type": "string"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "error_locations",
+              "type": "array"
+            },
+            {
+              "description": "",
+              "inner": [],
+              "key_name": "isvalid",
+              "type": "boolean"
+            }
+          ],
+          "key_name": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.650997 UTC",
+      "name": "verifychain",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "arguments": [],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.657404 UTC",
+      "name": "walletlock",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "none"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The wallet passphrase",
+          "names": [
+            "passphrase"
+          ],
+          "optional": false,
+          "type": "string, required"
+        },
+        {
+          "description": "The time to keep the decryption key in seconds; capped at 100000000 (~3 years).",
+          "names": [
+            "timeout"
+          ],
+          "optional": false,
+          "type": "numeric, required"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:07.880934 UTC",
+      "name": "walletpassphrase",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "none"
+        }
+      ]
+    },
+    {
+      "arguments": [
+        {
+          "description": "The current passphrase",
+          "names": [
+            "oldpassphrase"
+          ],
+          "optional": false,
+          "type": "string, required"
+        },
+        {
+          "description": "The new passphrase",
+          "names": [
+            "newpassphrase"
+          ],
+          "optional": false,
+          "type": "string, required"
+        }
+      ],
+      "description": "Discovered dynamically at 2025-04-27 09:12:08.299667 UTC",
+      "name": "walletpassphrasechange",
+      "results": [
+        {
+          "description": "",
+          "inner": [],
+          "key_name": "",
+          "type": "none"
+        }
+      ]
+    }
+  ]
+}
