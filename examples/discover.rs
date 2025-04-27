@@ -29,12 +29,13 @@ fn main() -> Result<()> {
         anyhow::bail!("Expected usage: --version v29");
     };
 
-
-
-
     let bin_path = bin_path_for_version(&version)?;
     if !bin_path.exists() {
-        anyhow::bail!("Missing bitcoind binary at {} — did you download Bitcoin Core {}?", bin_path.display(), version);
+        anyhow::bail!(
+            "Missing bitcoind binary at {} — did you download Bitcoin Core {}?",
+            bin_path.display(),
+            version
+        );
     }
 
     let mut conf = Conf::default();
@@ -48,7 +49,9 @@ fn main() -> Result<()> {
     println!("🚀 Hello, world!");
     println!("📜 Fetching full method list from `help`…");
 
-    let info = rpc.get_network_info().context("Failed to get network info")?;
+    let info = rpc
+        .get_network_info()
+        .context("Failed to get network info")?;
     println!("  version     = {}", info.version);
     println!("  subversion  = {}", info.subversion);
     println!("  protocol    = {}", info.protocol_version);
@@ -114,12 +117,7 @@ fn bin_path_for_version(version: &str) -> Result<PathBuf> {
 fn spawn_node_with_custom_bin(
     bin_path: &Path,
     conf: &Conf<'_>,
-) -> Result<(
-    std::process::Child,
-    tempfile::TempDir,
-    PathBuf,
-    String,
-)> {
+) -> Result<(std::process::Child, tempfile::TempDir, PathBuf, String)> {
     use bitcoin_rpc_codegen::regtest::{get_available_port, wait_for_rpc_ready};
     use std::process::{Command, Stdio};
     use std::{thread::sleep, time::Duration};
