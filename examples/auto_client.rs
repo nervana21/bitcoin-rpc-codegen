@@ -1,6 +1,8 @@
 // examples/auto_client.rs
 
-use bitcoin_rpc_codegen::{Conf, RegtestClient, Result, RpcApi};
+use anyhow::Result;
+use bitcoin_rpc_codegen::{Conf, RegtestClient, RpcApi};
+
 const WALLET: &str = "test";
 
 fn main() -> Result<()> {
