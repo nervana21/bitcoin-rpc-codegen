@@ -1,12 +1,13 @@
 // examples/extract_api.rs
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::parser::{ApiArgument, ApiResult};
 use bitcoin_rpc_codegen::Conf;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use regex::Regex;
 use serde_json::{json, Map, Value};
 use std::{
+    env,
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
@@ -14,8 +15,40 @@ use std::{
 };
 
 fn main() -> Result<()> {
-    let home = std::env::var("HOME")?;
-    let bin_path = PathBuf::from(&home).join("bitcoin-versions/v29/bitcoin-29.0/bin/bitcoind");
+    // --- 🏛 Parse CLI args ---
+    let mut args = env::args().skip(1);
+    let version = match (args.next(), args.next()) {
+        (Some(flag), Some(value)) if flag == "--version" => value,
+        _ => {
+            println!("Warning: No arguments provided, defaulting to v29");
+            "v29".to_string()
+        }
+    };
+
+    println!("Checking for docs directory...");
+    let docs_dir_path = format!("resources/docs/{}_docs", version);
+    let docs_dir = Path::new(&docs_dir_path);
+    println!("Docs path: {}", docs_dir.display());
+
+    if !docs_dir.exists() {
+        println!("\u{274c} Docs directory does not exist!");
+        anyhow::bail!(
+            "❌ Missing {}/ — please run `cargo run --example discover -- --version {}` first.",
+            docs_dir_path,
+            version
+        );
+    } else {
+        println!("Docs directory exists. Continuing...");
+    }
+
+    // --- 🔍 Setup bitcoind ---
+    let home = env::var("HOME").context("Missing $HOME env var")?;
+    let bin_path = PathBuf::from(&home).join(format!(
+        "bitcoin-versions/{}/bitcoin-{}.0/bin/bitcoind",
+        &version[1..],
+        &version[1..]
+    ));
+    println!("Using bitcoind path: {}", bin_path.display());
 
     let mut conf = Conf::default();
     conf.wallet_name = "dummy";
@@ -25,7 +58,8 @@ fn main() -> Result<()> {
     let (mut child, _datadir, cookie, rpc_url) = spawn_node_with_custom_bin(&bin_path, &conf)?;
     let rpc = Client::new(&rpc_url, Auth::CookieFile(cookie))?;
 
-    println!("📜 Fetching top-level help…");
+    // --- 🔍 Fetch Help ---
+    println!("Fetching top-level help...");
     let help_output: String = rpc.call("help", &[])?;
 
     let mut method_names = Vec::new();
@@ -36,17 +70,17 @@ fn main() -> Result<()> {
             }
         }
     }
-    println!("🔍 Found {} methods; fetching details…", method_names.len());
+    println!("Found {} methods.", method_names.len());
 
-    let docs_dir = Path::new("resources/v29_docs");
-    fs::create_dir_all(docs_dir)?;
-
-    // Dump raw help text to disk
+    // --- 🔍 Dumping Docs ---
+    println!("Dumping docs to: {}", docs_dir.display());
     for method in &method_names {
         match rpc.call::<String>("help", &[json!(method)]) {
             Ok(doc) => {
                 let path = docs_dir.join(format!("{method}.txt"));
-                fs::write(&path, &doc)?;
+                println!("Saving: {}", path.display());
+                fs::write(&path, &doc)
+                    .with_context(|| format!("Failed to write {}", path.display()))?;
             }
             Err(e) => {
                 eprintln!("⚠️  could not dump `{method}`: {e}");
@@ -54,11 +88,20 @@ fn main() -> Result<()> {
         }
     }
 
-    // Now parse each doc into our JSON schema
+    // --- 📊 Build JSON schema ---
+    println!("Parsing method docs...");
     let mut commands = Map::new();
-    let arg_re = Regex::new(r#"^\s*\d+\.\s+"?([^"\s]+)"?\s*\(([^)]+)\)\s*(.*)$"#).unwrap();
+    let arg_re = Regex::new(r#"^\s*\d+\.\s+\"?([^\"\s]+)\"?\s*\(([^)]+)\)\s*(.*)$"#).unwrap();
+
     for method in &method_names {
-        let doc = fs::read_to_string(docs_dir.join(format!("{method}.txt")))?;
+        let doc_path = docs_dir.join(format!("{method}.txt"));
+        let doc = fs::read_to_string(&doc_path).with_context(|| {
+            format!(
+                "Missing help text for `{method}` at `{}`",
+                doc_path.display()
+            )
+        })?;
+
         let description = extract_description(&doc);
         let arguments = infer_arguments(&doc, &arg_re);
         let results = infer_results(&doc);
@@ -72,18 +115,24 @@ fn main() -> Result<()> {
         commands.insert(method.clone(), json!([entry]));
     }
 
-    // Write the final schema
+    println!("Finalizing JSON output...");
+    let schema_dir = Path::new("resources/schemas");
+    fs::create_dir_all(schema_dir)?;
+
     let out = serde_json::to_string_pretty(&json!({ "commands": commands }))?;
-    let mut file = File::create("resources/api_v29.json")?;
+    let final_path = schema_dir.join(format!("api_{}.json", version));
+    println!("Writing schema to: {}", final_path.display());
+    let mut file = File::create(final_path)?;
     writeln!(file, "{out}")?;
 
-    // Clean shutdown
+    // --- 🛁 Clean Shutdown ---
+    println!("Stopping bitcoind...");
     let _ = rpc.call::<Value>("stop", &[]);
     let _ = child.wait();
 
     println!(
-        "✅ Wrote {} methods to resources/api_v29.json",
-        commands.len()
+        "Done! Successfully extracted {} methods.",
+        method_names.len()
     );
     Ok(())
 }
@@ -115,7 +164,7 @@ fn infer_arguments(doc: &str, re: &Regex) -> Vec<ApiArgument> {
         }
         if in_args {
             if t.is_empty() || t.ends_with(':') {
-                break; // end of Arguments section
+                break;
             }
             if let Some(c) = re.captures(line) {
                 let name = c[1].to_string();
@@ -183,7 +232,6 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
             inner: Vec::new(),
         };
 
-        // Pop back up for shallower depth
         while depth < stack.last().unwrap().0 {
             let (_, mut inner) = stack.pop().unwrap();
             if let Some((_, parent)) = stack.last_mut() {
@@ -195,7 +243,6 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
         stack.push((depth, Vec::new()));
     }
 
-    // unwind
     while stack.len() > 1 {
         let (_, mut inner) = stack.pop().unwrap();
         if let Some((_, parent)) = stack.last_mut() {
