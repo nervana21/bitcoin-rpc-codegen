@@ -33,6 +33,7 @@ pub struct Conf<'a> {
     pub view_stdout: bool,
     pub enable_txindex: bool,
     pub attempts: usize,
+    pub bitcoind_path: Option<PathBuf>, // <-- NEW
 }
 
 impl Default for Conf<'_> {
@@ -43,6 +44,7 @@ impl Default for Conf<'_> {
             view_stdout: false,
             enable_txindex: false,
             attempts: 3,
+            bitcoind_path: None, // <-- NEW
         }
     }
 }
@@ -68,6 +70,15 @@ impl RegtestClient {
     pub fn new_auto(wallet_name: &str) -> Result<Self> {
         let conf = Conf {
             wallet_name,
+            ..Default::default()
+        };
+        Self::new_with_conf(&conf)
+    }
+
+    pub fn new_from_path(wallet_name: &str, bitcoind_path: impl Into<PathBuf>) -> Result<Self> {
+        let conf = Conf {
+            wallet_name,
+            bitcoind_path: Some(bitcoind_path.into()),
             ..Default::default()
         };
         Self::new_with_conf(&conf)
@@ -101,7 +112,13 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
         let port = get_available_port()?;
         let url = format!("http://{}:{}", LOCALHOST, port);
         let cookie = datadir.path().join("regtest").join(".cookie");
-        let mut cmd = Command::new("bitcoind");
+
+        let bitcoind_bin = conf
+            .bitcoind_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("bitcoind"));
+
+        let mut cmd = Command::new(&bitcoind_bin);
         cmd.args([
             "-regtest",
             "-listen=0",
@@ -121,7 +138,8 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
             cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
 
-        let mut child = cmd.spawn()?;
+        let child_result = cmd.spawn();
+        let mut child = child_result?;
         match wait_for_rpc_ready(&url, &cookie, &mut child) {
             Ok(()) => {
                 return Ok((child, datadir, cookie, url));
