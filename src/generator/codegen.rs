@@ -207,7 +207,7 @@ fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
     let mut s = String::new();
     writeln!(s, "/// Response for the {} RPC call.", type_name).unwrap();
     if !description.trim().is_empty() {
-        write!(s, "{}\n", description).unwrap();
+        writeln!(s, "{}", description).unwrap();
     }
     writeln!(
         s,
