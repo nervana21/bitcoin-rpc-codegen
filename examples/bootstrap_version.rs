@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
     let home = env::var("HOME").context("Failed to get $HOME env var")?;
     let bin_path = format!(
-        "{}/bitcoin-versions/{}/bitcoin-{}.0/bin/bitcoind",
+        "{}/bitcoin-versions/v{}/bitcoin-{}.0/bin/bitcoind",
         home,
         &version[1..],
         &version[1..]
