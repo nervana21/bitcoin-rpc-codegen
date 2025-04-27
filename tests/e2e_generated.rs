@@ -1,14 +1,13 @@
-//! E2E test: call every RPC method defined in the schema and validate the result types.
-//! Focus: maximize coverage, allow imperfect schemas, control drift.
+// tests/e2e_generated.rs
 
 use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::parser::{parse_api_json, ApiArgument, ApiResult};
-use bitcoin_rpc_codegen::{RegtestClient, RpcApi};
+// use bitcoin_rpc_codegen::v29::client::getnewaddress::getnewaddress;
+use bitcoin_rpc_codegen::RegtestClient;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::fs;
 
-/// Return dummy parameters for RPC calls, based on argument names and types.
 fn dummy_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> Vec<Value> {
     args.iter()
         .map(|arg| {
@@ -37,7 +36,6 @@ fn dummy_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> Vec
         .collect()
 }
 
-/// Validate the structure of an RPC result against its schema definition.
 fn validate_result_shape(expected: &ApiResult, value: &Value, path: &str) -> Vec<String> {
     let mut errors = Vec::new();
     match (expected.type_.as_str(), value) {
@@ -48,7 +46,6 @@ fn validate_result_shape(expected: &ApiResult, value: &Value, path: &str) -> Vec
         ("string", Value::Number(_)) | ("number", Value::String(_)) => {}
         ("object", Value::Object(map)) => {
             if expected.inner.is_empty() {
-                // No fields expected
             } else {
                 let schema_fields: BTreeMap<_, _> = expected
                     .inner
@@ -102,13 +99,29 @@ fn e2e_generated() -> Result<()> {
         "e2e_test",
         "/Users/bitnode/bitcoin-versions/v29/bitcoin-29.0/bin/bitcoind",
     )?;
-    let client = &rt.client;
 
-    let new_addr: String = client.call("getnewaddress", &[])?;
-    let _: Vec<String> =
-        client.call("generatetoaddress", &[json!(101), json!(new_addr.clone())])?;
-    let best_block: String = client.call("getbestblockhash", &[])?;
-    let dummy_txid: String = client.call("sendtoaddress", &[json!(new_addr), json!(0.0001)])?;
+    let new_addr: String = rt
+        .call_json("getnewaddress", &[])?
+        .as_str()
+        .context("getnewaddress did not return a string")?
+        .to_string();
+    let _: Vec<String> = rt
+        .call_json("generatetoaddress", &[json!(101), json!(new_addr.clone())])?
+        .as_array()
+        .context("generatetoaddress did not return an array")?
+        .iter()
+        .map(|v| v.as_str().unwrap_or_default().to_string())
+        .collect();
+    let best_block: String = rt
+        .call_json("getbestblockhash", &[])?
+        .as_str()
+        .context("getbestblockhash did not return a string")?
+        .to_string();
+    let dummy_txid: String = rt
+        .call_json("sendtoaddress", &[json!(new_addr), json!(0.0001)])?
+        .as_str()
+        .context("sendtoaddress did not return a string")?
+        .to_string();
 
     let schema_path = "resources/schemas/api_v29.json";
     let schema_src = fs::read_to_string(schema_path)
@@ -131,7 +144,7 @@ fn e2e_generated() -> Result<()> {
             dummy_params(&method.arguments, &best_block, &dummy_txid)
         };
 
-        match client.call_json(&method.name, &params) {
+        match rt.call_json(&method.name, &params) {
             Ok(resp) => {
                 let schema = &method.results[0];
                 let mismatches = validate_result_shape(schema, &resp, &method.name);
@@ -155,7 +168,7 @@ fn e2e_generated() -> Result<()> {
     }
 
     println!("🛑 Stopping node...");
-    client.call_json("stop", &[])?;
+    rt.call_json("stop", &[])?;
     rt.teardown()?;
     println!("✅ Node shutdown verified.");
 
@@ -166,7 +179,6 @@ fn e2e_generated() -> Result<()> {
     println!("  Type mismatches:       {}", mismatch);
     println!("  Skipped (RPC errors):   {}", skipped);
 
-    // Set a soft threshold
     let mismatch_threshold = 20;
     if mismatch > mismatch_threshold {
         panic!(
