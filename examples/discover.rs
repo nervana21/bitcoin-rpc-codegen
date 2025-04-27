@@ -108,7 +108,7 @@ fn bin_path_for_version(version: &str) -> Result<PathBuf> {
     let home = env::var("HOME").context("Missing $HOME env var")?;
     Ok(Path::new(&home)
         .join("bitcoin-versions")
-        .join(&version[1..])
+        .join(format!("v{}", &version[1..])) // 🛠️ <-- FIXED: prepend 'v'
         .join(format!("bitcoin-{}.0/bin/bitcoind", &version[1..])))
 }
 
