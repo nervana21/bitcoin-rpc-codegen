@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn demo_auto(wallet: &str) -> Result<()> {
+fn demo_auto(wallet: &str) -> anyhow::Result<()> {
     let rt = RegtestClient::new_auto(wallet)?;
     let client = &rt.client;
 
@@ -32,7 +32,7 @@ fn demo_auto(wallet: &str) -> Result<()> {
 }
 
 /// Full‑featured constructor using a custom [`Conf`].
-fn demo_with_conf() -> Result<()> {
+fn demo_with_conf() -> anyhow::Result<()> {
     let mut conf = Conf::default();
     conf.wallet_name = WALLET;
     conf.enable_txindex = true;
