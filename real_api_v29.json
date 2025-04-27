@@ -2,7 +2,7 @@
   "commands": [
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:06.565435 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:22.136875 UTC",
       "name": "abortrescan",
       "results": [
         {
@@ -15,7 +15,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:06.568005 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:22.139242 UTC",
       "name": "clearbanned",
       "results": [
         {
@@ -37,7 +37,7 @@
           "type": "string, required"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.581880 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.072323 UTC",
       "name": "encryptwallet",
       "results": [
         {
@@ -67,7 +67,7 @@
           "type": "string, optional, default=\"economical\""
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.582955 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.073233 UTC",
       "name": "estimatesmartfee",
       "results": [
         {
@@ -102,7 +102,7 @@
           "type": "string, optional, default=all nodes"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.583860 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.074065 UTC",
       "name": "getaddednodeinfo",
       "results": [
         {
@@ -115,7 +115,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.584873 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.074939 UTC",
       "name": "getaddrmaninfo",
       "results": [
         {
@@ -198,7 +198,7 @@
           "type": "boolean, optional, default=true"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.585117 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.075149 UTC",
       "name": "getbalance",
       "results": [
         {
@@ -211,7 +211,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.585369 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.075385 UTC",
       "name": "getbalances",
       "results": [
         {
@@ -237,7 +237,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.585559 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.075591 UTC",
       "name": "getbestblockhash",
       "results": [
         {
@@ -250,7 +250,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.586285 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.076361 UTC",
       "name": "getblockchaininfo",
       "results": [
         {
@@ -354,7 +354,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.586456 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.076559 UTC",
       "name": "getblockcount",
       "results": [
         {
@@ -367,7 +367,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.589070 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.079462 UTC",
       "name": "getchainstates",
       "results": [
         {
@@ -393,7 +393,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.589334 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.079665 UTC",
       "name": "getchaintips",
       "results": [
         {
@@ -413,7 +413,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.589769 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.080064 UTC",
       "name": "getconnectioncount",
       "results": [
         {
@@ -426,7 +426,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.591482 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.081479 UTC",
       "name": "getdifficulty",
       "results": [
         {
@@ -448,7 +448,7 @@
           "type": "json object, optional"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.594467 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.083010 UTC",
       "name": "gethdkeys",
       "results": [
         {
@@ -477,7 +477,7 @@
           "type": "string, optional, default=\"stats\""
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.594969 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.083401 UTC",
       "name": "getmemoryinfo",
       "results": [
         {
@@ -497,7 +497,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.596024 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.084381 UTC",
       "name": "getmempoolinfo",
       "results": [
         {
@@ -577,7 +577,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.596353 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.084665 UTC",
       "name": "getmininginfo",
       "results": [
         {
@@ -645,7 +645,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.596608 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.084894 UTC",
       "name": "getnettotals",
       "results": [
         {
@@ -683,7 +683,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.597429 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.085887 UTC",
       "name": "getnetworkinfo",
       "results": [
         {
@@ -810,7 +810,7 @@
           "type": "string, optional, default=all networks"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.598195 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.086647 UTC",
       "name": "getnodeaddresses",
       "results": [
         {
@@ -823,7 +823,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.598422 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.086861 UTC",
       "name": "getpeerinfo",
       "results": [
         {
@@ -836,7 +836,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.598596 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.087061 UTC",
       "name": "getprioritisedtransactions",
       "results": [
         {
@@ -866,7 +866,7 @@
           "type": "boolean, optional, default=false"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.599214 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.087643 UTC",
       "name": "getrawmempool",
       "results": [
         {
@@ -879,7 +879,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.603799 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.089089 UTC",
       "name": "getrpcinfo",
       "results": [
         {
@@ -905,7 +905,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.606912 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.090892 UTC",
       "name": "getunconfirmedbalance",
       "results": [
         {
@@ -918,7 +918,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.607287 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.091222 UTC",
       "name": "getwalletinfo",
       "results": [
         {
@@ -1046,7 +1046,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.607461 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.091370 UTC",
       "name": "getzmqnotifications",
       "results": [
         {
@@ -1059,7 +1059,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.616289 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.095935 UTC",
       "name": "listaddressgroupings",
       "results": [
         {
@@ -1072,7 +1072,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.616455 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.096127 UTC",
       "name": "listbanned",
       "results": [
         {
@@ -1094,7 +1094,7 @@
           "type": "boolean, optional, default=false"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.618267 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.098314 UTC",
       "name": "listdescriptors",
       "results": [
         {
@@ -1129,7 +1129,7 @@
           "type": "string, optional"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.618508 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.098726 UTC",
       "name": "listlabels",
       "results": [
         {
@@ -1142,7 +1142,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.618699 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.098871 UTC",
       "name": "listlockunspent",
       "results": [
         {
@@ -1196,7 +1196,7 @@
           "type": "boolean, optional, default=false"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.618938 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.099049 UTC",
       "name": "listreceivedbyaddress",
       "results": [
         {
@@ -1242,7 +1242,7 @@
           "type": "boolean, optional, default=false"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.619123 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.099210 UTC",
       "name": "listreceivedbylabel",
       "results": [
         {
@@ -1288,7 +1288,7 @@
           "type": "boolean, optional, default=true for watch-only wallets, otherwise false"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.619836 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.100020 UTC",
       "name": "listtransactions",
       "results": [
         {
@@ -1301,7 +1301,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.620974 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.100693 UTC",
       "name": "listwalletdir",
       "results": [
         {
@@ -1321,7 +1321,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.621135 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.100874 UTC",
       "name": "listwallets",
       "results": [
         {
@@ -1358,7 +1358,7 @@
           "type": "json array, optional"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.622344 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.101945 UTC",
       "name": "logging",
       "results": [
         {
@@ -1540,7 +1540,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.624680 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.103752 UTC",
       "name": "ping",
       "results": [
         {
@@ -1553,7 +1553,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.639240 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.110045 UTC",
       "name": "savemempool",
       "results": [
         {
@@ -1582,7 +1582,7 @@
           "type": "numeric or string, required"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.645501 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.114173 UTC",
       "name": "settxfee",
       "results": [
         {
@@ -1595,7 +1595,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.648759 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.117612 UTC",
       "name": "uptime",
       "results": [
         {
@@ -1617,7 +1617,7 @@
           "type": "string, required"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.649269 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.118021 UTC",
       "name": "validateaddress",
       "results": [
         {
@@ -1649,7 +1649,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.650997 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.118177 UTC",
       "name": "verifychain",
       "results": [
         {
@@ -1662,7 +1662,7 @@
     },
     {
       "arguments": [],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.657404 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.120151 UTC",
       "name": "walletlock",
       "results": [
         {
@@ -1692,7 +1692,7 @@
           "type": "numeric, required"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:07.880934 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.313328 UTC",
       "name": "walletpassphrase",
       "results": [
         {
@@ -1722,7 +1722,7 @@
           "type": "string, required"
         }
       ],
-      "description": "Discovered dynamically at 2025-04-27 09:12:08.299667 UTC",
+      "description": "Discovered dynamically at 2025-04-27 22:38:23.717625 UTC",
       "name": "walletpassphrasechange",
       "results": [
         {

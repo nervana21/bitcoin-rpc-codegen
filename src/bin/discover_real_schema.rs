@@ -104,7 +104,6 @@ fn infer_result_schema(value: &Value) -> ApiResult {
 
 fn main() -> Result<()> {
     let mut rt = RegtestClient::new_auto("discover")?;
-    let client = &rt.client;
 
     println!("🔍 Discovering real RPC schema...");
 
@@ -122,7 +121,7 @@ fn main() -> Result<()> {
 
         println!("📡 Calling `{}`...", method.name);
 
-        match client.call_json(&method.name, &params) {
+        match rt.call_json(&method.name, &params) {
             Ok(resp) => {
                 successes.push(method.name.clone());
                 let result_schema = infer_result_schema(&resp);
