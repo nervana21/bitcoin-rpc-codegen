@@ -1,4 +1,4 @@
-// examples/extract_api_v29.rs
+// examples/extract_api.rs
 
 use anyhow::Result;
 use bitcoin_rpc_codegen::parser::{ApiArgument, ApiResult};

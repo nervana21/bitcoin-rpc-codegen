@@ -1,16 +1,17 @@
-// examples/bootstrap_v29.rs
+// examples/bootstrap_version.rs
 //
-// Full v29 bootstrap pipeline:
-//  0. (Optional) verify_all_methods_v29 to populate feedback
+// Full Bitcoin Core version bootstrap pipeline.
+//  0. (Optional) verify_all_methods to populate feedback
 //  1. discover               ‣ dump help texts (only if missing or forced)
-//  2. extract_api_v29         ‣ build raw JSON schema
-//  3. regenerate_schema_v29   ‣ canonicalize schema
-//  4. validate_roundtrip_v29  ‣ zero-arg roundtrip sanity check
-//  5. generate_v29            ‣ emit Rust client + types
+//  2. extract_api            ‣ build raw JSON schema
+//  3. regenerate_schema      ‣ canonicalize schema
+//  4. validate_roundtrip     ‣ zero-arg roundtrip sanity check
+//  5. generate               ‣ emit Rust client + types
 //
 // Invocation:
-//   cargo run --example bootstrap_v29
-//   cargo run --example bootstrap_v29 -- --force  (force re-discover and feedback regeneration)
+//   cargo run --example bootstrap_version -- v29
+//   cargo run --example bootstrap_version -- v30
+//   (add --force to re-run discovery/feedback)
 
 use anyhow::{Context, Result};
 use std::env;
@@ -18,56 +19,57 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 fn main() -> Result<()> {
-    const VERSION: &str = "v29";
+    let mut args = env::args().skip(1); // Skip program name
+
+    let version = args.next().context("Missing version argument (e.g., v29)")?;
+    let force = args.any(|arg| arg == "--force");
 
     let home = env::var("HOME").context("Failed to get $HOME env var")?;
     let bin_path = format!(
         "{}/bitcoin-versions/{}/bitcoin-{}.0/bin/bitcoind",
         home,
-        &VERSION[1..],
-        &VERSION[1..]
+        &version[1..],
+        &version[1..]
     );
 
-    println!("🚀 Starting bootstrap for version: {}", VERSION);
-
-    // --- 📂 Parse CLI args ---
-    let force = env::args().any(|arg| arg == "--force");
+    println!("🚀 Starting bootstrap for version: {}", version);
     if force {
         println!("⚡ Force mode enabled — will re-run discovery and feedback steps.");
     }
 
     // --- 📂 Step 0: Ensure feedback/ is populated ---
     if force || !Path::new("feedback").exists() {
-        println!("📂 Running `verify_all_methods_v29` to (re)generate feedback...");
-        run_example("verify_all_methods_v29", &[])?;
+        println!("📂 Running `verify_all_methods` to (re)generate feedback...");
+        run_example("verify_all_methods", &["--version", &version])?;
         println!("✅ `feedback/` generated successfully.");
     } else {
         println!("📂 `feedback/` directory already exists. Skipping feedback generation.");
     }
 
-    // --- 📂 Step 0b: Ensure v29_docs/ exists by checking index.txt ---
-    if force || !Path::new("resources/v29_docs/index.txt").exists() {
+    // --- 📂 Step 0b: Ensure version_docs/ exists ---
+    let index_path = format!("resources/{}_docs/index.txt", version);
+    if force || !Path::new(&index_path).exists() {
         println!("📂 Running `discover` to (re)generate method docs...");
-        run_example("discover", &["--bin-path", &bin_path])?;
-        println!("✅ `resources/v29_docs/` generated successfully.");
+        run_example("discover", &["--bin-path", &bin_path, "--version", &version])?;
+        println!("✅ `resources/{}_docs/` generated successfully.", version);
     } else {
-        println!("📂 `resources/v29_docs/index.txt` already exists. Skipping discovery.");
+        println!("📂 `{}` already exists. Skipping discovery.", index_path);
     }
 
     // --- 🚀 Main pipeline steps ---
     let steps = &[
-        ("extract_api_v29", &[][..]),
-        ("regenerate_schema_v29", &[][..]),
-        ("validate_roundtrip_v29", &[][..]),
-        ("generate_v29", &[][..]),
+        ("extract_api", &["--version", &version]),
+        ("regenerate_schema", &["--version", &version]),
+        ("validate_roundtrip", &["--version", &version]),
+        ("generate", &["--version", &version]),
     ];
 
     for (name, extra) in steps {
         println!("\n=== STEP `{}` ===", name);
-        run_example(name, extra)?;
+        run_example(name, *extra)?;
     }
 
-    println!("\n✅ bootstrap_v29 complete — all steps ran successfully and deterministically!");
+    println!("\n✅ bootstrap_version complete — all steps ran successfully and deterministically!");
     Ok(())
 }
 
@@ -88,7 +90,8 @@ fn run_example(name: &str, extra_args: &[&str]) -> Result<()> {
     let cmdline = format!("{:?}", cmd);
     println!("📜 Full command: {}", cmdline);
 
-    cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    cmd.stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
 
     let status = cmd
         .spawn()
