@@ -271,9 +271,12 @@ pub fn run_codegen() -> Result<()> {
 
 pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) -> Result<()> {
     let root = Path::new(out_dir);
-    let client_dir = root.join("client/src").join(version);
-    let types_dir = root.join("types/src").join(version);
+    let version_dir = root.join(version);
 
+    let client_dir = version_dir.join("client");
+    let types_dir = version_dir.join("types");
+
+    // Clean old, recreate
     for dir in [&client_dir, &types_dir] {
         if dir.exists() {
             fs::remove_dir_all(dir)?;
@@ -281,89 +284,32 @@ pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str
         fs::create_dir_all(dir)?;
     }
 
-    let imports = "use serde::{Deserialize, Serialize};\n\n";
-    let mut client = String::new();
-    let mut types = String::from(imports);
+    // --- Client side ---
+    for method in methods {
+        let filename = sanitize_method_name(&method.name) + ".rs";
+        let file_path = client_dir.join(&filename);
+        let contents = generate_client_macro(method, version);
+        fs::write(file_path, contents)?;
+    }
+    generate_client_mod_rs(&client_dir)?;
 
-    for m in methods {
-        client.push_str(&generate_client_macro(m, version));
-        client.push_str("\n\n");
-        if let Some(tc) = generate_return_type(m) {
+    // --- Types side ---
+    let imports = "use serde::{Deserialize, Serialize};\n\n";
+    let mut types = String::from(imports);
+    for method in methods {
+        if let Some(tc) = generate_return_type(method) {
             types.push_str(&tc);
             types.push_str("\n\n");
         }
     }
+    fs::write(types_dir.join("mod.rs"), types)?;
 
-    fs::write(client_dir.join("methods.rs"), client)?;
-    fs::write(types_dir.join("types.rs"), types)?;
-
-    // Inline the v17 traits template rather than include_str!
-    if version == "v17" {
-        let traits_content = r#"// SPDX-License-Identifier: CC0-1.0
-
-//! Common traits for Bitcoin RPC operations across different versions.
-//! These traits provide a unified interface for working with different Bitcoin Core versions.
-
-use serde::{Deserialize, Serialize};
-
-/// Common trait for blockchain-related RPC responses
-pub trait BlockchainResponse {
-    type GetBlockResponse: Deserialize<'static> + Serialize;
-    type GetBlockHashResponse: Deserialize<'static> + Serialize;
-    type GetBlockchainInfoResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for wallet-related RPC responses
-pub trait WalletResponse {
-    type GetBalanceResponse: Deserialize<'static> + Serialize;
-    type GetTransactionResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for mining-related RPC responses
-pub trait MiningResponse {
-    type GetBlockTemplateResponse: Deserialize<'static> + Serialize;
-    type GetMiningInfoResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for network-related RPC responses
-pub trait NetworkResponse {
-    type GetNetworkInfoResponse: Deserialize<'static> + Serialize;
-    type GetPeerInfoResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for control-related RPC responses
-pub trait ControlResponse {
-    type GetMemoryInfoResponse: Deserialize<'static> + Serialize;
-    type HelpResponse: Deserialize<'static> + Serialize;
-    type UptimeResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for raw transaction-related RPC responses
-pub trait RawTransactionResponse {
-    type GetRawTransactionResponse: Deserialize<'static> + Serialize;
-    type DecodeRawTransactionResponse: Deserialize<'static> + Serialize;
-    type CreateRawTransactionResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for utility-related RPC responses
-pub trait UtilResponse {
-    type ValidateAddressResponse: Deserialize<'static> + Serialize;
-    type CreateMultiSigResponse: Deserialize<'static> + Serialize;
-    type VerifyMessageResponse: Deserialize<'static> + Serialize;
-}
-
-/// Common trait for signer-related RPC responses
-pub trait SignerResponse {
-    type SignRawTransactionResponse: Deserialize<'static> + Serialize;
-    type SignRawTransactionWithKeyResponse: Deserialize<'static> + Serialize;
-}
-"#;
-        fs::write(types_dir.join("traits.rs"), traits_content)?;
-    }
+    // --- Top level ---
+    let version_mod = "pub mod client;\npub mod types;\n";
+    fs::write(version_dir.join("mod.rs"), version_mod)?;
 
     Ok(())
 }
-
 pub fn generate_struct_fields(result: &ApiResult) -> String {
     let mut out = String::new();
     let mut seen = HashSet::new();
@@ -421,5 +367,26 @@ pub fn generate_client_stubs(mod_path: &Path, methods: &[ApiMethod]) -> anyhow::
 
     out.push_str("}\n");
     fs::write(mod_path, out)?;
+    Ok(())
+}
+
+fn generate_client_mod_rs(client_dir: &Path) -> Result<()> {
+    let mut mods = String::new();
+
+    for entry in fs::read_dir(client_dir)? {
+        let path = entry?.path();
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "rs") {
+            if let Some(stem) = path.file_stem() {
+                let name = stem.to_string_lossy();
+                if name != "mod" {
+                    // skip mod.rs itself
+                    writeln!(mods, "pub mod {};", name)?;
+                }
+            }
+        }
+    }
+
+    fs::write(client_dir.join("mod.rs"), mods)?;
+
     Ok(())
 }
