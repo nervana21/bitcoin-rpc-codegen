@@ -1,9 +1,10 @@
 // tests/roundtrip_test.rs
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::parser::{parse_api_json, ApiArgument};
 use bitcoin_rpc_codegen::{RegtestClient, RpcApi};
 use serde_json::{json, Value};
+use std::fs;
 
 /// Return a Vec of placeholder JSON values for each argument,
 /// substituting valid blockhash and txid where recognized.
@@ -30,9 +31,13 @@ fn default_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> V
 }
 
 #[test]
-fn roundtrip_generated_v29() -> Result<()> {
+fn roundtrip_generated() -> Result<()> {
     // 1. Spin up a regtest node and client
-    let mut rt = RegtestClient::new_auto("test")?;
+    let mut rt = RegtestClient::new_from_path(
+        "test",
+        "/Users/bitnode/bitcoin-versions/v29/bitcoin-29.0/bin/bitcoind",
+    )?;
+
     let client = &rt.client;
 
     // 2. Prepare a funded chain and valid txid
@@ -43,7 +48,13 @@ fn roundtrip_generated_v29() -> Result<()> {
     let dummy_txid: String = client.call("sendtoaddress", &[json!(new_addr), json!(0.0001)])?;
 
     // 3. Load schema and iterate all methods except "stop"
-    let methods = parse_api_json(include_str!("../resources/api_v29.json"))?;
+    let schema_path = "resources/schemas/api_v29.json";
+
+    let schema_src = fs::read_to_string(schema_path)
+        .with_context(|| format!("❌ Failed to read schema file at `{}`", schema_path))?;
+
+    let methods = parse_api_json(&schema_src)
+        .with_context(|| format!("❌ Failed to parse API schema at `{}`", schema_path))?;
     for m in methods.into_iter().filter(|m| m.name != "stop") {
         let params = if m.arguments.is_empty() {
             Vec::new()
