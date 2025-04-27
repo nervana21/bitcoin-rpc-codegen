@@ -6,9 +6,10 @@
 // * always spawns a fresh regtest `bitcoind` using cookie-auth
 // * waits for RPC, creates/loads a wallet
 // * gracefully stops the node on Drop
+// * now supports multi-wallet RPC prefixes cleanly
 
-use crate::{Client, Error, Result};
-use bitcoincore_rpc::{Auth, RpcApi};
+use crate::{Error, Result};
+use bitcoincore_rpc::{Auth, Client as RawClient, RpcApi};
 use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
@@ -33,7 +34,7 @@ pub struct Conf<'a> {
     pub view_stdout: bool,
     pub enable_txindex: bool,
     pub attempts: usize,
-    pub bitcoind_path: Option<PathBuf>, // <-- NEW
+    pub bitcoind_path: Option<PathBuf>,
 }
 
 impl Default for Conf<'_> {
@@ -44,13 +45,121 @@ impl Default for Conf<'_> {
             view_stdout: false,
             enable_txindex: false,
             attempts: 3,
-            bitcoind_path: None, // <-- NEW
+            bitcoind_path: None,
         }
     }
 }
 
+/// Lightweight client that tracks associated wallet (if any).
+pub struct Client {
+    raw: RawClient,
+    wallet: Option<String>,
+}
+
+impl Client {
+    pub fn new_with_auth(url: &str, auth: Auth) -> Result<Self> {
+        Ok(Client {
+            raw: RawClient::new(url, auth)?,
+            wallet: None,
+        })
+    }
+
+    pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
+        // Try to load existing wallet
+        if self
+            .raw
+            .call::<Value>("loadwallet", &[wallet_name.into()])
+            .is_ok()
+        {
+            return Ok(());
+        }
+        // Otherwise, create a new one
+        self.raw
+            .call::<Value>("createwallet", &[wallet_name.into()])
+            .map(|_| ())
+            .map_err(Error::Rpc)
+    }
+
+    pub fn with_wallet(mut self, wallet_name: impl Into<String>) -> Self {
+        self.wallet = Some(wallet_name.into());
+        self
+    }
+
+    pub fn call_json(&self, method: &str, params: &[Value]) -> Result<Value> {
+        let scoped_method = if self.requires_wallet_prefix(method) {
+            if let Some(wallet) = &self.wallet {
+                format!("wallet/{}/{}", wallet, method)
+            } else {
+                method.to_string()
+            }
+        } else {
+            method.to_string()
+        };
+        self.raw
+            .call::<Value>(&scoped_method, params)
+            .map_err(Error::Rpc)
+    }
+
+    fn requires_wallet_prefix(&self, method: &str) -> bool {
+        matches!(
+            method,
+            "abandontransaction"
+                | "abortrescan"
+                | "addmultisigaddress"
+                | "backupwallet"
+                | "bumpfee"
+                | "createwallet"
+                | "dumpprivkey"
+                | "dumpwallet"
+                | "encryptwallet"
+                | "fundrawtransaction"
+                | "getaddressesbylabel"
+                | "getaddressinfo"
+                | "getbalance"
+                | "getnewaddress"
+                | "getrawchangeaddress"
+                | "getreceivedbyaddress"
+                | "getreceivedbylabel"
+                | "gettransaction"
+                | "getwalletinfo"
+                | "importaddress"
+                | "importdescriptors"
+                | "importmulti"
+                | "importprivkey"
+                | "importprunedfunds"
+                | "keypoolrefill"
+                | "listaddressgroupings"
+                | "listlabels"
+                | "listlockunspent"
+                | "listreceivedbyaddress"
+                | "listreceivedbylabel"
+                | "listsinceblock"
+                | "listtransactions"
+                | "listunspent"
+                | "loadwallet"
+                | "lockunspent"
+                | "removeprunedfunds"
+                | "rescanblockchain"
+                | "sendmany"
+                | "sendtoaddress"
+                | "sethdseed"
+                | "setlabel"
+                | "settxfee"
+                | "signmessage"
+                | "signrawtransactionwithwallet"
+                | "unloadwallet"
+                | "walletcreatefundedpsbt"
+                | "walletlock"
+                | "walletpassphrase"
+                | "walletpassphrasechange"
+                | "walletprocesspsbt"
+        )
+    }
+}
+
+/// Regtest node controller
 pub struct RegtestClient {
-    pub client: Client,
+    pub client: RawClient,
     child: Child,
     _datadir: TempDir,
 }
@@ -58,8 +167,13 @@ pub struct RegtestClient {
 impl RegtestClient {
     pub fn new_with_conf(conf: &Conf<'_>) -> Result<Self> {
         let (child, datadir, cookie, rpc_url) = spawn_node(conf)?;
-        let client = Client::new_with_auth(&rpc_url, Auth::CookieFile(cookie))?;
-        client.load_or_create_wallet(conf.wallet_name)?;
+        let client = RawClient::new(&rpc_url, Auth::CookieFile(cookie))?;
+
+        // Load or create wallet manually
+        let _ = client
+            .call::<Value>("loadwallet", &[conf.wallet_name.into()])
+            .or_else(|_| client.call::<Value>("createwallet", &[conf.wallet_name.into()]))?;
+
         Ok(Self {
             client,
             child,
@@ -75,17 +189,8 @@ impl RegtestClient {
         Self::new_with_conf(&conf)
     }
 
-    pub fn new_from_path(wallet_name: &str, bitcoind_path: impl Into<PathBuf>) -> Result<Self> {
-        let conf = Conf {
-            wallet_name,
-            bitcoind_path: Some(bitcoind_path.into()),
-            ..Default::default()
-        };
-        Self::new_with_conf(&conf)
-    }
-
     pub fn teardown(&mut self) -> Result<()> {
-        let _ = self.client.call_json("stop", &[]);
+        let _ = self.client.call::<Value>("stop", &[]);
         let start = Instant::now();
         while start.elapsed() < Duration::from_secs(WAIT_SECS) {
             if let Ok(Some(_)) = self.child.try_wait() {
@@ -141,9 +246,7 @@ fn spawn_node(conf: &Conf<'_>) -> Result<(Child, TempDir, PathBuf, String)> {
         let child_result = cmd.spawn();
         let mut child = child_result?;
         match wait_for_rpc_ready(&url, &cookie, &mut child) {
-            Ok(()) => {
-                return Ok((child, datadir, cookie, url));
-            }
+            Ok(()) => return Ok((child, datadir, cookie, url)),
             Err(e) => {
                 let _ = child.kill();
                 let _ = child.wait();
@@ -172,7 +275,7 @@ pub fn wait_for_rpc_ready(url: &str, cookie: &Path, child: &mut Child) -> Result
         }
         if cookie.exists() {
             let auth = Auth::CookieFile(cookie.to_path_buf());
-            if let Ok(c) = bitcoincore_rpc::Client::new(url, auth) {
+            if let Ok(c) = RawClient::new(url, auth) {
                 if c.call::<Value>("getnetworkinfo", &[]).is_ok() {
                     return Ok(());
                 }
