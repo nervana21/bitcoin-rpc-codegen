@@ -1,32 +1,22 @@
-# Compiled output
-**/target/debug/
-**/target/release/
-**/target/doc/
-**/target/package/
-**/target/tmp/
-**/target/.rustc_info.json
-**/target/.rustdoc_fingerprint.json
-**/target/.cargo-lock
-
-# Keep only our top-level generated code
+# -----------------------------------------------------------------------------
+# Compiled outputs (target/)
+# -----------------------------------------------------------------------------
+/target/
 !/target/generated/
 
-# Rust/Cargo specific files
-**/*.rs.bk
+# Rust artifacts
 Cargo.lock
+**/*.rs.bk
 
-# IDE and editor specific files
+# IDE settings
 /.idea/
 /.vscode/
 /*.sublime-workspace
 /*.sublime-project
 
-# OS generated files
+# OS artifacts
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
 
 # Temporary files
 *.tmp
@@ -35,15 +25,7 @@ Thumbs.db
 *.old
 *.orig
 
-# Marker file used by catchup script
-.gpt_marker_commit
-
-# -----------------------------------------------------------------------------
-# Pipeline outputs (ephemeral)
-# -----------------------------------------------------------------------------
-
-# We don’t want to check in the JSON “feedback” directory
+# Project-specific
 /feedback/
-
-# And in the examples folder, ignore their own build dirs completely
 /examples/**/target/
+/.gpt_marker_commit
