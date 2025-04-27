@@ -270,46 +270,43 @@ pub fn run_codegen() -> Result<()> {
 }
 
 pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &str) -> Result<()> {
-    let root = Path::new(out_dir);
-    let version_dir = root.join(version);
+    let version_dir = Path::new(out_dir); // ❗ stay at 'target/generated/v29', no .join(version)
 
-    let client_dir = version_dir.join("client");
-    let types_dir = version_dir.join("types");
-
-    // Clean old, recreate
-    for dir in [&client_dir, &types_dir] {
-        if dir.exists() {
-            fs::remove_dir_all(dir)?;
-        }
-        fs::create_dir_all(dir)?;
+    if version_dir.exists() {
+        fs::remove_dir_all(version_dir)?;
     }
+    fs::create_dir_all(version_dir)?;
 
-    // --- Client side ---
+    // --- Individual RPCs ---
     for method in methods {
         let filename = sanitize_method_name(&method.name) + ".rs";
-        let file_path = client_dir.join(&filename);
+        let filepath = version_dir.join(filename);
         let contents = generate_client_macro(method, version);
-        fs::write(file_path, contents)?;
+        fs::write(filepath, contents)?;
     }
-    generate_client_mod_rs(&client_dir)?;
 
-    // --- Types side ---
-    let imports = "use serde::{Deserialize, Serialize};\n\n";
-    let mut types = String::from(imports);
+    // --- Types.rs ---
+    let mut types = String::from("use serde::{Deserialize, Serialize};\n\n");
     for method in methods {
         if let Some(tc) = generate_return_type(method) {
             types.push_str(&tc);
-            types.push_str("\n\n");
+            types.push('\n');
         }
     }
-    fs::write(types_dir.join("mod.rs"), types)?;
+    fs::write(version_dir.join("types.rs"), types)?;
 
-    // --- Top level ---
-    let version_mod = "pub mod client;\npub mod types;\n";
-    fs::write(version_dir.join("mod.rs"), version_mod)?;
+    // --- mod.rs ---
+    let mut mod_rs = String::new();
+    for method in methods {
+        let modname = sanitize_method_name(&method.name);
+        writeln!(mod_rs, "mod {};", modname)?;
+    }
+    writeln!(mod_rs, "pub mod types;")?;
+    fs::write(version_dir.join("mod.rs"), mod_rs)?;
 
     Ok(())
 }
+
 pub fn generate_struct_fields(result: &ApiResult) -> String {
     let mut out = String::new();
     let mut seen = HashSet::new();
@@ -371,22 +368,26 @@ pub fn generate_client_stubs(mod_path: &Path, methods: &[ApiMethod]) -> anyhow::
 }
 
 fn generate_client_mod_rs(client_dir: &Path) -> Result<()> {
-    let mut mods = String::new();
+    let mut contents = String::new();
 
-    for entry in fs::read_dir(client_dir)? {
-        let path = entry?.path();
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "rs") {
+    let mut entries = fs::read_dir(client_dir)?
+        .filter_map(|e| e.ok())
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|e| e.file_name()); // sort for deterministic order
+
+    for entry in entries {
+        let path = entry.path();
+        if path.extension().map(|ext| ext == "rs").unwrap_or(false) {
             if let Some(stem) = path.file_stem() {
                 let name = stem.to_string_lossy();
                 if name != "mod" {
-                    // skip mod.rs itself
-                    writeln!(mods, "pub mod {};", name)?;
+                    writeln!(contents, "pub mod {};", name)?;
                 }
             }
         }
     }
 
-    fs::write(client_dir.join("mod.rs"), mods)?;
+    fs::write(client_dir.join("mod.rs"), contents)?;
 
     Ok(())
 }
