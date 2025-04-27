@@ -9,7 +9,6 @@ use std::fs;
 fn check_and_count_methods(client: &Client, src: &str) -> Result<usize> {
     let api: Vec<ApiMethod> = parse_api_json(src)?;
     for m in &api {
-        // this both checks existence (via "help") and will Err if missing
         client
             .call::<String>("help", &[json!(m.name)])
             .unwrap_or_else(|e| panic!("RPC method `{}` missing or broken: {}", m.name, e));
@@ -48,13 +47,17 @@ fn e2e_all_methods() -> Result<()> {
     std::io::Write::flush(&mut std::io::stdout()).ok();
 
     // current version's methods
-    let current_api = include_str!("../resources/api.json");
-    let current_count = check_and_count_methods(client, current_api)?;
+    let current_filename = format!("resources/schemas/api_v29.json");
+    let current_api = fs::read_to_string(&current_filename).expect(&format!(
+        "Missing current version schema file: {}",
+        current_filename
+    ));
+    let current_count = check_and_count_methods(client, &current_api)?;
 
-    // prior version's methods (by going down one major version)
+    // prior version's methods
     let prior_major = current_major - 1;
-    let filename = format!("resources/api_{}00.json", prior_major);
-    let prior_count = fs::read_to_string(&filename)
+    let prior_filename = format!("resources/schemas/api_v28{}.json", prior_major);
+    let prior_count = fs::read_to_string(&prior_filename)
         .ok()
         .and_then(|src| check_and_count_methods(client, &src).ok());
 
