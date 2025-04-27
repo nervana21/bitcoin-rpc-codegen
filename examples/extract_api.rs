@@ -31,7 +31,7 @@ fn main() -> Result<()> {
     println!("Docs path: {}", docs_dir.display());
 
     if !docs_dir.exists() {
-        println!("\u{274c} Docs directory does not exist!");
+        println!("Docs directory does not exist!");
         anyhow::bail!(
             "❌ Missing {}/ — please run `cargo run --example discover -- --version {}` first.",
             docs_dir_path,
@@ -44,7 +44,7 @@ fn main() -> Result<()> {
     // --- 🔍 Setup bitcoind ---
     let home = env::var("HOME").context("Missing $HOME env var")?;
     let bin_path = PathBuf::from(&home).join(format!(
-        "bitcoin-versions/{}/bitcoin-{}.0/bin/bitcoind",
+        "bitcoin-versions/v{}/bitcoin-{}.0/bin/bitcoind",
         &version[1..],
         &version[1..]
     ));
