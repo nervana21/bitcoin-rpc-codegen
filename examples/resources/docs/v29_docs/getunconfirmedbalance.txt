@@ -1,7 +1,0 @@
-getunconfirmedbalance
-
-DEPRECATED
-Identical to getbalances().mine.untrusted_pending
-
-Result:
-n    (numeric) The balance
