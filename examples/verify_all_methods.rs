@@ -47,10 +47,9 @@ fn main() -> Result<()> {
     let mut conf = Conf::default();
     conf.extra_args.push("-fallbackfee=0.0002");
     let rt = RegtestClient::new_with_conf(&conf)?;
-    let client = &rt.client;
 
     println!("🔑 Generating wallet-owned mining address...");
-    let mining_address: String = client
+    let mining_address: String = rt
         .call_json("getnewaddress", &[])?
         .as_str()
         .unwrap()
@@ -58,14 +57,14 @@ fn main() -> Result<()> {
     println!("✅ Generated mining address: {}", mining_address);
 
     println!("⛏️ Mining initial blocks...");
-    client.call_json("generatetoaddress", &[json!(101), json!(mining_address)])?;
+    rt.call_json("generatetoaddress", &[json!(101), json!(mining_address)])?;
 
-    let blockhash: String = client
+    let blockhash: String = rt
         .call_json("getblockhash", &[json!(1)])?
         .as_str()
         .unwrap()
         .into();
-    let block: Value = client.call_json("getblock", &[json!(blockhash.clone())])?;
+    let block: Value = rt.call_json("getblock", &[json!(blockhash.clone())])?;
     let txid = block["tx"][0].as_str().unwrap().to_string();
 
     println!("📌 Using blockhash: {}", blockhash);
@@ -77,7 +76,7 @@ fn main() -> Result<()> {
             continue; // explicitly skip `stop` here
         }
         println!("🔸 Calling `{}`...", method.name);
-        match client.call_json(&method.name, &[]) {
+        match rt.call_json(&method.name, &[]) {
             Ok(resp) => println!("✅ `{}` succeeded: {}", method.name, resp),
             Err(e) => println!("⚠️ `{}` RPC error: {}", method.name, e),
         }
@@ -89,20 +88,20 @@ fn main() -> Result<()> {
         let params = default_params(&method.arguments, &blockhash, &txid);
         println!("   Params: {:?}", params);
 
-        match client.call_json(&method.name, &params) {
+        match rt.call_json(&method.name, &params) {
             Ok(resp) => println!("✅ `{}` succeeded: {}", method.name, resp),
             Err(e) => println!("⚠️ `{}` RPC error: {}", method.name, e),
         }
     }
 
     println!("\n🛑 Calling `stop` at the end...");
-    match client.call_json("stop", &[]) {
+    match rt.call_json("stop", &[]) {
         Ok(resp) => println!("✅ `stop` succeeded: {}", resp),
         Err(e) => println!("⚠️ `stop` RPC error: {}", e),
     }
 
     println!("✅ Node stopping... Verifying shutdown...");
-    match client.call_json("getblockcount", &[]) {
+    match rt.call_json("getblockcount", &[]) {
         Ok(_) => println!("❌ Node still running after stop command!"),
         Err(e) => {
             let e_str = format!("{}", e);

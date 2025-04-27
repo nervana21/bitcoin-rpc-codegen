@@ -47,7 +47,7 @@ fn main() -> Result<()> {
     // 6. Call every zero-arg *except* the last (`stop`), skipping on RPC error
     for name in &zero_arg[..zero_arg.len() - 1] {
         println!("\nCalling `{}`...", name);
-        let v: Value = match client.call_json(name, &[]) {
+        let v: Value = match rt.call_json(name, &[]) {
             Ok(v) => {
                 // dump for later schema regeneration
                 fs::create_dir_all("feedback")?;
@@ -85,7 +85,7 @@ fn main() -> Result<()> {
 
     // 8. Finally call `stop`
     println!("\nCalling `stop` (last)...");
-    let stop_response: Value = client.call_json("stop", &[]).context("stop RPC failed")?;
+    let stop_response: Value = rt.call_json("stop", &[]).context("stop RPC failed")?;
     println!(
         "   → stop RPC returned {} bytes",
         stop_response.to_string().len()
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
 
     // 9. Prove the node has shut down
     println!("\n🔒 Verifying shutdown: next RPC must fail.");
-    match client.call_json("getblockcount", &[]) {
+    match rt.call_json("getblockcount", &[]) {
         Ok(_) => panic!("Expected RPC to fail after stop, but it succeeded"),
         Err(err) => println!("   → getblockcount failed as expected: {}", err),
     }
