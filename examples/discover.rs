@@ -2,7 +2,7 @@
 //
 // Fully deterministic Bitcoin Core RPC method discovery for a given version.
 // Spawns a fresh regtest node, ensures dummy wallet is available,
-// dumps all `help <method>` outputs into resources/{version}_docs/.
+// dumps all `help <method>` outputs into resources/docs/{version}_docs/.
 
 use anyhow::{Context, Result};
 use bitcoin_rpc_codegen::Conf;
@@ -26,13 +26,13 @@ fn main() -> Result<()> {
     } else if parsed.len() == 2 && parsed[0] == "--version" {
         parsed[1].clone()
     } else {
-        anyhow::bail!("Expected usage: --version v29");
+        anyhow::bail!("Expected usage: --version vXX (e.g., --version v29)");
     };
 
     let bin_path = bin_path_for_version(&version)?;
     if !bin_path.exists() {
         anyhow::bail!(
-            "Missing bitcoind binary at {} — did you download Bitcoin Core {}?",
+            "❌ Missing bitcoind binary at {} — did you download Bitcoin Core {}?",
             bin_path.display(),
             version
         );
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
 
     println!("✅ Found {} RPC methods", method_names.len());
 
-    let output_dir = PathBuf::from(format!("resources/{}_docs", version));
+    let output_dir = PathBuf::from(format!("resources/docs/{}_docs", version));
     fs::create_dir_all(&output_dir).context("Failed to create output dir")?;
 
     let mut successful_methods = Vec::new();
