@@ -1,12 +1,5 @@
 // src/regtest.rs
 // SPDX-License-Identifier: CC0-1.0
-//
-// Disposable **regtest bitcoind** helper.
-//
-// * always spawns a fresh regtest `bitcoind` using cookie-auth
-// * waits for RPC, creates/loads a wallet
-// * gracefully stops the node on Drop
-// * now supports multi-wallet RPC prefixes cleanly
 
 use crate::{Error, Result};
 use bitcoincore_rpc::{Auth, Client as RawClient, RpcApi};
@@ -19,11 +12,8 @@ use std::{
 };
 use tempfile::TempDir;
 
-/// 127.0.0.1 for every regtest instance.
 const LOCALHOST: &str = "127.0.0.1";
-/// Seconds to wait for RPC to come up or shut down.
 const WAIT_SECS: u64 = 5;
-/// Milliseconds between retries.
 const RETRY_SLEEP_MS: u64 = 200;
 
 #[non_exhaustive]
@@ -50,113 +40,6 @@ impl Default for Conf<'_> {
     }
 }
 
-/// Lightweight client that tracks associated wallet (if any).
-pub struct Client {
-    raw: RawClient,
-    wallet: Option<String>,
-}
-
-impl Client {
-    pub fn new_with_auth(url: &str, auth: Auth) -> Result<Self> {
-        Ok(Client {
-            raw: RawClient::new(url, auth)?,
-            wallet: None,
-        })
-    }
-
-    pub fn load_or_create_wallet(&self, wallet_name: &str) -> Result<()> {
-        // Try to load existing wallet
-        if self
-            .raw
-            .call::<Value>("loadwallet", &[wallet_name.into()])
-            .is_ok()
-        {
-            return Ok(());
-        }
-        // Otherwise, create a new one
-        self.raw
-            .call::<Value>("createwallet", &[wallet_name.into()])
-            .map(|_| ())
-            .map_err(Error::Rpc)
-    }
-
-    pub fn with_wallet(mut self, wallet_name: impl Into<String>) -> Self {
-        self.wallet = Some(wallet_name.into());
-        self
-    }
-
-    pub fn call_json(&self, method: &str, params: &[Value]) -> Result<Value> {
-        let scoped_method = if self.requires_wallet_prefix(method) {
-            if let Some(wallet) = &self.wallet {
-                format!("wallet/{}/{}", wallet, method)
-            } else {
-                method.to_string()
-            }
-        } else {
-            method.to_string()
-        };
-        self.raw
-            .call::<Value>(&scoped_method, params)
-            .map_err(Error::Rpc)
-    }
-
-    fn requires_wallet_prefix(&self, method: &str) -> bool {
-        matches!(
-            method,
-            "abandontransaction"
-                | "abortrescan"
-                | "addmultisigaddress"
-                | "backupwallet"
-                | "bumpfee"
-                | "createwallet"
-                | "dumpprivkey"
-                | "dumpwallet"
-                | "encryptwallet"
-                | "fundrawtransaction"
-                | "getaddressesbylabel"
-                | "getaddressinfo"
-                | "getbalance"
-                | "getnewaddress"
-                | "getrawchangeaddress"
-                | "getreceivedbyaddress"
-                | "getreceivedbylabel"
-                | "gettransaction"
-                | "getwalletinfo"
-                | "importaddress"
-                | "importdescriptors"
-                | "importmulti"
-                | "importprivkey"
-                | "importprunedfunds"
-                | "keypoolrefill"
-                | "listaddressgroupings"
-                | "listlabels"
-                | "listlockunspent"
-                | "listreceivedbyaddress"
-                | "listreceivedbylabel"
-                | "listsinceblock"
-                | "listtransactions"
-                | "listunspent"
-                | "loadwallet"
-                | "lockunspent"
-                | "removeprunedfunds"
-                | "rescanblockchain"
-                | "sendmany"
-                | "sendtoaddress"
-                | "sethdseed"
-                | "setlabel"
-                | "settxfee"
-                | "signmessage"
-                | "signrawtransactionwithwallet"
-                | "unloadwallet"
-                | "walletcreatefundedpsbt"
-                | "walletlock"
-                | "walletpassphrase"
-                | "walletpassphrasechange"
-                | "walletprocesspsbt"
-        )
-    }
-}
-
 /// Regtest node controller
 pub struct RegtestClient {
     pub client: RawClient,
@@ -169,7 +52,6 @@ impl RegtestClient {
         let (child, datadir, cookie, rpc_url) = spawn_node(conf)?;
         let client = RawClient::new(&rpc_url, Auth::CookieFile(cookie))?;
 
-        // Load or create wallet manually
         let _ = client
             .call::<Value>("loadwallet", &[conf.wallet_name.into()])
             .or_else(|_| client.call::<Value>("createwallet", &[conf.wallet_name.into()]))?;
@@ -187,6 +69,21 @@ impl RegtestClient {
             ..Default::default()
         };
         Self::new_with_conf(&conf)
+    }
+
+    pub fn new_from_path(wallet_name: &str, bitcoind_path: impl Into<PathBuf>) -> Result<Self> {
+        let conf = Conf {
+            wallet_name,
+            bitcoind_path: Some(bitcoind_path.into()),
+            ..Default::default()
+        };
+        Self::new_with_conf(&conf)
+    }
+
+    pub fn call_json(&self, method: &str, params: &[Value]) -> Result<Value> {
+        self.client
+            .call::<Value>(method, params)
+            .map_err(Error::Rpc)
     }
 
     pub fn teardown(&mut self) -> Result<()> {
