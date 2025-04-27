@@ -1,0 +1,2390 @@
+{
+  "commands": {
+    "abortrescan": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "abortrescan",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "boolean"
+          }
+        ]
+      }
+    ],
+    "clearbanned": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "clearbanned",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "none"
+          }
+        ]
+      }
+    ],
+    "getaddrmaninfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getaddrmaninfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "all_networks",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "cjdns",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "i2p",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "ipv4",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "ipv6",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "new",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "total",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "tried",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "onion",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getbalances": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getbalances",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "string"
+                          }
+                        ],
+                        "key_name": "hash",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "height",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "lastprocessedblock",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "immature",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "trusted",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "untrusted_pending",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "mine",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getbestblockhash": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getbestblockhash",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "string"
+          }
+        ]
+      }
+    ],
+    "getblockchaininfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getblockchaininfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "bestblockhash",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "bits",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "blocks",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "chain",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "chainwork",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "difficulty",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "headers",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "initialblockdownload",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "mediantime",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "pruned",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "size_on_disk",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "target",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "time",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "verificationprogress",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "warnings",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getblockcount": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getblockcount",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "getchainstates": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getchainstates",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "bestblockhash",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "bits",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "blocks",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "coins_db_cache_bytes",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "coins_tip_cache_bytes",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "difficulty",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "target",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "boolean"
+                              }
+                            ],
+                            "key_name": "validated",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "verificationprogress",
+                            "type": "object"
+                          }
+                        ],
+                        "key_name": "",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "chainstates",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "headers",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getchaintips": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getchaintips",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [],
+                        "key_name": "",
+                        "type": "number"
+                      }
+                    ],
+                    "key_name": "branchlen",
+                    "type": "object"
+                  },
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [],
+                        "key_name": "",
+                        "type": "string"
+                      }
+                    ],
+                    "key_name": "hash",
+                    "type": "object"
+                  },
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [],
+                        "key_name": "",
+                        "type": "number"
+                      }
+                    ],
+                    "key_name": "height",
+                    "type": "object"
+                  },
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [],
+                        "key_name": "",
+                        "type": "string"
+                      }
+                    ],
+                    "key_name": "status",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "getconnectioncount": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getconnectioncount",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "getdifficulty": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getdifficulty",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "getmempoolinfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getmempoolinfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "bytes",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "fullrbf",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "incrementalrelayfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "loaded",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "maxmempool",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "mempoolminfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "minrelaytxfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "size",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "total_fee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "unbroadcastcount",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "usage",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getmininginfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getmininginfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "bits",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "blocks",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "chain",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "difficulty",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "networkhashps",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "string"
+                          }
+                        ],
+                        "key_name": "bits",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "difficulty",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "height",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "string"
+                          }
+                        ],
+                        "key_name": "target",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "next",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "pooledtx",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "target",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "warnings",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getnettotals": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getnettotals",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "timemillis",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "totalbytesrecv",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "totalbytessent",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "bytes_left_in_cycle",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "boolean"
+                          }
+                        ],
+                        "key_name": "serve_historical_blocks",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "target",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "boolean"
+                          }
+                        ],
+                        "key_name": "target_reached",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "time_left_in_cycle",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "timeframe",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "uploadtarget",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getnetworkinfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getnetworkinfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "connections",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "connections_in",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "connections_out",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "incrementalfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "localaddresses",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "localrelay",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "localservices",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [],
+                        "key_name": "",
+                        "type": "string"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "localservicesnames",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "networkactive",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "boolean"
+                              }
+                            ],
+                            "key_name": "limited",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "name",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "proxy",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "boolean"
+                              }
+                            ],
+                            "key_name": "proxy_randomize_credentials",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "boolean"
+                              }
+                            ],
+                            "key_name": "reachable",
+                            "type": "object"
+                          }
+                        ],
+                        "key_name": "",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "networks",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "protocolversion",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "relayfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "subversion",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "timeoffset",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "version",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "warnings",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getpeerinfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getpeerinfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "getprioritisedtransactions": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getprioritisedtransactions",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getrpcinfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getrpcinfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "number"
+                              }
+                            ],
+                            "key_name": "duration",
+                            "type": "object"
+                          },
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "method",
+                            "type": "object"
+                          }
+                        ],
+                        "key_name": "",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "active_commands",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "logpath",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getunconfirmedbalance": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getunconfirmedbalance",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "getwalletinfo": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getwalletinfo",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "avoid_reuse",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "balance",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "birthtime",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "blank",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "descriptors",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "external_signer",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "format",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "immature_balance",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "keypoolsize",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "keypoolsize_hd_internal",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "string"
+                          }
+                        ],
+                        "key_name": "hash",
+                        "type": "object"
+                      },
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [],
+                            "key_name": "",
+                            "type": "number"
+                          }
+                        ],
+                        "key_name": "height",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "object"
+                  }
+                ],
+                "key_name": "lastprocessedblock",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "paytxfee",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "private_keys_enabled",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "boolean"
+                  }
+                ],
+                "key_name": "scanning",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "txcount",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "unconfirmed_balance",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "walletname",
+                "type": "object"
+              },
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "number"
+                  }
+                ],
+                "key_name": "walletversion",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "getzmqnotifications": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "getzmqnotifications",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "listaddressgroupings": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "listaddressgroupings",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "listbanned": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "listbanned",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "listlockunspent": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "listlockunspent",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "listwalletdir": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "listwalletdir",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [
+                      {
+                        "description": "",
+                        "inner": [
+                          {
+                            "description": "",
+                            "inner": [
+                              {
+                                "description": "",
+                                "inner": [],
+                                "key_name": "",
+                                "type": "string"
+                              }
+                            ],
+                            "key_name": "name",
+                            "type": "object"
+                          }
+                        ],
+                        "key_name": "",
+                        "type": "object"
+                      }
+                    ],
+                    "key_name": "",
+                    "type": "array"
+                  }
+                ],
+                "key_name": "wallets",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "listwallets": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "listwallets",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [],
+                "key_name": "",
+                "type": "string"
+              }
+            ],
+            "key_name": "",
+            "type": "array"
+          }
+        ]
+      }
+    ],
+    "ping": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "ping",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "none"
+          }
+        ]
+      }
+    ],
+    "savemempool": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "savemempool",
+        "results": [
+          {
+            "description": "",
+            "inner": [
+              {
+                "description": "",
+                "inner": [
+                  {
+                    "description": "",
+                    "inner": [],
+                    "key_name": "",
+                    "type": "string"
+                  }
+                ],
+                "key_name": "filename",
+                "type": "object"
+              }
+            ],
+            "key_name": "",
+            "type": "object"
+          }
+        ]
+      }
+    ],
+    "stop": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "stop",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "string"
+          }
+        ]
+      }
+    ],
+    "uptime": [
+      {
+        "arguments": [],
+        "description": "",
+        "name": "uptime",
+        "results": [
+          {
+            "description": "",
+            "inner": [],
+            "key_name": "",
+            "type": "number"
+          }
+        ]
+      }
+    ]
+  }
+}
