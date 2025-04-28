@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use tempfile::tempdir;
 
 use bitcoin_rpc_codegen::discover_methods;
-use std::{os::unix::fs::PermissionsExt, path::Path};
+use std::os::unix::fs::PermissionsExt;
 
 #[test]
 fn discover_on_bad_path_yields_empty() {

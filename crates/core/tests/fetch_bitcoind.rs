@@ -1,4 +1,4 @@
-use std::{env, fs, io::Write, path::PathBuf};
+use std::{env, fs, io::Write};
 use tempfile::tempdir;
 
 use bitcoin_rpc_codegen as core;
