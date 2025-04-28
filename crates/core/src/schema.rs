@@ -1,0 +1,265 @@
+//! Schema extraction for Bitcoin RPC Code Generator (core crate).
+//!
+//! Parses raw `bitcoin-cli help` text files into a structured JSON schema.
+
+use anyhow::{Context, Result};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Map};
+use std::{fs, io::Write, path::Path};
+
+/// Represents a single RPC argument.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ApiArgument {
+    /// Parameter names (aliases)
+    pub names: Vec<String>,
+    /// Base type (e.g. "string", "numeric")
+    pub type_: String,
+    /// True if the argument is optional
+    pub optional: bool,
+    /// Description text
+    pub description: String,
+}
+
+/// Represents a single RPC result field (possibly nested).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ApiResult {
+    /// JSON type ("string", "number", "object", "array", "boolean", "none")
+    pub type_: String,
+    /// Field key name (empty for array items)
+    pub key_name: String,
+    /// Description text
+    pub description: String,
+    /// Nested inner fields
+    pub inner: Vec<ApiResult>,
+}
+
+/// Represents a full RPC method schema.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ApiMethod {
+    pub name: String,
+    pub description: String,
+    pub arguments: Vec<ApiArgument>,
+    pub results: Vec<ApiResult>,
+}
+
+/// Parse a single help-text document into an ApiMethod.
+pub fn parse_method_doc(name: &str, doc: &str) -> ApiMethod {
+    let description = extract_description(doc);
+    let arg_re = Regex::new(r#"^\s*\d+\.\s+"?([^"\s]+)"?\s*\(([^)]+)\)\s*(.*)$"#).unwrap();
+    let arguments = infer_arguments(doc, &arg_re);
+    let results = infer_results(doc);
+    ApiMethod {
+        name: name.to_string(),
+        description,
+        arguments,
+        results,
+    }
+}
+
+/// Walk `docs_dir`, parse each `<method>.txt`, and write JSON schema to `out_file`.
+pub fn extract_api_docs(docs_dir: &Path, out_file: &Path) -> Result<()> {
+    let mut commands = Map::new();
+    for entry in fs::read_dir(docs_dir).context("reading docs_dir failed")? {
+        let path = entry?.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("txt") {
+            continue;
+        }
+        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap();
+        let content = fs::read_to_string(&path).with_context(|| format!("reading {:?}", path))?;
+        let method = parse_method_doc(stem, &content);
+        commands.insert(stem.to_string(), json!([method]));
+    }
+    let wrapper = json!({ "commands": commands });
+    let mut f = fs::File::create(out_file)
+        .with_context(|| format!("creating schema file {:?}", out_file))?;
+    writeln!(f, "{}", serde_json::to_string_pretty(&wrapper)?)?;
+    Ok(())
+}
+
+/// Extracts the method description (skip signature and initial blank lines).
+fn extract_description(doc: &str) -> String {
+    doc.lines()
+        .skip_while(|l| l.trim().is_empty()) // drop leading blanks
+        .skip(1) // drop signature line
+        .skip_while(|l| l.trim().is_empty()) // drop blanks after signature
+        .take_while(|l| {
+            // collect until a section header
+            let t = l.trim();
+            !t.starts_with("Arguments:")
+                && !t.starts_with("Result")
+                && !t.starts_with("Returns:")
+                && !t.starts_with("Examples:")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Infers arguments by regex on the "Arguments:" block, extracting base type.
+fn infer_arguments(doc: &str, re: &Regex) -> Vec<ApiArgument> {
+    let mut args = Vec::new();
+    let mut in_args = false;
+    for line in doc.lines() {
+        let t = line.trim();
+        if t.starts_with("Arguments:") {
+            in_args = true;
+            continue;
+        }
+        if in_args {
+            if t.is_empty() || t.ends_with(':') {
+                break;
+            }
+            if let Some(c) = re.captures(line) {
+                let name = c[1].to_string();
+                let raw_typ = c[2].to_lowercase();
+                let optional = raw_typ.contains("optional");
+                let base_type = raw_typ.split(',').next().unwrap().trim().to_string();
+                let desc = c[3].trim().to_string();
+                args.push(ApiArgument {
+                    names: vec![name],
+                    type_: base_type,
+                    optional,
+                    description: desc,
+                });
+            }
+        }
+    }
+    args
+}
+
+/// Parses the "Result" block into nested ApiResult structures.
+/// Parses the "Result" block into nested ApiResult structures.
+fn infer_results(doc: &str) -> Vec<ApiResult> {
+    let mut in_res = false;
+    let mut stack: Vec<(usize, Vec<ApiResult>)> = vec![(0, Vec::new())];
+    // Matches lines like: `"res" (numeric) The result.`
+    let field_re = Regex::new(r#"^"([^"]+)"\s*\(([^)]+)\)\s*(.*)$"#).unwrap();
+
+    for line in doc.lines() {
+        let t = line.trim();
+        // Enter the result section
+        if t.starts_with("Result") || t.starts_with("Returns") {
+            in_res = true;
+            continue;
+        }
+        // Stop when hitting the next section or numbered list
+        if in_res
+            && (t.starts_with("Arguments:")
+                || t.starts_with("Examples:")
+                || t.chars().next().map_or(false, |c| c.is_digit(10)))
+        {
+            break;
+        }
+        if !in_res || t.is_empty() {
+            continue;
+        }
+
+        // How deeply indented this line is (for nested objects/arrays)
+        let depth = line.chars().take_while(|c| c.is_whitespace()).count();
+
+        // Try to pull out key, raw type hint, and description
+        let (key_name, type_hint, description) = if let Some(cap) = field_re.captures(t) {
+            (
+                cap[1].to_string(),
+                cap[2].to_lowercase(),
+                cap[3].trim().to_string(),
+            )
+        } else {
+            // Fallback (e.g. anonymous arrays, primitives)
+            (String::new(), String::new(), t.to_string())
+        };
+
+        // Map the raw hint to our canonical JSON types
+        let typ = if type_hint.contains("boolean") {
+            "boolean"
+        } else if type_hint.contains("numeric") {
+            "number"
+        } else if type_hint.contains("json object") {
+            "object"
+        } else if type_hint.contains("json null") {
+            "none"
+        } else {
+            "string"
+        };
+
+        // Build the ApiResult node
+        let node = ApiResult {
+            type_: typ.to_string(),
+            key_name,
+            description,
+            inner: Vec::new(),
+        };
+
+        // Attach into the nesting stack
+        while depth < stack.last().unwrap().0 {
+            let (_, mut children) = stack.pop().unwrap();
+            stack
+                .last_mut()
+                .unwrap()
+                .1
+                .last_mut()
+                .unwrap()
+                .inner
+                .append(&mut children);
+        }
+        stack.last_mut().unwrap().1.push(node);
+        stack.push((depth, Vec::new()));
+    }
+
+    // Unwind any remaining nested entries
+    while stack.len() > 1 {
+        let (_, mut children) = stack.pop().unwrap();
+        stack
+            .last_mut()
+            .unwrap()
+            .1
+            .last_mut()
+            .unwrap()
+            .inner
+            .append(&mut children);
+    }
+
+    let result = stack.pop().unwrap().1;
+    if result.is_empty() {
+        vec![ApiResult {
+            type_: "none".into(),
+            key_name: String::new(),
+            description: String::new(),
+            inner: Vec::new(),
+        }]
+    } else {
+        result
+    }
+}
+
+/// Parse a full JSON schema (generated by `extract_api_docs`) into a list of ApiMethod.
+/// Empty or whitespace input yields an empty Vec.
+pub fn parse_api_json(input: &str) -> Result<Vec<ApiMethod>> {
+    if input.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let v: serde_json::Value =
+        serde_json::from_str(input).context("Failed to deserialize API JSON schema")?;
+
+    let empty_map = serde_json::Map::new();
+    let cmds = v
+        .get("commands")
+        .and_then(|c| c.as_object())
+        .unwrap_or(&empty_map);
+
+    let mut methods = Vec::new();
+    for (name, arr) in cmds {
+        if let Some(items) = arr.as_array() {
+            for item in items {
+                // Deserialize each entry into your ApiMethod type
+                let mut m: ApiMethod = serde_json::from_value(item.clone())
+                    .context(format!("Invalid ApiMethod entry for {}", name))?;
+                // Override the name field with the map key
+                m.name = name.clone();
+                methods.push(m);
+            }
+        }
+    }
+    Ok(methods)
+}

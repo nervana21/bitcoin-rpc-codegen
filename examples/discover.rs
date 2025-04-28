@@ -3,57 +3,91 @@
 // Discover RPC methods and dump help output for each.
 
 use anyhow::{bail, Context, Result};
-use std::env;
-use std::path::Path;
-use std::process::{Command, Stdio};
+use bitcoin_rpc_codegen::discover_methods;
+use std::{
+    env,
+    fs::{create_dir_all, write},
+    path::PathBuf,
+    process::Command,
+};
 
 fn main() -> Result<()> {
-    let mut version: Option<String> = None;
-    let mut bin_path: Option<String> = None;
-
-    let mut args = env::args().skip(1); // Skip program name
+    // --- Parse CLI args ---
+    let mut args = env::args().skip(1);
+    let mut bin_path = None;
+    let mut version = None;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--bin-path" => {
+                bin_path = Some(PathBuf::from(
+                    args.next().context("Expected path after --bin-path")?,
+                ));
+            }
             "--version" => {
                 version = Some(
                     args.next()
                         .context("Expected version after --version (e.g., v29)")?,
                 );
             }
-            "--bin-path" => {
-                bin_path = Some(args.next().context("Expected path after --bin-path")?);
-            }
-            unknown => {
-                bail!("Unknown argument: {}", unknown);
+            other => {
+                bail!("Unknown argument: {}", other);
             }
         }
     }
 
-    let version = version.context("Missing required --version argument (e.g., --version v29)")?;
-    let bin_path = bin_path.context("Missing required --bin-path argument")?;
-
-    if !Path::new(&bin_path).exists() {
-        bail!("bitcoind binary not found at: {}", bin_path);
+    let bitcoind = bin_path.context("Missing required --bin-path argument")?;
+    let ver = version.context("Missing required --version argument")?;
+    if !bitcoind.exists() {
+        bail!("bitcoind binary not found at: {}", bitcoind.display());
     }
 
     println!(
-        "🚀 Discovering methods for version {} using binary {}",
-        version, bin_path
+        "🚀 Discovering methods for version {} using {}",
+        ver,
+        bitcoind.display()
     );
 
-    // Proceed to discovery logic...
-    discover_methods(&bin_path, &version)?;
+    // Discover RPC method names
+    let methods =
+        discover_methods(&bitcoind).context("Failed to discover methods from bitcoin-cli")?;
+    println!("Found {} methods", methods.len());
 
-    println!("✅ Discovery complete.");
-    Ok(())
-}
+    // Prepare docs directory
+    let docs_dir = PathBuf::from("resources").join(format!("{}_docs", ver));
+    create_dir_all(&docs_dir)
+        .with_context(|| format!("Failed to create docs directory {:?}", docs_dir))?;
 
-fn discover_methods(bin_path: &str, version: &str) -> Result<()> {
-    // Your discovery logic here (example)
-    println!(
-        "(Pretend) discovering methods from {} for {}",
-        bin_path, version
-    );
+    // Locate bitcoin-cli next to bitcoind
+    let cli = bitcoind.parent().unwrap().join(if cfg!(windows) {
+        "bitcoin-cli.exe"
+    } else {
+        "bitcoin-cli"
+    });
+
+    // Dump help output for each method
+    for method in methods {
+        print!("Dumping help for `{}`… ", method);
+        let out = Command::new(&cli)
+            .args(&["-regtest", "help", &method])
+            .output();
+
+        match out {
+            Ok(o) if o.status.success() => {
+                let text = String::from_utf8_lossy(&o.stdout);
+                let path = docs_dir.join(format!("{}.txt", method));
+                write(&path, text.as_ref())?;
+                println!("ok");
+            }
+            Ok(o) => {
+                eprintln!("error (exit {})", o.status.code().unwrap_or(-1));
+            }
+            Err(e) => {
+                eprintln!("failed to spawn {}: {}", cli.display(), e);
+            }
+        }
+    }
+
+    println!("✅ Discovery complete — docs/{} populated.", ver);
     Ok(())
 }
