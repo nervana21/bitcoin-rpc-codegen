@@ -4,8 +4,9 @@
 //!
 //! Provides functionality to list RPC methods supported by a given bitcoin-cli binary.
 
-use anyhow::{Context, Result};
 use std::{path::Path, process::Command};
+
+use crate::error::{CoreError, DiscoverError};
 
 /// Discover available RPC methods by invoking `bitcoin-cli help`.
 ///
@@ -25,12 +26,10 @@ use std::{path::Path, process::Command};
 /// use std::path::Path;
 /// use bitcoin_rpc_codegen::discover_methods;
 ///
-/// // If your bitcoind is at /usr/local/bin/bitcoind,
-/// // then bitcoin-cli is expected next to it.
 /// let methods = discover_methods(Path::new("/usr/local/bin/bitcoind")).unwrap();
 /// assert!(methods.iter().all(|m| !m.is_empty()));
 /// ```
-pub fn discover_methods(bitcoind_bin: &Path) -> Result<Vec<String>> {
+pub fn discover_methods(bitcoind_bin: &Path) -> Result<Vec<String>, CoreError> {
     // 1) Determine bitcoin-cli path
     let cli_name = if cfg!(windows) {
         "bitcoin-cli.exe"
@@ -51,7 +50,7 @@ pub fn discover_methods(bitcoind_bin: &Path) -> Result<Vec<String>> {
     let output = Command::new(cli)
         .arg("help")
         .output()
-        .context("failed to execute `bitcoin-cli help`")?;
+        .map_err(|e| CoreError::Discover(DiscoverError::CliFailed(e.to_string())))?;
 
     // 4) Non-zero exit status => no methods
     if !output.status.success() {
