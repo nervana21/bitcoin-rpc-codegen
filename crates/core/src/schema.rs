@@ -63,22 +63,41 @@ pub fn parse_method_doc(name: &str, doc: &str) -> ApiMethod {
 /// Walk `docs_dir`, parse each `<method>.txt`, and write JSON schema to `out_file`.
 pub fn extract_api_docs(docs_dir: &Path, out_file: &Path) -> Result<(), CoreError> {
     let mut commands = Map::new();
-    for entry in fs::read_dir(docs_dir).map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("reading docs_dir failed: {e}"))))? {
-        let path = entry.map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("iterating docs_dir failed: {e}"))))?.path();
+    for entry in fs::read_dir(docs_dir).map_err(|e| {
+        CoreError::Schema(SchemaError::InvalidFormat(format!(
+            "reading docs_dir failed: {e}"
+        )))
+    })? {
+        let path = entry
+            .map_err(|e| {
+                CoreError::Schema(SchemaError::InvalidFormat(format!(
+                    "iterating docs_dir failed: {e}"
+                )))
+            })?
+            .path();
         if path.extension().and_then(|e| e.to_str()) != Some("txt") {
             continue;
         }
         let stem = path.file_stem().and_then(|s| s.to_str()).unwrap();
-        let content = fs::read_to_string(&path)
-            .map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("reading {path:?} failed: {e}"))))?;
+        let content = fs::read_to_string(&path).map_err(|e| {
+            CoreError::Schema(SchemaError::InvalidFormat(format!(
+                "reading {path:?} failed: {e}"
+            )))
+        })?;
         let method = parse_method_doc(stem, &content);
         commands.insert(stem.to_string(), json!([method]));
     }
     let wrapper = json!({ "commands": commands });
-    let mut f = fs::File::create(out_file)
-        .map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("creating {out_file:?} failed: {e}"))))?;
-    writeln!(f, "{}", serde_json::to_string_pretty(&wrapper)?)
-        .map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("writing {out_file:?} failed: {e}"))))?;
+    let mut f = fs::File::create(out_file).map_err(|e| {
+        CoreError::Schema(SchemaError::InvalidFormat(format!(
+            "creating {out_file:?} failed: {e}"
+        )))
+    })?;
+    writeln!(f, "{}", serde_json::to_string_pretty(&wrapper)?).map_err(|e| {
+        CoreError::Schema(SchemaError::InvalidFormat(format!(
+            "writing {out_file:?} failed: {e}"
+        )))
+    })?;
     Ok(())
 }
 
@@ -146,7 +165,7 @@ fn infer_results(doc: &str) -> Vec<ApiResult> {
         if in_res
             && (t.starts_with("Arguments:")
                 || t.starts_with("Examples:")
-                || t.chars().next().map_or(false, |c| c.is_digit(10)))
+                || t.chars().next().is_some_and(|c| c.is_ascii_digit()))
         {
             break;
         }
@@ -231,8 +250,11 @@ pub fn parse_api_json(input: &str) -> Result<Vec<ApiMethod>, CoreError> {
         return Ok(Vec::new());
     }
 
-    let v: serde_json::Value =
-        serde_json::from_str(input).map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("Failed to deserialize API JSON schema: {e}"))))?;
+    let v: serde_json::Value = serde_json::from_str(input).map_err(|e| {
+        CoreError::Schema(SchemaError::InvalidFormat(format!(
+            "Failed to deserialize API JSON schema: {e}"
+        )))
+    })?;
 
     let empty_map = serde_json::Map::new();
     let cmds = v
@@ -244,8 +266,11 @@ pub fn parse_api_json(input: &str) -> Result<Vec<ApiMethod>, CoreError> {
     for (name, arr) in cmds {
         if let Some(items) = arr.as_array() {
             for item in items {
-                let mut m: ApiMethod = serde_json::from_value(item.clone())
-                    .map_err(|e| CoreError::Schema(SchemaError::InvalidFormat(format!("Invalid ApiMethod entry for {name}: {e}"))))?;
+                let mut m: ApiMethod = serde_json::from_value(item.clone()).map_err(|e| {
+                    CoreError::Schema(SchemaError::InvalidFormat(format!(
+                        "Invalid ApiMethod entry for {name}: {e}"
+                    )))
+                })?;
                 m.name = name.clone();
                 methods.push(m);
             }
