@@ -6,12 +6,14 @@
 
 // Modules
 pub mod discover;
-pub mod download;
+pub mod error;
+pub mod fetch;
 pub mod generator;
 pub mod schema;
 
 // Re-exported public API
 pub use discover::discover_methods;
-pub use download::fetch_bitcoind;
+pub use error::{CoreError, DiscoverError, FetchError, GenerateError, SchemaError};
+pub use fetch::fetch_bitcoind;
 pub use generator::generate_version_code;
 pub use schema::{parse_api_json, ApiArgument, ApiMethod, ApiResult};
