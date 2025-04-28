@@ -43,6 +43,6 @@ fn fetch_bitcoind_errors_when_missing_and_unsupported_version() {
 #[test]
 fn default_platform_reports_something() {
     // We can only check it returns a non‐empty string
-    let plat = core::download::default_platform();
+    let plat = core::fetch::default_platform();
     assert!(!plat.trim().is_empty());
 }

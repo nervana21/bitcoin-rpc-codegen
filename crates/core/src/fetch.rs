@@ -1,3 +1,5 @@
+// crates/core/src/fetch.rs
+
 //! Download module for bitcoin-rpc-codegen.
 
 use anyhow::{bail, Context, Result};
@@ -25,7 +27,7 @@ use tar::Archive;
 /// ```no_run
 /// use std::env;
 /// use std::path::PathBuf;
-/// use bitcoin_rpc_codegen::download::fetch_bitcoind;
+/// use bitcoin_rpc_codegen::fetch::fetch_bitcoind;
 ///
 /// // 1) Env override takes precedence
 /// env::set_var("BITCOIND_PATH", "/usr/local/bin/bitcoind");
