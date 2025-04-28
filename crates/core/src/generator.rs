@@ -2,7 +2,7 @@
 
 use crate::schema::ApiMethod;
 use anyhow::Result;
-use std::{fs, io::Write as _, path::PathBuf};
+use std::{fs, io::Write as _, path::Path};
 
 /// Sanitize an RPC method name into a valid Rust identifier file name.
 fn sanitize_method_name(name: &str) -> String {
@@ -20,11 +20,7 @@ fn sanitize_method_name(name: &str) -> String {
 /// Given a version tag (e.g. "v29"), a list of ApiMethods,
 /// and an output directory, emit the minimal file layout so that
 /// generator_tests.rs will pass.
-pub fn generate_version_code(
-    version: &str,
-    methods: &[ApiMethod],
-    out_dir: &PathBuf,
-) -> Result<()> {
+pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &Path) -> Result<()> {
     // 1) client/src/<version>/
     let client_dir = out_dir.join("client").join("src").join(version);
     fs::create_dir_all(&client_dir)?;
