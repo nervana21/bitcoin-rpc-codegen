@@ -2,7 +2,7 @@
 
 //! Download module for bitcoin-rpc-codegen.
 
-use anyhow::{bail, Context, Result};
+use anyhow::Result;
 use flate2::read::GzDecoder;
 use reqwest::blocking::Client;
 use std::{
@@ -12,6 +12,8 @@ use std::{
     path::PathBuf,
 };
 use tar::Archive;
+
+use crate::error::FetchError;
 
 /// Download or locate the `bitcoind` binary for `version`.
 ///
@@ -41,7 +43,7 @@ use tar::Archive;
 /// assert!( fetch_bitcoind("v0").is_err() );
 /// ```
 ///
-pub fn fetch_bitcoind(version: &str) -> Result<PathBuf> {
+pub fn fetch_bitcoind(version: &str) -> Result<PathBuf, FetchError> {
     // 1) Check override
     if let Ok(path) = env::var("BITCOIND_PATH") {
         return Ok(PathBuf::from(path));
@@ -68,12 +70,15 @@ pub fn fetch_bitcoind(version: &str) -> Result<PathBuf> {
     );
 
     // 5) Prepare local paths
-    let home = env::var("HOME").context("HOME environment variable not set")?;
+    let home = env::var("HOME").map_err(|e| {
+        FetchError::DownloadFailed(format!("HOME environment variable not set: {}", e))
+    })?;
     let base_dir = PathBuf::from(home)
         .join("bitcoin-versions")
         .join(format!("v{}", major));
-    create_dir_all(&base_dir)
-        .with_context(|| format!("Failed to create directory {:?}", &base_dir))?;
+    create_dir_all(&base_dir).map_err(|e| {
+        FetchError::DownloadFailed(format!("Failed to create directory {:?}: {}", &base_dir, e))
+    })?;
 
     let archive_path = base_dir.join(&filename);
     let extract_dir = base_dir.join(format!("bitcoin-{}", semver));
@@ -84,33 +89,40 @@ pub fn fetch_bitcoind(version: &str) -> Result<PathBuf> {
         let mut resp = Client::new()
             .get(&url)
             .send()
-            .with_context(|| format!("Failed HTTP GET {}", url))?
+            .map_err(|e| FetchError::DownloadFailed(format!("Failed HTTP GET {}: {}", url, e)))?
             // Unify context: treat status errors same as connection errors
             .error_for_status()
-            .with_context(|| format!("Failed HTTP GET {}", url))?;
-        let mut out_file = File::create(&archive_path)
-            .with_context(|| format!("Failed to create file {:?}", &archive_path))?;
-        copy(&mut resp, &mut out_file).context("Failed writing download to disk")?;
+            .map_err(|e| FetchError::DownloadFailed(format!("Failed HTTP GET {}: {}", url, e)))?;
+        let mut out_file = File::create(&archive_path).map_err(|e| {
+            FetchError::DownloadFailed(format!("Failed to create file {:?}: {}", &archive_path, e))
+        })?;
+        copy(&mut resp, &mut out_file).map_err(|e| {
+            FetchError::DownloadFailed(format!("Failed writing download to disk: {}", e))
+        })?;
         println!("✅ Downloaded to {}", archive_path.display());
     }
 
     // 7) Extract if missing
     if !extract_dir.exists() {
         println!("📂 Extracting {:?} to {:?}...", archive_path, base_dir);
-        let tar_gz = File::open(&archive_path)
-            .with_context(|| format!("Failed to open archive {:?}", &archive_path))?;
+        let tar_gz = File::open(&archive_path).map_err(|e| {
+            FetchError::ExtractFailed(format!("Failed to open archive {:?}: {}", &archive_path, e))
+        })?;
         let decoder = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(decoder);
-        archive
-            .unpack(&base_dir)
-            .with_context(|| format!("Failed to unpack archive into {:?}", &base_dir))?;
+        archive.unpack(&base_dir).map_err(|e| {
+            FetchError::ExtractFailed(format!(
+                "Failed to unpack archive into {:?}: {}",
+                &base_dir, e
+            ))
+        })?;
         println!("✅ Extraction complete");
     }
 
     // 8) Return binary path
     let bitcoind_path = extract_dir.join("bin").join("bitcoind");
     if !bitcoind_path.exists() {
-        bail!("bitcoind not found at {:?}", bitcoind_path);
+        return Err(FetchError::NotFound(bitcoind_path));
     }
 
     Ok(bitcoind_path)
