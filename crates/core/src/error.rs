@@ -1,5 +1,6 @@
 // crates/core/src/error.rs
 
+use std::path::PathBuf;
 use thiserror::Error;
 
 /// Top-level error type for bitcoin-rpc-codegen
@@ -25,6 +26,15 @@ pub enum CoreError {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
+
+    #[error("other error: {0}")]
+    Other(String),
+}
+
+impl From<anyhow::Error> for CoreError {
+    fn from(err: anyhow::Error) -> Self {
+        CoreError::Other(err.to_string())
+    }
 }
 
 /// Error during binary fetching (download/extract)
@@ -35,6 +45,9 @@ pub enum FetchError {
 
     #[error("failed to extract archive: {0}")]
     ExtractFailed(String),
+
+    #[error("bitcoind binary not found at: {0}")]
+    NotFound(PathBuf),
 }
 
 /// Error during probing for available RPC methods
