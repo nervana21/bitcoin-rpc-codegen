@@ -122,22 +122,47 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         format!("json!([{}])", args)
     };
 
-    // 3) Documentation
+    // 3) Documentation with examples
     let mut docs = String::new();
+    docs.push_str("//! This file is auto-generated. Do not edit manually.\n");
+    docs.push_str("//! Generated for Bitcoin Core version: ");
+    docs.push_str(version);
+    docs.push_str("\n\n");
+
     if !method.description.trim().is_empty() {
         for line in method.description.lines().filter(|l| !l.trim().is_empty()) {
-            docs.push_str("        /// ");
+            docs.push_str("/// ");
             docs.push_str(line.trim());
             docs.push('\n');
         }
     }
 
+    // Add example usage if available
+    if let Some(example) = method.examples.as_ref() {
+        docs.push_str("\n/// # Example\n");
+        docs.push_str("/// ```rust\n");
+        docs.push_str("/// use bitcoin_rpc_codegen::client::");
+        docs.push_str(version);
+        docs.push_str("::");
+        docs.push_str(&func_name);
+        docs.push_str(";\n///\n");
+        docs.push_str("/// let client = Client::new(\"http://127.0.0.1:8332\", auth);\n");
+        docs.push_str("/// let result = client.");
+        docs.push_str(&func_name);
+        docs.push_str("(");
+        if !method.arguments.is_empty() {
+            docs.push_str("/* params */");
+        }
+        docs.push_str(").await?;\n");
+        docs.push_str("/// ```\n");
+    }
+
     // 4) Assemble the macro
     let mut out = String::new();
+    out.push_str(&docs);
     writeln!(out, "/// client impl for `{}` RPC ({})", name, version).unwrap();
     writeln!(out, "macro_rules! {} {{", macro_name).unwrap();
     writeln!(out, "    () => {{").unwrap();
-    out.push_str(&docs);
     if params_decl.is_empty() {
         writeln!(
             out,
@@ -180,7 +205,27 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     } else {
         generate_struct_fields(result)
     };
-    Some(generate_struct(&type_name, &formatted_description, &fields))
+
+    let mut s = String::new();
+    writeln!(
+        s,
+        "//! This file is auto-generated. Do not edit manually.\n"
+    )
+    .unwrap();
+    writeln!(s, "/// Response type for the {} RPC call.", type_name).unwrap();
+    if !formatted_description.trim().is_empty() {
+        writeln!(s, "{}", formatted_description).unwrap();
+    }
+    writeln!(
+        s,
+        "#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]"
+    )
+    .unwrap();
+    writeln!(s, "pub struct {} {{", type_name).unwrap();
+    writeln!(s, "{}", fields).unwrap();
+    writeln!(s, "}}\n").unwrap();
+
+    Some(s)
 }
 
 fn get_return_type(result: &ApiResult) -> String {
@@ -226,46 +271,37 @@ fn generate_struct_fields(result: &ApiResult) -> String {
 /// and an output directory, emit the minimal file layout so that
 /// generator_tests.rs will pass.
 pub fn generate_version_code(version: &str, methods: &[ApiMethod], out_dir: &Path) -> Result<()> {
-    // 1) client/src/<version>/
-    let client_dir = out_dir.join("client").join("src").join(version);
-    fs::create_dir_all(&client_dir)?;
+    // Create version directory
+    let version_dir = out_dir.join(version);
+    fs::create_dir_all(&version_dir)?;
 
     // Generate client stubs
     for method in methods {
         let fname = sanitize_method_name(&method.name) + ".rs";
-        let mut file = fs::File::create(client_dir.join(&fname))?;
+        let mut file = fs::File::create(version_dir.join(&fname))?;
         let macro_code = generate_client_macro(method, version);
         write!(file, "{}", macro_code)?;
     }
 
     // Generate mod.rs
     {
-        let mut mod_rs = fs::File::create(client_dir.join("mod.rs"))?;
+        let mut mod_rs = fs::File::create(version_dir.join("mod.rs"))?;
+        writeln!(
+            mod_rs,
+            "//! This file is auto-generated. Do not edit manually.\n"
+        )?;
         for method in methods {
             let modname = sanitize_method_name(&method.name);
             writeln!(mod_rs, "pub mod {};", modname)?;
         }
     }
 
-    // 2) types/src/<version>/
-    let types_dir = out_dir.join("types").join("src").join(version);
-    fs::create_dir_all(&types_dir)?;
-
-    // Generate type definitions
+    // Generate type definitions in the same directory
     for method in methods {
-        let fname = sanitize_method_name(&method.name) + ".rs";
-        let mut file = fs::File::create(types_dir.join(&fname))?;
+        let fname = sanitize_method_name(&method.name) + "_types.rs";
+        let mut file = fs::File::create(version_dir.join(&fname))?;
         if let Some(type_code) = generate_return_type(method) {
             write!(file, "{}", type_code)?;
-        }
-    }
-
-    // Generate mod.rs
-    {
-        let mut mod_rs = fs::File::create(types_dir.join("mod.rs"))?;
-        for method in methods {
-            let modname = sanitize_method_name(&method.name);
-            writeln!(mod_rs, "pub mod {};", modname)?;
         }
     }
 
