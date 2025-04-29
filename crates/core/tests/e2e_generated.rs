@@ -1,13 +1,14 @@
 // tests/e2e_generated.rs
 
-use anyhow::{Context, Result};
-use bitcoin_rpc_codegen::schema::{parse_api_json, ApiArgument, ApiResult};
+// use anyhow::{Context, Result};
+use bitcoin_rpc_codegen::schema::{ApiArgument, ApiResult};
 // use bitcoin_rpc_codegen::v29::client::getnewaddress::getnewaddress;
 // use bitcoin_rpc_codegen::client::RegtestClient;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
-use std::fs;
+// use std::fs;
 
+#[allow(dead_code)]
 fn dummy_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> Vec<Value> {
     args.iter()
         .map(|arg| {
@@ -36,6 +37,7 @@ fn dummy_params(args: &[ApiArgument], best_block: &str, dummy_txid: &str) -> Vec
         .collect()
 }
 
+#[allow(dead_code)]
 fn validate_result_shape(expected: &ApiResult, value: &Value, path: &str) -> Vec<String> {
     let mut errors = Vec::new();
     match (expected.type_.as_str(), value) {
