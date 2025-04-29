@@ -16,4 +16,4 @@ pub use discover::discover_methods;
 pub use error::{CoreError, DiscoverError, FetchError, GenerateError, SchemaError};
 pub use fetch::fetch_bitcoind;
 pub use generator::generate_version_code;
-pub use schema::{parse_api_json, ApiArgument, ApiMethod, ApiResult};
+pub use schema::{extract_api_docs, parse_api_json, ApiArgument, ApiMethod, ApiResult};
