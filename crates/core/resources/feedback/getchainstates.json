@@ -1,0 +1,16 @@
+{
+  "chainstates": [
+    {
+      "bestblockhash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206",
+      "bits": "207fffff",
+      "blocks": 0,
+      "coins_db_cache_bytes": 8388608,
+      "coins_tip_cache_bytes": 461373440,
+      "difficulty": 4.6565423739069247e-10,
+      "target": "7fffff0000000000000000000000000000000000000000000000000000000000",
+      "validated": true,
+      "verificationprogress": 1
+    }
+  ],
+  "headers": 0
+}
