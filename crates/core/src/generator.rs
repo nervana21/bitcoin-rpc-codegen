@@ -138,7 +138,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     }
 
     // Add example usage if available
-    if let Some(example) = method.examples.as_ref() {
+    if let Some(_example) = method.examples.as_ref() {
         docs.push_str("\n/// # Example\n");
         docs.push_str("/// ```rust\n");
         docs.push_str("/// use bitcoin_rpc_codegen::client::");
@@ -149,7 +149,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         docs.push_str("/// let client = Client::new(\"http://127.0.0.1:8332\", auth);\n");
         docs.push_str("/// let result = client.");
         docs.push_str(&func_name);
-        docs.push_str("(");
+        docs.push('(');
         if !method.arguments.is_empty() {
             docs.push_str("/* params */");
         }
@@ -236,22 +236,22 @@ fn get_return_type(result: &ApiResult) -> String {
     }
 }
 
-fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
-    let mut s = String::new();
-    writeln!(s, "/// Response for the {} RPC call.", type_name).unwrap();
-    if !description.trim().is_empty() {
-        writeln!(s, "{}", description).unwrap();
-    }
-    writeln!(
-        s,
-        "#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]"
-    )
-    .unwrap();
-    writeln!(s, "pub struct {} {{", type_name).unwrap();
-    writeln!(s, "{}", fields).unwrap();
-    writeln!(s, "}}\n").unwrap();
-    s
-}
+// fn generate_struct(type_name: &str, description: &str, fields: &str) -> String {
+//     let mut s = String::new();
+//     writeln!(s, "/// Response for the {} RPC call.", type_name).unwrap();
+//     if !description.trim().is_empty() {
+//         writeln!(s, "{}", description).unwrap();
+//     }
+//     writeln!(
+//         s,
+//         "#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]"
+//     )
+//     .unwrap();
+//     writeln!(s, "pub struct {} {{", type_name).unwrap();
+//     writeln!(s, "{}", fields).unwrap();
+//     writeln!(s, "}}\n").unwrap();
+//     s
+// }
 
 fn generate_struct_fields(result: &ApiResult) -> String {
     let mut fields = String::new();
