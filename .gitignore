@@ -20,6 +20,8 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+target/tmp/
+**/target/tmp/
 *.swp
 *.bak
 *.old
