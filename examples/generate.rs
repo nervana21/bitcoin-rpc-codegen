@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use bitcoin_rpc_codegen::generator::{generate_mod_rs, generate_version_code};
-use bitcoin_rpc_codegen::parser::parse_api_json;
+use bitcoin_rpc_codegen::schema::parse_api_json;
 use std::{fs, path::PathBuf};
 
 fn main() -> Result<()> {

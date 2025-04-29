@@ -1,7 +1,7 @@
 // examples/regenerate_schema_v29.rs
 
 use anyhow::Result;
-use bitcoin_rpc_codegen::parser::{ApiArgument, ApiMethod, ApiResult};
+use bitcoin_rpc_codegen::schema::{ApiArgument, ApiMethod, ApiResult};
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf};
 

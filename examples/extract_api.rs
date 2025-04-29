@@ -1,7 +1,7 @@
 // examples/extract_api.rs
 
 use anyhow::{Context, Result};
-use bitcoin_rpc_codegen::parser::{ApiArgument, ApiResult};
+use bitcoin_rpc_codegen::schema::{ApiArgument, ApiResult};
 use bitcoin_rpc_codegen::Conf;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use regex::Regex;

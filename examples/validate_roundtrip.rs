@@ -1,7 +1,7 @@
 // examples/validate_roundtrip_v29.rs
 
 use anyhow::{Context, Result};
-use bitcoin_rpc_codegen::parser::{parse_api_json, ApiMethod, ApiResult};
+use bitcoin_rpc_codegen::schema::{parse_api_json, ApiMethod, ApiResult};
 use bitcoin_rpc_codegen::{Conf, RegtestClient};
 use serde_json::Value;
 use std::{collections::HashSet, fs};

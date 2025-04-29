@@ -27,7 +27,6 @@ pub struct ApiResult {
     pub inner: Vec<ApiResult>,
 }
 
-// use crate::parser::ApiMethod;
 use anyhow::{Context, Error};
 use serde_json::Value;
 

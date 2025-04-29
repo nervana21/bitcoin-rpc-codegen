@@ -1,7 +1,7 @@
 // tests/e2e_generated.rs
 
 use anyhow::{Context, Result};
-use bitcoin_rpc_codegen::parser::{parse_api_json, ApiArgument, ApiResult};
+use bitcoin_rpc_codegen::schema::{parse_api_json, ApiArgument, ApiResult};
 // use bitcoin_rpc_codegen::v29::client::getnewaddress::getnewaddress;
 use bitcoin_rpc_codegen::RegtestClient;
 use serde_json::{json, Value};

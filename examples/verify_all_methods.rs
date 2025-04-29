@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bitcoin_rpc_codegen::parser::{parse_api_json, ApiArgument, ApiMethod};
+use bitcoin_rpc_codegen::schema::{parse_api_json, ApiArgument, ApiMethod};
 use bitcoin_rpc_codegen::{Conf, RegtestClient};
 use serde_json::{json, Map, Value};
 use std::fs;
