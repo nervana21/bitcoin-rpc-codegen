@@ -30,5 +30,4 @@ target/tmp/
 # Project-specific
 /feedback/
 /resources/
-/examples/**/target/
 /.gpt_marker_commit
