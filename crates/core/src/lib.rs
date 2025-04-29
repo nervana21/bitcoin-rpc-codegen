@@ -13,7 +13,7 @@ pub mod schema;
 pub mod version;
 
 // Re-exported public API
-pub use discover::discover_methods;
+pub use discover::{discover_methods, parse_help_output};
 pub use error::{CoreError, DiscoverError, FetchError, GenerateError, SchemaError};
 pub use fetch::fetch_bitcoind;
 pub use generator::{
