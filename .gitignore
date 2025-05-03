@@ -31,3 +31,8 @@ target/tmp/
 /feedback/
 /resources/
 /.gpt_marker_commit
+
+crates/core/resources/docs/
+crates/core/resources/feedback/
+crates/core/resources/api_v*.json
+crates/core/resources/schema.json
