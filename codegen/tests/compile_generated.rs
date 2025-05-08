@@ -1,4 +1,4 @@
-use codegen::{write_generated, BasicCodeGenerator, CodeGenerator, JsonRpcCodeGenerator};
+use codegen::{write_generated, BasicCodeGenerator, CodeGenerator, TransportCodeGenerator};
 use rpc_api::ApiMethod;
 use std::{fs, process::Command};
 use tempfile::TempDir;
@@ -10,21 +10,25 @@ fn generated_code_compiles() {
     let project = tmp.path();
 
     // Write Cargo.toml
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     fs::write(
         project.join("Cargo.toml"),
-        r#"[package]
+        format!(
+            r#"[package]
 name = "gen_test"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+transport = {{ path = "{}/../transport" }}
 serde_json = "1"
-reqwest = { version = "0.12.15", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
+tokio = {{ version = "1", features = ["full"] }}
 
 [lib]
 path = "src/lib.rs"
 "#,
+            manifest_dir
+        ),
     )
     .expect("write Cargo.toml");
 
@@ -75,21 +79,25 @@ fn json_rpc_generated_code_compiles() {
     let project = tmp.path();
 
     // Write Cargo.toml
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     fs::write(
         project.join("Cargo.toml"),
-        r#"[package]
+        format!(
+            r#"[package]
 name = "gen_test"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+transport = {{ path = "{}/../transport" }}
 serde_json = "1"
-reqwest = { version = "0.12.15", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
+tokio = {{ version = "1", features = ["full"] }}
 
 [lib]
 path = "src/lib.rs"
 "#,
+            manifest_dir
+        ),
     )
     .expect("write Cargo.toml");
 
@@ -112,9 +120,7 @@ path = "src/lib.rs"
             results: vec![],
         },
     ];
-    let gen = JsonRpcCodeGenerator {
-        url: "http://127.0.0.1:18443".into(),
-    };
+    let gen = TransportCodeGenerator;
     let files = gen.generate(&methods);
     write_generated(&src, &files).expect("write_generated");
 

@@ -1,8 +1,8 @@
-use codegen::{CodeGenerator, JsonRpcCodeGenerator};
+use codegen::{CodeGenerator, TransportCodeGenerator};
 use rpc_api::ApiMethod;
 
 #[test]
-fn json_rpc_codegen_emits_reqwest_and_url() {
+fn test_json_rpc_codegen_transport() {
     let methods = vec![ApiMethod {
         name: "foo".into(),
         description: "".into(),
@@ -10,9 +10,7 @@ fn json_rpc_codegen_emits_reqwest_and_url() {
         results: vec![],
     }];
 
-    let gen = JsonRpcCodeGenerator {
-        url: "http://example.com".into(),
-    };
+    let gen = TransportCodeGenerator;
     let files = gen.generate(&methods);
 
     // should produce exactly one module named "foo"
@@ -20,8 +18,8 @@ fn json_rpc_codegen_emits_reqwest_and_url() {
     let (mod_name, src) = &files[0];
     assert_eq!(mod_name, "foo");
 
-    // spot the reqwest import, the correct URL, and the JSON-RPC method name
-    assert!(src.contains("use reqwest::Client;"));
-    assert!(src.contains(r#"post("http://example.com")"#));
-    assert!(src.contains(r#""method": "foo""#));
+    // now should reference Transport
+    assert!(src.contains("use transport::Transport;"));
+    assert!(src.contains("transport.send_request(\"foo\""));
+    assert!(src.contains("pub async fn foo"));
 }
