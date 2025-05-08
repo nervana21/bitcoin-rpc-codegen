@@ -8,16 +8,6 @@
 Cargo.lock
 **/*.rs.bk
 
-# IDE settings
-/.idea/
-/.vscode/
-/*.sublime-workspace
-/*.sublime-project
-
-# OS artifacts
-.DS_Store
-Thumbs.db
-
 # Temporary files
 *.tmp
 target/tmp/
