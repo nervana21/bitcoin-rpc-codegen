@@ -6,23 +6,23 @@ digraph BitcoinRpcCodegen {
     rank = min;
     label="Legend"; fontsize=12;
     node [shape=box style=filled];
-    legend_core     [label="Core Crate\n(types, errors, versions)" fillcolor="#ffffff" color="#888888"];
-    legend_parser   [label="Parser" fillcolor="#ccffcc" color="#888888"];
-    legend_schema   [label="Schema\n(norm & val)" fillcolor="#ccccff" color="#888888"];
-    legend_codegen  [label="Codegen" fillcolor="#ffcccc" color="#888888"];
-    legend_transport[label="Transport\n(JSON‑RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
-    legend_client   [label="Client\n(RpcClient)" fillcolor="#ccffff" color="#888888"];
-    legend_node_mgr [label="Node Manager\n(bitcoind spawn & control)" fillcolor="#ccffff" color="#888888"];
-    legend_cli      [label="CLI / Pipeline" fillcolor="#ffccff" color="#888888"];
-    legend_cross    [label="Cross‑cutting Crates" fillcolor="#ffffff" color="#888888"];
-    legend_tests    [label="Testing Harnesses" fillcolor="#ffcc80" color="#888888"];
+    legend_rpc_api   [label="rpc_api Crate\n(types, errors, versions)" fillcolor="#ffffff" color="#888888"];
+    legend_parser    [label="Parser" fillcolor="#ccffcc" color="#888888"];
+    legend_schema    [label="Schema\n(norm & val)" fillcolor="#ccccff" color="#888888"];
+    legend_codegen   [label="Codegen" fillcolor="#ffcccc" color="#888888"];
+    legend_transport [label="Transport\n(JSON‑RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
+    legend_client    [label="Client\n(RpcClient)" fillcolor="#ccffff" color="#888888"];
+    legend_node_mgr  [label="Node Manager\n(bitcoind spawn & control)" fillcolor="#ccffff" color="#888888"];
+    legend_cli       [label="CLI / Pipeline" fillcolor="#ffccff" color="#888888"];
+    legend_cross     [label="Cross‑cutting Crates" fillcolor="#ffffff" color="#888888"];
+    legend_tests     [label="Testing Harnesses" fillcolor="#ffcc80" color="#888888"];
   }
 
-  // ───────────── Core crate ─────────────
-  subgraph cluster_core {
-    label="core"; style=filled; fillcolor="#f0f0f0"; color="#888888";
+  // ───────────── rpc_api crate ─────────────
+  subgraph cluster_rpc_api {
+    label="rpc_api"; style=filled; fillcolor="#f0f0f0"; color="#888888";
     node [shape=box style=filled fillcolor="#ffffff" color="#000000"];
-    core [label="core\n(types, errors, versions)"];
+    rpc_api [label="rpc_api\n(types, errors, versions)"];
   }
 
   // ───────────── Parser crate ─────────────
@@ -81,19 +81,19 @@ digraph BitcoinRpcCodegen {
   verify           [label="verify"          shape=box style=filled fillcolor="#ffcc80"];
 
   // ───────────── Dependencies ─────────────
-  parser           -> core;
+  parser           -> rpc_api;
   schema_norm      -> parser;
-  schema_norm      -> core;
+  schema_norm      -> rpc_api;
   schema_val       -> schema_norm;
-  schema_val       -> core;
+  schema_val       -> rpc_api;
   codegen          -> schema_norm;
   codegen          -> schema_val;
-  codegen          -> core;
+  codegen          -> rpc_api;
   transport        -> util;
   client           -> codegen;
   client           -> transport;
-  client           -> core;
-  node_mgr         -> core;
+  client           -> rpc_api;
+  node_mgr         -> rpc_api;
   node_mgr         -> util;
   node_mgr         -> config;
   pipeline         -> parser;

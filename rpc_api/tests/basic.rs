@@ -1,6 +1,8 @@
-// core/tests/basic.rs
+// rpc_api/tests/basic.rs
 
-use core::{parse_version, ApiArgument, ApiMethod, ApiResult, Error, Version, SUPPORTED_VERSIONS};
+use rpc_api::{
+    parse_version, ApiArgument, ApiMethod, ApiResult, Error, Version, SUPPORTED_VERSIONS,
+};
 use serde_json;
 
 /// Make sure all supported version strings round‐trip through `parse_version`.

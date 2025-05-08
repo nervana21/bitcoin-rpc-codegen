@@ -1,4 +1,4 @@
-//! core/src/lib.rs
+//! rpc_api/src/lib.rs
 //! Defines the canonical types, error enum, and supported-version logic.
 
 use serde::{Deserialize, Serialize};
