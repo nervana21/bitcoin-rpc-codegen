@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 /target/
 !/target/generated/
+/client/src/generated/
 
 # Rust artifacts
 Cargo.lock
