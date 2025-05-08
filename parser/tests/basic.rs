@@ -5,7 +5,7 @@ getblockchaininfo
 Returns an object containing various state info regarding blockchain processing.
 
 getnetworkinfo ( verbose )
-Returns an object containing network-related info.
+Returns an object containing various state info regarding P2P networking.
 
 stop
 Immediately shuts down the server.
@@ -19,7 +19,7 @@ fn parse_sample_blocks() {
     assert_eq!(names, &["getblockchaininfo", "getnetworkinfo", "stop"]);
 
     // Check raw text preservation
-    assert!(methods[1].raw.contains("network-related"));
+    assert!(methods[1].raw.contains("P2P networking"));
 }
 
 #[test]
