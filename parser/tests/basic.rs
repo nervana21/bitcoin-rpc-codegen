@@ -1,3 +1,5 @@
+// parser/tests/basic.rs
+
 use parser::{DefaultHelpParser, HelpParser, ParserError};
 
 static SAMPLE_HELP: &str = r#"
@@ -29,4 +31,19 @@ fn empty_input_errors() {
         Err(ParserError::NoMethods) => {}
         other => panic!("expected NoMethods, got {:?}", other),
     }
+}
+
+#[test]
+fn ignores_category_headings() {
+    let raw = r#"
+== Foo ==
+getfoo "arg"  Description of getfoo.
+
+== Bar ==
+getbar
+    "#;
+
+    let methods = DefaultHelpParser.parse(raw).expect("should parse methods");
+    let names: Vec<_> = methods.iter().map(|m| m.name.as_str()).collect();
+    assert_eq!(names, &["getfoo", "getbar"]);
 }
