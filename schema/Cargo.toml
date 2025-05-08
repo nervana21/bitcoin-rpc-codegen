@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# <-- add only what each crate truly needs as we flesh them out
+rpc_api = { path = "../rpc_api" }
+parser = { path = "../parser" }
+thiserror = "2.0.12"
