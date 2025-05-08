@@ -33,15 +33,15 @@ pub struct ApiResult {
 }
 
 /// Supported Bitcoin‐Core RPC versions
-pub const SUPPORTED_VERSIONS: &[&str] = &["v24", "v25", "v26" /* etc. */];
+pub const SUPPORTED_VERSIONS: &[&str] = &["v27", "v28", "v29" /* etc. */];
 
 /// Parsed version enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Version {
-    V24,
-    V25,
-    V26,
-    // …
+    V27,
+    V28,
+    V29,
+    // TODO: add support for prior versions
 }
 
 #[derive(Error, Debug)]
@@ -57,15 +57,15 @@ pub enum Error {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    // …any others you need
+    // TODO: add more cases as needed
 }
 
 /// Convert a string tag into our `Version` enum
 pub fn parse_version(s: &str) -> Result<Version, Error> {
     match s {
-        "v24" => Ok(Version::V24),
-        "v25" => Ok(Version::V25),
-        "v26" => Ok(Version::V26),
+        "v27" => Ok(Version::V27),
+        "v28" => Ok(Version::V28),
+        "v29" => Ok(Version::V29),
         other => Err(Error::UnsupportedVersion(other.to_string())),
     }
 }

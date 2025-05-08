@@ -12,10 +12,10 @@ fn supported_versions_parseable() {
         let v = parse_version(tag).unwrap_or_else(|e| panic!("`{}` failed to parse: {}", tag, e));
         // And matching back out (optional):
         let back = match v {
-            Version::V24 => "v24",
-            Version::V25 => "v25",
-            Version::V26 => "v26",
-            // …extend as you add versions
+            Version::V27 => "v27",
+            Version::V28 => "v28",
+            Version::V29 => "v29",
+            // TODO: add more cases as needed
         };
         assert_eq!(back, tag, "Version enum → &str mismatch");
     }
