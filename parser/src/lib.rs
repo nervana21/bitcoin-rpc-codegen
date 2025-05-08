@@ -11,7 +11,7 @@ pub struct MethodHelp {
     pub raw: String,
 }
 
-/// Errors that can occur during help‐text parsing.
+/// Errors that can occur during help‑text parsing.
 #[derive(Error, Debug)]
 pub enum ParserError {
     #[error("no methods found")]
@@ -20,39 +20,62 @@ pub enum ParserError {
     Regex(#[from] regex::Error),
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    // TODO: add more cases as needed
 }
 
-/// A help‐text parser: input is the entire `bitcoin-cli help` output,
-/// output is a Vec of (name, raw‐text) blocks.
+/// A help‑text parser: input is the entire `bitcoin-cli help` output,
+/// output is a Vec of `MethodHelp` blocks.
 pub trait HelpParser {
     fn parse(&self, raw_help: &str) -> Result<Vec<MethodHelp>, ParserError>;
 }
 
-/// The “standard” help parser: splits on blank lines and captures the first token as name.
+/// The “standard” help parser: groups each signature plus following description
+/// under a single MethodHelp, ignoring blank lines and category headings.
 pub struct DefaultHelpParser;
 
 impl HelpParser for DefaultHelpParser {
     fn parse(&self, raw_help: &str) -> Result<Vec<MethodHelp>, ParserError> {
-        // Simple first cut: split on double‐newlines
         let mut methods = Vec::new();
-        for block in raw_help.trim().split("\n\n") {
-            let block = block.trim();
-            if block.is_empty() {
+        let mut current_name: Option<String> = None;
+        let mut current_raw: Vec<String> = Vec::new();
+
+        for line in raw_help.lines() {
+            let trimmed_end = line.trim_end();
+            let trimmed = trimmed_end.trim_start();
+
+            // Skip blank lines and category headings
+            if trimmed.is_empty() || trimmed.starts_with("=") {
                 continue;
             }
-            // First word of the first line is the method name
-            let first_line = block.lines().next().unwrap();
-            let name = first_line
-                .split_whitespace()
-                .next()
-                .ok_or(ParserError::NoMethods)?
-                .to_string();
+
+            let first_char = trimmed.chars().next().unwrap();
+            if first_char.is_ascii_lowercase() {
+                // New method signature line
+                if let Some(name) = current_name.take() {
+                    methods.push(MethodHelp {
+                        name,
+                        raw: current_raw.join("\n"),
+                    });
+                }
+                // Start a new block
+                let name_tok = trimmed.split_whitespace().next().unwrap().to_string();
+                current_name = Some(name_tok.clone());
+                current_raw.clear();
+                current_raw.push(trimmed.to_string());
+            } else {
+                // Description or continuation line
+                if current_name.is_some() {
+                    current_raw.push(trimmed.to_string());
+                }
+            }
+        }
+        // Push last buffered method
+        if let Some(name) = current_name.take() {
             methods.push(MethodHelp {
                 name,
-                raw: block.to_string(),
+                raw: current_raw.join("\n"),
             });
         }
+
         if methods.is_empty() {
             Err(ParserError::NoMethods)
         } else {
