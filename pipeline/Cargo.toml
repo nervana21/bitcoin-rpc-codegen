@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# <-- add only what each crate truly needs as we flesh them out
+anyhow = "1.0"
+clap = { version = "4", features = ["derive"] }
+parser = { path = "../parser" }
+schema = { path = "../schema" }
+codegen = { path = "../codegen" }
+transport = { path = "../transport" }
+client = { path = "../client" }
