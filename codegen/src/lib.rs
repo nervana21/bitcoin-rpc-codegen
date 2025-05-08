@@ -1,6 +1,7 @@
 // codegen/src/lib.rs
 
 use rpc_api::ApiMethod;
+use std::{fs, io::Write, path::Path};
 
 /// A code generator that turns a list of `ApiMethod` into Rust source files.
 ///
@@ -32,4 +33,22 @@ pub fn {name}() {{
             })
             .collect()
     }
+}
+
+/// Write generated modules to disk under `out_dir`.
+///
+/// Creates `out_dir` if needed, and writes each `(module_name, src)`
+/// pair to a `<module_name>.rs` file.
+pub fn write_generated<P: AsRef<Path>>(
+    out_dir: P,
+    files: &[(String, String)],
+) -> std::io::Result<()> {
+    let out_dir = out_dir.as_ref();
+    fs::create_dir_all(out_dir)?;
+    for (name, src) in files {
+        let path = out_dir.join(format!("{}.rs", name));
+        let mut file = fs::File::create(&path)?;
+        file.write_all(src.as_bytes())?;
+    }
+    Ok(())
 }
