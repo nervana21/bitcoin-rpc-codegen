@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# <-- add only what each crate truly needs as we flesh them out
+transport = { path = "../transport" }
+serde_json = "1.0"
+thiserror = "2.0.12"
+
+[dev-dependencies]
+mockito = "1.7.0"
+tokio = { version = "1", features = ["full"] }
