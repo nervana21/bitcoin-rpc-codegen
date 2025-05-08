@@ -98,20 +98,49 @@ impl CodeGenerator for TransportCodeGenerator {
             .iter()
             .map(|m| {
                 let name = &m.name;
+
+                // 1) Build the fn signature args: always `transport: &Transport`,
+                //    plus one `arg_name: serde_json::Value` per ApiArgument.
+                let mut fn_args = vec!["transport: &Transport".to_string()];
+                for arg in &m.arguments {
+                    let arg_name = &arg.names[0];
+                    fn_args.push(format!("{}: serde_json::Value", arg_name));
+                }
+                let fn_args = fn_args.join(", ");
+
+                // 2) Build the params vector literal: either `vec![]` or
+                //    `vec![ json!(arg1), json!(arg2), … ]`.
+                let params_expr = if m.arguments.is_empty() {
+                    // explicit empty Vec<Value> so `P = Value` can be inferred
+                    "Vec::<Value>::new()".to_string()
+                } else {
+                    let elems: Vec<_> = m
+                        .arguments
+                        .iter()
+                        .map(|arg| format!("json!({})", &arg.names[0]))
+                        .collect();
+                    format!("vec![{}]", elems.join(", "))
+                };
+
+                // 3) Emit the module source
                 let src = format!(
                     r#"// Auto‑generated JSON‑RPC client for `{name}`, via Transport
 
 use transport::Transport;
-use serde_json::Value;
+use serde_json::{{json, Value}};
 use transport::TransportError;
 
 /// Calls the `{name}` RPC method.
-pub async fn {name}(transport: &Transport) -> Result<Value, TransportError> {{
-    transport.send_request("{name}", &[] as &[Value]).await
+pub async fn {name}({fn_args}) -> Result<Value, TransportError> {{
+    let params = {params_expr};
+    transport.send_request("{name}", &params).await
 }}
 "#,
                     name = name,
+                    fn_args = fn_args,
+                    params_expr = params_expr,
                 );
+
                 (name.clone(), src)
             })
             .collect()
