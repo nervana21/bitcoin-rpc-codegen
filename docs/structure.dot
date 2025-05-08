@@ -1,0 +1,117 @@
+digraph BitcoinRpcCodegen {
+  graph [rankdir=LR, splines=ortho];
+
+  // ───────────── Legend ─────────────
+  subgraph cluster_legend {
+    rank = min;
+    label="Legend"; fontsize=12;
+    node [shape=box style=filled];
+    legend_core     [label="Core Crate\n(types, errors, versions)" fillcolor="#ffffff" color="#888888"];
+    legend_parser   [label="Parser" fillcolor="#ccffcc" color="#888888"];
+    legend_schema   [label="Schema\n(norm & val)" fillcolor="#ccccff" color="#888888"];
+    legend_codegen  [label="Codegen" fillcolor="#ffcccc" color="#888888"];
+    legend_transport[label="Transport\n(JSON‑RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
+    legend_client   [label="Client\n(RpcClient)" fillcolor="#ccffff" color="#888888"];
+    legend_node_mgr [label="Node Manager\n(bitcoind spawn & control)" fillcolor="#ccffff" color="#888888"];
+    legend_cli      [label="CLI / Pipeline" fillcolor="#ffccff" color="#888888"];
+    legend_cross    [label="Cross‑cutting Crates" fillcolor="#ffffff" color="#888888"];
+    legend_tests    [label="Testing Harnesses" fillcolor="#ffcc80" color="#888888"];
+  }
+
+  // ───────────── Core crate ─────────────
+  subgraph cluster_core {
+    label="core"; style=filled; fillcolor="#f0f0f0"; color="#888888";
+    node [shape=box style=filled fillcolor="#ffffff" color="#000000"];
+    core [label="core\n(types, errors, versions)"];
+  }
+
+  // ───────────── Parser crate ─────────────
+  subgraph cluster_parser {
+    label="parser"; style=filled; fillcolor="#ccffcc"; color="#669966";
+    parser [label="parser\n(HelpParser)"];
+  }
+
+  // ───────────── Schema crate ─────────────
+  subgraph cluster_schema {
+    label="schema"; style=filled; fillcolor="#ccccff"; color="#6666CC";
+    schema_norm [label="schema_normalizer"];
+    schema_val  [label="schema_validator"];
+  }
+
+  // ───────────── Codegen crate ─────────────
+  subgraph cluster_codegen {
+    label="codegen"; style=filled; fillcolor="#ffcccc"; color="#CC6666";
+    codegen [label="codegen"];
+  }
+
+  // ───────────── Transport crate ─────────────
+  subgraph cluster_transport {
+    label="transport"; style=filled; fillcolor="#ffffcc"; color="#CCCC66";
+    transport [label="transport\n(JSON‑RPC HTTP)"];
+  }
+
+  // ───────────── Client crate ─────────────
+  subgraph cluster_client {
+    label="client"; style=filled; fillcolor="#ccffff"; color="#66CCCC";
+    client [label="client\n(RpcClient)"];
+  }
+
+  // ───────────── Node Manager crate ─────────────
+  subgraph cluster_node_mgr {
+    label="node"; style=filled; fillcolor="#ccffff"; color="#339999";
+    node_mgr [label="node\n(NodeManager)"];
+  }
+
+  // ───────────── CLI / Pipeline crate ─────────────
+  subgraph cluster_cli {
+    label="cli"; style=filled; fillcolor="#ffccff"; color="#CC66CC";
+    pipeline [label="pipeline\n(DAG Executor)"];
+    cli_app  [label="cli\n(CLI)"];
+  }
+
+  // ───────────── Cross‑cutting crates ─────────────
+  config  [label="config"  shape=box style=filled fillcolor="#ffffff"];
+  util    [label="util"    shape=box style=filled fillcolor="#ffffff"];
+  logging [label="logging" shape=box style=filled fillcolor="#ffffff"];
+  metrics [label="metrics" shape=box style=filled fillcolor="#ffffff"];
+
+  // ───────────── Testing harnesses ─────────────
+  integration_test [label="integration-test" shape=box style=filled fillcolor="#ffcc80"];
+  fuzz             [label="fuzz"            shape=box style=filled fillcolor="#ffcc80"];
+  verify           [label="verify"          shape=box style=filled fillcolor="#ffcc80"];
+
+  // ───────────── Dependencies ─────────────
+  parser           -> core;
+  schema_norm      -> parser;
+  schema_norm      -> core;
+  schema_val       -> schema_norm;
+  schema_val       -> core;
+  codegen          -> schema_norm;
+  codegen          -> schema_val;
+  codegen          -> core;
+  transport        -> util;
+  client           -> codegen;
+  client           -> transport;
+  client           -> core;
+  node_mgr         -> core;
+  node_mgr         -> util;
+  node_mgr         -> config;
+  pipeline         -> parser;
+  pipeline         -> schema_norm;
+  pipeline         -> schema_val;
+  pipeline         -> codegen;
+  pipeline         -> transport;
+  pipeline         -> client;
+  pipeline         -> node_mgr;
+  cli_app          -> pipeline;
+  cli_app          -> config;
+  cli_app          -> logging;
+  cli_app          -> metrics;
+  integration_test -> node_mgr;
+  integration_test -> client;
+  integration_test -> verify;
+  fuzz             -> parser;
+  fuzz             -> transport;
+  verify           -> client;
+  verify           -> schema_norm;
+}

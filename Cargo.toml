@@ -1,3 +1,19 @@
 [workspace]
-resolver = "2"
-members = ["crates/core"]
+members = [
+    "core",
+    "parser",
+    "schema",
+    "codegen",
+    "transport",
+    "client",
+    "node",
+    "pipeline",
+    "cli",
+    "config",
+    "util",
+    "logging",
+    "metrics",
+    "integration-test",
+    "fuzz",
+    "verify",
+]
