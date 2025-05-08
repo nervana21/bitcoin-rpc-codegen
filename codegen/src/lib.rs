@@ -52,3 +52,52 @@ pub fn write_generated<P: AsRef<Path>>(
     }
     Ok(())
 }
+
+/// A generator that emits fully‑templated JSON‑RPC async functions
+/// using `reqwest` and `serde_json`.
+pub struct JsonRpcCodeGenerator {
+    /// The URL of the Bitcoin node RPC endpoint, e.g. "http://127.0.0.1:18443"
+    pub url: String,
+}
+
+impl CodeGenerator for JsonRpcCodeGenerator {
+    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+        methods
+            .iter()
+            .map(|m| {
+                let func = &m.name;
+                let rpc = &m.name;
+                let src = format!(
+                    r#"// Auto‑generated JSON-RPC client for `{rpc}`
+
+use serde_json::json;
+use serde_json::Value;
+use reqwest::Client;
+
+/// Calls the `{rpc}` method on the configured node.
+pub async fn {func}(client: &Client) -> Result<Value, reqwest::Error> {{
+    let req = json!({{
+        "jsonrpc": "2.0",
+        "method": "{rpc}",
+        "params": [],
+        "id": 1,
+    }});
+    let resp = client
+        .post("{url}")
+        .json(&req)
+        .send()
+        .await?
+        .json::<Value>()
+        .await?;
+    Ok(resp["result"].clone())
+}}
+"#,
+                    rpc = rpc,
+                    func = func,
+                    url = self.url,
+                );
+                (func.clone(), src)
+            })
+            .collect()
+    }
+}
