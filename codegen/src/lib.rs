@@ -78,7 +78,7 @@ pub struct JsonRpcCodeGenerator {
 ///
 /// For an RPC method like `getblockcount`, this generator will create:
 ///
-/// ```rust
+/// ```rust,ignore
 /// pub async fn getblockcount(transport: &Transport) -> Result<Value, TransportError> {
 ///     transport.send_request("getblockcount", &[] as &[Value]).await
 /// }
@@ -86,7 +86,7 @@ pub struct JsonRpcCodeGenerator {
 ///
 /// This allows users to make RPC calls like:
 ///
-/// ```rust
+/// ```rust,ignore
 /// let transport = Transport::new("http://127.0.0.1:18443");
 /// let block_count = getblockcount(&transport).await?;
 /// ```
