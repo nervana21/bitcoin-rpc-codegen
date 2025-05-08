@@ -20,7 +20,7 @@ pub enum ParserError {
     Regex(#[from] regex::Error),
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    // … add more cases if needed
+    // TODO: add more cases as needed
 }
 
 /// A help‐text parser: input is the entire `bitcoin-cli help` output,

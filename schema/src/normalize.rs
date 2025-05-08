@@ -10,7 +10,7 @@ use rpc_api::ApiMethod;
 pub enum SchemaError {
     #[error("no help blocks provided")]
     NoHelpBlocks,
-    // (TODO: more detailed parse errors here)
+    // TODO: add more detailed parse errors here
 }
 
 /// Trait to convert raw help into a structured schema
