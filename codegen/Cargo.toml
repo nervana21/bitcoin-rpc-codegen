@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rpc_api = { path = "../rpc_api" }
 # <-- add only what each crate truly needs as we flesh them out
