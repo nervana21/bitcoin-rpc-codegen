@@ -60,43 +60,59 @@ pub struct JsonRpcCodeGenerator {
     pub url: String,
 }
 
-impl CodeGenerator for JsonRpcCodeGenerator {
+/// A code generator that creates type-safe Rust functions for Bitcoin Core RPC methods.
+///
+/// This generator takes a list of RPC methods and generates corresponding async Rust functions
+/// that communicate with a Bitcoin Core node using JSON-RPC over HTTP. Each generated function:
+///
+/// 1. Takes a `Transport` instance that handles the low-level HTTP communication
+/// 2. Returns a `Result<Value, TransportError>` where:
+///    - `Value` is the JSON-RPC response data
+///    - `TransportError` captures both HTTP and RPC-level errors
+///
+/// The generated code provides a thin wrapper around the `Transport` layer, making it easy to
+/// call Bitcoin Core RPC methods while handling authentication, HTTP communication, and error
+/// handling in a consistent way.
+///
+/// # Example
+///
+/// For an RPC method like `getblockcount`, this generator will create:
+///
+/// ```rust
+/// pub async fn getblockcount(transport: &Transport) -> Result<Value, TransportError> {
+///     transport.send_request("getblockcount", &[] as &[Value]).await
+/// }
+/// ```
+///
+/// This allows users to make RPC calls like:
+///
+/// ```rust
+/// let transport = Transport::new("http://127.0.0.1:18443");
+/// let block_count = getblockcount(&transport).await?;
+/// ```
+pub struct TransportCodeGenerator;
+
+impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
         methods
             .iter()
             .map(|m| {
-                let func = &m.name;
-                let rpc = &m.name;
+                let name = &m.name;
                 let src = format!(
-                    r#"// Auto‑generated JSON-RPC client for `{rpc}`
+                    r#"// Auto‑generated JSON‑RPC client for `{name}`, via Transport
 
-use serde_json::json;
+use transport::Transport;
 use serde_json::Value;
-use reqwest::Client;
+use transport::TransportError;
 
-/// Calls the `{rpc}` method on the configured node.
-pub async fn {func}(client: &Client) -> Result<Value, reqwest::Error> {{
-    let req = json!({{
-        "jsonrpc": "2.0",
-        "method": "{rpc}",
-        "params": [],
-        "id": 1,
-    }});
-    let resp = client
-        .post("{url}")
-        .json(&req)
-        .send()
-        .await?
-        .json::<Value>()
-        .await?;
-    Ok(resp["result"].clone())
+/// Calls the `{name}` RPC method.
+pub async fn {name}(transport: &Transport) -> Result<Value, TransportError> {{
+    transport.send_request("{name}", &[] as &[Value]).await
 }}
 "#,
-                    rpc = rpc,
-                    func = func,
-                    url = self.url,
+                    name = name,
                 );
-                (func.clone(), src)
+                (name.clone(), src)
             })
             .collect()
     }
