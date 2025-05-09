@@ -9,7 +9,7 @@ members = [
     "client",
     "node",
     "pipeline",
-    "cli",
+    "rpc-cli",
     "config",
     "util",
     "logging",
