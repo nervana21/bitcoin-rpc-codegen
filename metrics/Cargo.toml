@@ -1,7 +1,0 @@
-[package]
-name = "metrics"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# <-- add only what each crate truly needs as we flesh them out

@@ -13,7 +13,7 @@ members = [
     "config",
     "util",
     "logging",
-    "metrics",
+    "rpc_metrics",
     "integration-test",
     "fuzz",
     "verify",
