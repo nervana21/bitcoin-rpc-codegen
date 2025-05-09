@@ -3,7 +3,7 @@
 //! A small helper to initialize tracing for the pipeline.
 //!
 //! Usage:
-//! ```rust
+//! ```rust,ignore
 //! logging::init();
 //! tracing::info!("pipeline started");
 //! tracing::debug!("detailed state: {:?}", some_struct);
