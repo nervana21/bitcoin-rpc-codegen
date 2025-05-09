@@ -79,7 +79,8 @@ pub fn record_histogram(name: &str, value: f64) {
 /// Useful for testing or embedding.
 pub fn gather() -> Result<String> {
     unsafe {
-        if let Some(handle) = &HANDLE {
+        let handle_ptr: *const Option<PrometheusHandle> = &raw const HANDLE;
+        if let Some(handle) = (*handle_ptr).as_ref() {
             Ok(handle.render())
         } else {
             Err(anyhow::anyhow!("Metrics recorder not initialized"))
