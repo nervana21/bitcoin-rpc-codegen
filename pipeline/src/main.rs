@@ -1,10 +1,14 @@
+// pipeline/src/main.rs
+
 use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser as ClapParser;
 use codegen::{write_generated, CodeGenerator, TransportCodeGenerator};
+use logging::init;
 use parser::{DefaultHelpParser, HelpParser};
 use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
+use tracing;
 
 /// Simple pipeline: parse help → normalize → generate RPC modules.
 #[derive(ClapParser)]
@@ -20,7 +24,14 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
+    init();
+
     let opts = Opts::parse();
+    tracing::info!(
+        "Starting pipeline; input={:?}, out_dir={:?}",
+        opts.input,
+        opts.out_dir
+    );
 
     // 1) Read help dump
     let help = fs::read_to_string(&opts.input)?;

@@ -5,9 +5,12 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+tracing = "0.1"
+
 clap = { version = "4", features = ["derive"] }
 parser = { path = "../parser" }
 schema = { path = "../schema" }
 codegen = { path = "../codegen" }
 transport = { path = "../transport" }
 client = { path = "../client" }
+logging = { path = "../logging" }
