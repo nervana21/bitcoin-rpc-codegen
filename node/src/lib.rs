@@ -71,3 +71,9 @@ impl NodeManager for BitcoinNodeManager {
         Ok(self.state.read().await.clone())
     }
 }
+
+impl Default for BitcoinNodeManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
