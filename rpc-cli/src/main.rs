@@ -3,7 +3,6 @@
 use anyhow::Result;
 use clap::Parser;
 use config::Config;
-use logging;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]

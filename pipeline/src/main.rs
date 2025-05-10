@@ -4,7 +4,6 @@ use anyhow::Result;
 use clap::Parser as ClapParser;
 use logging::init;
 use std::path::PathBuf;
-use tracing;
 
 /// Simple pipeline: parse help → normalize → generate RPC modules.
 #[derive(ClapParser)]
