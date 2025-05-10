@@ -70,7 +70,6 @@ digraph BitcoinRpcCodegen {
 
   // ───────────── Cross‑cutting crates ─────────────
   config  [label="config"  shape=box style=filled fillcolor="#ffffff"];
-  util    [label="util"    shape=box style=filled fillcolor="#ffffff"];
   logging [label="logging" shape=box style=filled fillcolor="#ffffff"];
   rpc_metrics [label="rpc_metrics" shape=box style=filled fillcolor="#ffffff"];
 
@@ -88,12 +87,10 @@ digraph BitcoinRpcCodegen {
   codegen          -> schema_norm;
   codegen          -> schema_val;
   codegen          -> rpc_api;
-  transport        -> util;
   client           -> codegen;
   client           -> transport;
   client           -> rpc_api;
   node_mgr         -> rpc_api;
-  node_mgr         -> util;
   node_mgr         -> config;
   pipeline         -> parser;
   pipeline         -> schema_norm;
