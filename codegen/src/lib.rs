@@ -122,12 +122,18 @@ impl CodeGenerator for TransportCodeGenerator {
                     format!("vec![{}]", elems.join(", "))
                 };
 
-                // 3) Emit the module source
+                // 3) Emit the module source with conditional imports
+                let imports = if m.arguments.is_empty() {
+                    "use serde_json::Value;"
+                } else {
+                    "use serde_json::{json, Value};"
+                };
+
                 let src = format!(
                     r#"// Auto‑generated JSON‑RPC client for `{name}`, via Transport
 
 use transport::Transport;
-use serde_json::{{json, Value}};
+{imports}
 use transport::TransportError;
 
 /// Calls the `{name}` RPC method.
@@ -139,6 +145,7 @@ pub async fn {name}({fn_args}) -> Result<Value, TransportError> {{
                     name = name,
                     fn_args = fn_args,
                     params_expr = params_expr,
+                    imports = imports,
                 );
 
                 (name.clone(), src)
