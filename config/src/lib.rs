@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+/// Errors that can occur when loading or saving configuration
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("Failed to read config file: {0}")]
@@ -39,6 +40,8 @@ pub struct BitcoinConfig {
     pub username: String,
     /// RPC password
     pub password: String,
+    /// Bitcoin Core version (e.g. "v29"); `None` to auto-detect
+    pub core_version: Option<String>,
 }
 
 /// Logging configuration
@@ -67,6 +70,7 @@ impl Default for Config {
                 port: 8332,
                 username: "bitcoinrpc".to_string(),
                 password: "".to_string(),
+                core_version: None,
             },
             logging: LoggingConfig {
                 level: "info".to_string(),
@@ -81,26 +85,26 @@ impl Default for Config {
 }
 
 impl Config {
-    /// Load configuration from a file
+    /// Load configuration from a TOML file at `path`
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
         let contents = std::fs::read_to_string(path.as_ref())?;
         let config = toml::from_str(&contents)?;
         Ok(config)
     }
 
-    /// Save configuration to a file
+    /// Save this configuration as a pretty-printed TOML file at `path`
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ConfigError> {
         let contents = toml::to_string_pretty(self)?;
         std::fs::write(path, contents)?;
         Ok(())
     }
 
-    /// Get the default config file path
+    /// Returns the default config file path:
+    /// `{config_dir()}/bitcoin-rpc-codegen/config.toml`
     pub fn default_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .ok_or_else(|| anyhow::anyhow!("Could not find config directory"))?
             .join("bitcoin-rpc-codegen");
-
         Ok(config_dir.join("config.toml"))
     }
 }
