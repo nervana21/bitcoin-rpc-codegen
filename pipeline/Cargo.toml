@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 tracing = "0.1"
+config = { path = "../config" }
 
 clap = { version = "4", features = ["derive"] }
 parser = { path = "../parser" }
