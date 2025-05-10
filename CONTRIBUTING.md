@@ -17,8 +17,8 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests to the `tests/` directory.
-3. If you've changed APIs or the generation process, update the documentation (like this file or `README.md`).
+2. If you've added code that should be tested, add tests.
+3. If you've changed APIs or the generation process, update the documentation.
 4. Ensure the test suite passes using `cargo test`.
 5. Make sure your code adheres to the standard Rust style (`cargo fmt`) and passes linter checks (`cargo clippy`).
 6. Issue that pull request!
@@ -59,18 +59,15 @@ By contributing, you agree that your contributions will be licensed under its MI
 2. **Clone the repository**:
 
    ```bash
-   # Replace 'yourusername' with the correct GitHub username/organization
    git clone https://github.com/yourusername/bitcoin-rpc-codegen.git
    cd bitcoin-rpc-codegen
    ```
 
-3. **Build the project**: The core code generation happens during the build.
+3. **Build the project**:
 
    ```bash
    cargo build
    ```
-
-   This will parse `resources/api.json` and generate Rust code.
 
 4. **Run the tests**:
 
@@ -80,26 +77,31 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 ## Project Structure
 
-- `resources/`: Contains the source `api.json` file defining the Bitcoin RPC methods.
-- `src/`: Source code for the generator library and binary.
-  - `parser/`: Logic for parsing `resources/api.json`.
-  - `generator/`: Code generation logic, invoked by `build.rs`.
-  - `lib.rs`: Shared library code.
-  - `main.rs`: Entry point for the binary executable (may have limited use).
-  - `schema.json`: JSON schema file for validating `api.json`.
-- `tests/`: Integration and unit tests. Run with `cargo test`.
-- `examples/`: Example usage.
-- `build.rs`: Build script that orchestrates the code generation process.
-- `Cargo.toml`: Project manifest defining dependencies and metadata.
-- `target/`: Build artifacts and generated code (usually ignored by git).
+The project is organized into several focused crates:
+
+- `rpc-api/`: Core RPC API definitions and types
+- `parser/`: Bitcoin RPC method parsing and validation
+- `schema/`: Schema definitions and validation
+- `codegen/`: Code generation for RPC clients
+- `transport/`: RPC transport layer implementation
+- `client/`: RPC client implementation
+- `node/`: Bitcoin node management
+- `pipeline/`: Code generation pipeline
+- `rpc-cli/`: Command-line interface
+- `config/`: Configuration management
+- `logging/`: Logging infrastructure
+- `rpc-metrics/`: RPC metrics collection
+- `integration-test/`: Integration tests
+- `fuzz/`: Fuzzing tests
+- `verify/`: Verification tools
 
 ## Guidelines for Pull Requests
 
 1. **Keep it focused**: Each pull request should address a single issue or feature.
-2. **Write tests**: Include tests in the `tests/` directory for any new functionality or bug fixes.
-3. **Update documentation**: Update `README.md`, `CONTRIBUTING.md`, and code comments as needed.
+2. **Write tests**: Include tests for any new functionality or bug fixes.
+3. **Update documentation**: Update relevant documentation as needed.
 4. **Follow the code style**: Run `cargo fmt` and `cargo clippy`.
-5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`). Try to keep commits logical, squashing is not strictly required if the history is clean.
+5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`).
 
 ## Questions and Discussions
 
