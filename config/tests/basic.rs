@@ -35,15 +35,28 @@ fn test_config_serialization_roundtrip() {
     // Verify file exists
     assert!(config_path.exists());
 
-    // Load and verify config
     let loaded_config = Config::from_file(&config_path).unwrap();
     assert_eq!(original_config.bitcoin.host, loaded_config.bitcoin.host);
     assert_eq!(original_config.bitcoin.port, loaded_config.bitcoin.port);
+    assert_eq!(
+        original_config.bitcoin.username,
+        loaded_config.bitcoin.username
+    );
+    assert_eq!(
+        original_config.bitcoin.password,
+        loaded_config.bitcoin.password
+    );
+    assert_eq!(
+        original_config.bitcoin.core_version,
+        loaded_config.bitcoin.core_version
+    );
+
     assert_eq!(original_config.logging.level, loaded_config.logging.level);
     assert_eq!(
         original_config.metrics.enabled,
         loaded_config.metrics.enabled
     );
+    assert_eq!(original_config.metrics.port, loaded_config.metrics.port);
 }
 
 #[test]
