@@ -11,8 +11,8 @@ fn test_default_config() {
     // Test Bitcoin config defaults
     assert_eq!(config.bitcoin.host, "127.0.0.1");
     assert_eq!(config.bitcoin.port, 8332);
-    assert_eq!(config.bitcoin.username, "bitcoinrpc");
-    assert_eq!(config.bitcoin.password, "");
+    assert_eq!(config.bitcoin.username, "rpcuser");
+    assert_eq!(config.bitcoin.password, "rpcpassword");
 
     // Test Logging config defaults
     assert_eq!(config.logging.level, "info");

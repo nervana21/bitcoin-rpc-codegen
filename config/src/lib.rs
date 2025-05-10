@@ -73,32 +73,6 @@ pub struct MetricsConfig {
     pub port: u16,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            bitcoin: BitcoinConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8332,
-                username: "bitcoinrpc".to_string(),
-                password: "".to_string(),
-                core_version: None,
-            },
-            logging: LoggingConfig {
-                level: "info".to_string(),
-                file: None,
-            },
-            metrics: MetricsConfig {
-                enabled: true,
-                port: 9090,
-            },
-            pipeline: PipelineConfig {
-                input_path: PathBuf::from("help.txt"),
-                output_dir: PathBuf::from("../client/src/generated"),
-            },
-        }
-    }
-}
-
 impl Config {
     /// Load configuration from a TOML file at `path`
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
@@ -121,5 +95,41 @@ impl Config {
             .ok_or_else(|| anyhow::anyhow!("Could not find config directory"))?
             .join("bitcoin-rpc-codegen");
         Ok(config_dir.join("config.toml"))
+    }
+
+    /// Get the path to the default help.txt file
+    pub fn default_help_path() -> PathBuf {
+        PathBuf::from("../resources/help.txt")
+    }
+
+    /// Get the default output directory for generated code
+    pub fn default_output_dir() -> PathBuf {
+        PathBuf::from("../client/src/generated")
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            bitcoin: BitcoinConfig {
+                host: "127.0.0.1".to_string(),
+                port: 8332,
+                username: "rpcuser".to_string(),
+                password: "rpcpassword".to_string(),
+                core_version: None,
+            },
+            logging: LoggingConfig {
+                level: "info".to_string(),
+                file: None,
+            },
+            metrics: MetricsConfig {
+                enabled: true,
+                port: 9090,
+            },
+            pipeline: PipelineConfig {
+                input_path: Self::default_help_path(),
+                output_dir: Self::default_output_dir(),
+            },
+        }
     }
 }

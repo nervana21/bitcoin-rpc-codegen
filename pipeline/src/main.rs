@@ -11,7 +11,7 @@ use tracing;
 #[command(author, version, about)]
 struct Opts {
     /// Path to the `bitcoin-cli help` dump
-    #[arg(short, long, default_value = "help.txt")]
+    #[arg(short, long, default_value = "../resources/help.txt")]
     input: PathBuf,
 
     /// Where to write generated modules (e.g. client/src/generated)
