@@ -2,10 +2,13 @@
 //! The `parser` crate: tokenizes `bitcoin-cli help` output into method blocks.
 use thiserror::Error;
 
+pub mod discover;
+pub use discover::{discover_methods, parse_help_output, DiscoverError};
+
 /// A raw help block for one RPC method.
 #[derive(Debug, Clone)]
 pub struct MethodHelp {
-    /// The RPC method’s name, e.g. "getblockchaininfo"
+    /// The RPC method's name, e.g. "getblockchaininfo"
     pub name: String,
     /// The full help text (all lines) for that method
     pub raw: String,
@@ -28,7 +31,7 @@ pub trait HelpParser {
     fn parse(&self, raw_help: &str) -> Result<Vec<MethodHelp>, ParserError>;
 }
 
-/// The “standard” help parser: groups each signature plus following description
+/// The "standard" help parser: groups each signature plus following description
 /// under a single MethodHelp, ignoring blank lines and category headings.
 pub struct DefaultHelpParser;
 
