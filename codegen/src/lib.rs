@@ -3,6 +3,9 @@
 use rpc_api::ApiMethod;
 use std::{fs, io::Write, path::Path};
 
+pub mod docs;
+pub mod types;
+
 /// A code generator that turns a list of `ApiMethod` into Rust source files.
 ///
 /// Returns a `Vec` of `(module_name, source_code)` tuples.
@@ -98,13 +101,15 @@ impl CodeGenerator for TransportCodeGenerator {
             .iter()
             .map(|m| {
                 let name = &m.name;
+                let sanitized_name = types::sanitize_method_name(name);
 
                 // 1) Build the fn signature args: always `transport: &Transport`,
                 //    plus one `arg_name: serde_json::Value` per ApiArgument.
                 let mut fn_args = vec!["transport: &Transport".to_string()];
                 for arg in &m.arguments {
                     let arg_name = &arg.names[0];
-                    fn_args.push(format!("{}: serde_json::Value", arg_name));
+                    let arg_type = types::map_type_to_rust(&arg.type_);
+                    fn_args.push(format!("{}: {}", arg_name, arg_type));
                 }
                 let fn_args = fn_args.join(", ");
 
@@ -122,7 +127,15 @@ impl CodeGenerator for TransportCodeGenerator {
                     format!("vec![{}]", elems.join(", "))
                 };
 
-                // 3) Emit the module source with conditional imports
+                // 3) Generate documentation
+                let docs = docs::generate_example_docs(m, "latest");
+
+                // 4) Generate return type
+                let return_type = types::generate_return_type(m)
+                    .map(|t| format!(" -> Result<{}, TransportError>", t))
+                    .unwrap_or_else(|| " -> Result<Value, TransportError>".to_string());
+
+                // 5) Emit the module source with conditional imports
                 let imports = if m.arguments.is_empty() {
                     "use serde_json::Value;"
                 } else {
@@ -130,22 +143,25 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 let src = format!(
-                    r#"// Auto‑generated JSON‑RPC client for `{name}`, via Transport
+                    r#"{docs}
 
 use transport::Transport;
 {imports}
 use transport::TransportError;
 
 /// Calls the `{name}` RPC method.
-pub async fn {name}({fn_args}) -> Result<Value, TransportError> {{
+pub async fn {sanitized_name}({fn_args}){return_type} {{
     let params = {params_expr};
     transport.send_request("{name}", &params).await
 }}
 "#,
+                    docs = docs,
                     name = name,
+                    sanitized_name = sanitized_name,
                     fn_args = fn_args,
                     params_expr = params_expr,
                     imports = imports,
+                    return_type = return_type,
                 );
 
                 (name.clone(), src)
