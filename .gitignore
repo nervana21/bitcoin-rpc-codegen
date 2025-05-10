@@ -20,10 +20,13 @@ target/tmp/
 
 # Project-specific
 /feedback/
-/resources/
-/.gpt_marker_commit
 
-crates/core/resources/docs/
-crates/core/resources/feedback/
-crates/core/resources/api_v*.json
-crates/core/resources/schema.json
+# Legacy resources (do not track)
+/crates/core/resources/
+/crates/core/resources/docs/
+/crates/core/resources/feedback/
+/crates/core/resources/api_v*.json
+/crates/core/resources/schema.json
+
+# Track main project resources
+!/resources/
