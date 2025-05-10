@@ -25,6 +25,13 @@ impl RpcClient {
         }
     }
 
+    /// Create a new client pointing at `url` with basic authentication.
+    pub fn new_with_auth<U: Into<String>>(url: U, username: &str, password: &str) -> Self {
+        RpcClient {
+            transport: Transport::new_with_auth(url, username, password),
+        }
+    }
+
     /// Generic call: method name plus JSON‐serialized params.
     pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value, ClientError> {
         Ok(self.transport.send_request(method, params).await?)
