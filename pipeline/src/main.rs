@@ -1,13 +1,9 @@
 // pipeline/src/main.rs
 
-use std::{fs, path::PathBuf};
-
 use anyhow::Result;
 use clap::Parser as ClapParser;
-use codegen::{write_generated, CodeGenerator, TransportCodeGenerator};
 use logging::init;
-use parser::{DefaultHelpParser, HelpParser};
-use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
+use std::path::PathBuf;
 use tracing;
 
 /// Simple pipeline: parse help → normalize → generate RPC modules.
@@ -33,27 +29,5 @@ fn main() -> Result<()> {
         opts.out_dir
     );
 
-    // 1) Read help dump
-    let help = fs::read_to_string(&opts.input)?;
-
-    // 2) Parse into ApiMethod structs
-    let raw = DefaultHelpParser.parse(&help)?;
-
-    // 3) Normalize & validate
-    let norm = DefaultSchemaNormalizer.normalize(&raw)?;
-    DefaultSchemaValidator.validate(&norm)?;
-
-    // 4) Generate modules
-    let gen = TransportCodeGenerator;
-    let files = gen.generate(&norm);
-
-    // 5) Write into client crate
-    write_generated(&opts.out_dir, &files)?;
-
-    println!(
-        "✅ Wrote {} RPC modules into {:?}",
-        files.len(),
-        opts.out_dir
-    );
-    Ok(())
+    pipeline::run(&opts.input, &opts.out_dir)
 }
