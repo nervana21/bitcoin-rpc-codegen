@@ -1,5 +1,7 @@
 // transport/src/lib.rs
 
+use base64::Engine;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -26,6 +28,24 @@ impl Transport {
     pub fn new<U: Into<String>>(url: U) -> Self {
         Transport {
             client: Client::new(),
+            url: url.into(),
+        }
+    }
+
+    /// Create a new transport pointing at `url` with basic authentication.
+    pub fn new_with_auth<U: Into<String>>(url: U, username: &str, password: &str) -> Self {
+        let mut headers = HeaderMap::new();
+        let auth =
+            base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", username, password));
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Basic {}", auth)).unwrap(),
+        );
+
+        let client = Client::builder().default_headers(headers).build().unwrap();
+
+        Transport {
+            client,
             url: url.into(),
         }
     }
