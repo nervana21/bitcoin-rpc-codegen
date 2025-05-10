@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rpc_api = { path = "../rpc_api" }
+rpc-api = { path = "../rpc-api" }
 parser = { path = "../parser" }
 thiserror = "2.0.12"

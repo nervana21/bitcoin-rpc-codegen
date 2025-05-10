@@ -1,5 +1,5 @@
 [package]
-name = "rpc_api"
+name = "rpc-api"
 version = "0.1.0"
 edition = "2021"
 
