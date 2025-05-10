@@ -185,8 +185,8 @@ impl NodeManager for BitcoinNodeManager {
 
         let child = self.child.lock().await.take();
         if let Some(mut child) = child {
-            let _ = child.kill();
-            let _ = child.wait();
+            std::mem::drop(child.kill());
+            std::mem::drop(child.wait());
         }
 
         state.is_running = false;
@@ -210,8 +210,8 @@ impl Drop for BitcoinNodeManager {
             .ok()
             .and_then(|mut guard| guard.take())
         {
-            let _ = child.kill();
-            let _ = child.wait();
+            std::mem::drop(child.kill());
+            std::mem::drop(child.wait());
         }
     }
 }
