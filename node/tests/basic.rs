@@ -5,7 +5,7 @@ use tokio_test::block_on;
 
 #[test]
 fn test_node_lifecycle() {
-    let node_manager = BitcoinNodeManager::new();
+    let mut node_manager = BitcoinNodeManager::new().unwrap();
 
     // Test initial state
     let initial_state = block_on(node_manager.get_state()).unwrap();
@@ -25,7 +25,7 @@ fn test_node_lifecycle() {
 
 #[test]
 fn test_multiple_start_stop() {
-    let node_manager = BitcoinNodeManager::new();
+    let mut node_manager = BitcoinNodeManager::new().unwrap();
 
     // Multiple starts should be idempotent
     block_on(node_manager.start()).unwrap();
