@@ -68,17 +68,49 @@ pub fn get_field_type(field: &rpc_api::ApiResult) -> String {
     }
 }
 
+/// Format documentation comments
+fn format_doc_comment(description: &str) -> String {
+    description
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map(|line| format!("    /// {}", line))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// Generate the return type for a method
 pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     if method.results.is_empty() {
         return None;
     }
-    let result = &method.results[0];
-    if result.type_.eq_ignore_ascii_case("none") {
+
+    let type_name = format!("{}Response", capitalize(&method.name));
+
+    // Generate fields with documentation
+    let mut fields = String::new();
+    for result in &method.results {
+        if result.type_.eq_ignore_ascii_case("none") {
+            continue;
+        }
+
+        // Add field documentation
+        if !result.description.is_empty() {
+            fields.push_str(&format_doc_comment(&result.description));
+        }
+
+        // Add the field with its type
+        let field_type = get_field_type(result);
+        fields.push_str(&format!(
+            "    pub {}: {},\n",
+            sanitize_field_name(&result.key_name),
+            field_type
+        ));
+    }
+
+    if fields.is_empty() {
         return None;
     }
-    let type_name = format!("{}Response", capitalize(&method.name));
-    let fields = format!("    pub {}: {},", result.key_name, get_field_type(result));
 
     let mut s = String::new();
     writeln!(
@@ -149,5 +181,34 @@ mod tests {
         let result = generate_return_type(&method).unwrap();
         assert!(result.contains("pub struct GetblockcountResponse"));
         assert!(result.contains("pub count: f64"));
+        assert!(result.contains("/// The current block count"));
+    }
+
+    #[test]
+    fn test_generate_return_type_multiple_fields() {
+        let method = ApiMethod {
+            name: "getblockchaininfo".to_string(),
+            description: "Returns blockchain info".to_string(),
+            arguments: vec![],
+            results: vec![
+                rpc_api::ApiResult {
+                    key_name: "chain".to_string(),
+                    type_: "string".to_string(),
+                    description: "Current network name".to_string(),
+                },
+                rpc_api::ApiResult {
+                    key_name: "blocks".to_string(),
+                    type_: "number".to_string(),
+                    description: "Current block height".to_string(),
+                },
+            ],
+        };
+
+        let result = generate_return_type(&method).unwrap();
+        assert!(result.contains("pub struct GetblockchaininfoResponse"));
+        assert!(result.contains("pub chain: String"));
+        assert!(result.contains("pub blocks: f64"));
+        assert!(result.contains("/// Current network name"));
+        assert!(result.contains("/// Current block height"));
     }
 }

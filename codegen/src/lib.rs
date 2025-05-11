@@ -69,8 +69,8 @@ pub struct JsonRpcCodeGenerator {
 /// that communicate with a Bitcoin Core node using JSON-RPC over HTTP. Each generated function:
 ///
 /// 1. Takes a `Transport` instance that handles the low-level HTTP communication
-/// 2. Returns a `Result<Value, TransportError>` where:
-///    - `Value` is the JSON-RPC response data
+/// 2. Returns a `Result<T, TransportError>` where:
+///    - `T` is the generated response type for the RPC method
 ///    - `TransportError` captures both HTTP and RPC-level errors
 ///
 /// The generated code provides a thin wrapper around the `Transport` layer, making it easy to
@@ -82,8 +82,9 @@ pub struct JsonRpcCodeGenerator {
 /// For an RPC method like `getblockcount`, this generator will create:
 ///
 /// ```rust,ignore
-/// pub async fn getblockcount(transport: &Transport) -> Result<Value, TransportError> {
-///     transport.send_request("getblockcount", &[] as &[Value]).await
+/// pub async fn getblockcount(transport: &Transport) -> Result<GetblockcountResponse, TransportError> {
+///     let response = transport.send_request("getblockcount", &[] as &[Value]).await?;
+///     Ok(serde_json::from_value(response)?)
 /// }
 /// ```
 ///
@@ -92,6 +93,7 @@ pub struct JsonRpcCodeGenerator {
 /// ```rust,ignore
 /// let transport = Transport::new("http://127.0.0.1:18443");
 /// let block_count = getblockcount(&transport).await?;
+/// println!("Current block height: {}", block_count.count);
 /// ```
 pub struct TransportCodeGenerator;
 
@@ -103,8 +105,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 let name = &m.name;
                 let sanitized_name = types::sanitize_method_name(name);
 
-                // 1) Build the fn signature args: always `transport: &Transport`,
-                //    plus one `arg_name: serde_json::Value` per ApiArgument.
+                // 1) Build the fn signature args
                 let mut fn_args = vec!["transport: &Transport".to_string()];
                 for arg in &m.arguments {
                     let arg_name = &arg.names[0];
@@ -113,10 +114,8 @@ impl CodeGenerator for TransportCodeGenerator {
                 }
                 let fn_args = fn_args.join(", ");
 
-                // 2) Build the params vector literal: either `vec![]` or
-                //    `vec![ json!(arg1), json!(arg2), … ]`.
+                // 2) Build the params vector literal
                 let params_expr = if m.arguments.is_empty() {
-                    // explicit empty Vec<Value> so `P = Value` can be inferred
                     "Vec::<Value>::new()".to_string()
                 } else {
                     let elems: Vec<_> = m
@@ -130,9 +129,16 @@ impl CodeGenerator for TransportCodeGenerator {
                 // 3) Generate documentation
                 let docs = docs::generate_example_docs(m, "latest");
 
-                // 4) Generate return type
-                let return_type = types::generate_return_type(m)
-                    .map(|t| format!(" -> Result<{}, TransportError>", t))
+                // 4) Generate response type and return type
+                let response_type = types::generate_return_type(m);
+                let return_type = response_type
+                    .as_ref()
+                    .map(|_| {
+                        format!(
+                            " -> Result<{}Response, TransportError>",
+                            types::capitalize(name)
+                        )
+                    })
                     .unwrap_or_else(|| " -> Result<Value, TransportError>".to_string());
 
                 // 5) Emit the module source with conditional imports
@@ -142,26 +148,38 @@ impl CodeGenerator for TransportCodeGenerator {
                     "use serde_json::{json, Value};"
                 };
 
+                let response_handler = if response_type.is_some() {
+                    "Ok(serde_json::from_value(response)?)"
+                } else {
+                    "Ok(response)"
+                };
+                let response_type_str = response_type.unwrap_or_default();
                 let src = format!(
                     r#"{docs}
 
+use serde::{{Deserialize, Serialize}};
 use transport::Transport;
 {imports}
 use transport::TransportError;
 
+{response_type}
+
 /// Calls the `{name}` RPC method.
 pub async fn {sanitized_name}({fn_args}){return_type} {{
     let params = {params_expr};
-    transport.send_request("{name}", &params).await
+    let response = transport.send_request("{name}", &params).await?;
+    {response_handler}
 }}
 "#,
                     docs = docs,
                     name = name,
                     sanitized_name = sanitized_name,
                     fn_args = fn_args,
-                    params_expr = params_expr,
-                    imports = imports,
                     return_type = return_type,
+                    params_expr = params_expr,
+                    response_type = response_type_str,
+                    imports = imports,
+                    response_handler = response_handler
                 );
 
                 (name.clone(), src)
