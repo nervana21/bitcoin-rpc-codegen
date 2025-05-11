@@ -1,15 +1,38 @@
-// codegen/src/lib.rs
+//! Code generation for Bitcoin Core RPC methods and types.
+//! This crate provides tools to generate type-safe Rust functions and corresponding response types
+//! for Bitcoin Core RPC calls. It automatically generates:
+//! - Type-safe response structs for each RPC method
+//! - Async functions to call the RPC methods
+//! - Documentation and examples for each generated item
+//!
+//! # Example
+//!
+//! ```bash
+//! cargo run --bin bitcoin-rpc-codegen -- --url http://127.0.0.1:18443
+//! ```
+//!
+//! # Example
+//!
+//! ```rust
+//! use bitcoin_rpc_codegen::TransportCodeGenerator;
+//! use bitcoin_rpc_codegen::Transport;
+//! use bitcoin_rpc_codegen::TransportError;
+//!
+#![warn(missing_docs)]
 
 use rpc_api::ApiMethod;
 use std::{fs, io::Write, path::Path};
 
+/// A code generator that turns a list of `ApiMethod` into Rust source files.
 pub mod docs;
+/// A code generator that turns a list of `ApiMethod` into Rust source files.
 pub mod types;
 
 /// A code generator that turns a list of `ApiMethod` into Rust source files.
 ///
 /// Returns a `Vec` of `(module_name, source_code)` tuples.
 pub trait CodeGenerator {
+    /// Generate the source code for the given methods.
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)>;
 }
 
