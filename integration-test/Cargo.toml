@@ -17,16 +17,6 @@ futures = "0.3"
 serde_json = "1.0"
 
 [[test]]
-name = "basic_rpc_tests"
-path = "tests/basic_rpc_tests.rs"
-harness = true
-
-[[test]]
-name = "node_management_tests"
-path = "tests/node_management_tests.rs"
-harness = true
-
-[[test]]
-name = "regtest_connection_test"
-path = "tests/regtest_connection_test.rs"
+name = "btc_node_integration_tests"
+path = "tests/btc_node_integration_tests.rs"
 harness = true
