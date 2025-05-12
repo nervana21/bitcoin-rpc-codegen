@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bitcoin Core RPC API Schema",
+  "description": "Schema for Bitcoin Core RPC API documentation",
+  "type": "object",
+  "properties": {
+    "commands": {
+      "type": "object",
+      "description": "Map of RPC command names to their definitions",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "category", "description", "arguments", "results"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the RPC command"
+            },
+            "category": {
+              "type": "string",
+              "description": "Category of the RPC command",
+              "enum": ["wallet", "blockchain", "network", "mining", "util", "rawtransactions", "zmq", "generating", "control"]
+            },
+            "description": {
+              "type": "string",
+              "description": "Detailed description of what the command does"
+            },
+            "examples": {
+              "type": "string",
+              "description": "Example usage of the command"
+            },
+            "arguments": {
+              "type": "array",
+              "description": "List of arguments the command accepts",
+              "items": {
+                "type": "object",
+                "required": ["description", "names", "type", "optional"],
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the argument"
+                  },
+                  "names": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Possible names for this argument"
+                  },
+                  "inner": {
+                    "type": "array",
+                    "description": "For complex types, describes the inner structure"
+                  },
+                  "optional": {
+                    "type": "boolean",
+                    "description": "Whether this argument is optional"
+                  },
+                  "default": {
+                    "type": ["null", "string", "number", "boolean"],
+                    "description": "Default value for optional arguments"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Type of the argument",
+                    "enum": [
+                      "string",
+                      "hex",
+                      "boolean",
+                      "number",
+                      "array",
+                      "object",
+                      "object-named-parameters"
+                    ]
+                  },
+                  "hidden": {
+                    "type": "boolean",
+                    "description": "Whether this argument should be hidden from documentation"
+                  },
+                  "skip_type_check": {
+                    "type": "boolean",
+                    "description": "Whether to skip type checking for this argument"
+                  },
+                  "one_line_description": {
+                    "type": "string",
+                    "description": "Short, one-line description of the argument"
+                  },
+                  "also_positional": {
+                    "type": "boolean",
+                    "description": "Whether this argument can also be passed positionally"
+                  },
+                  "type_string": {
+                    "type": ["string", "null"],
+                    "description": "Custom type string for documentation"
+                  }
+                }
+              }
+            },
+            "results": {
+              "type": "array",
+              "description": "List of possible results from the command",
+              "items": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Type of the result"
+                  },
+                  "optional": {
+                    "type": "boolean",
+                    "description": "Whether this result is optional"
+                  },
+                  "skip_type_checking": {
+                    "type": "boolean",
+                    "description": "Whether to skip type checking for this result"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the result"
+                  },
+                  "condition": {
+                    "type": "string",
+                    "description": "Condition under which this result is returned"
+                  },
+                  "key_name": {
+                    "type": "string",
+                    "description": "Name of the key in the response object"
+                  },
+                  "inner": {
+                    "type": "array",
+                    "description": "For complex types, describes the inner structure",
+                    "items": {
+                      "$ref": "#/definitions/result"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "result": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of the result"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether this result is optional"
+        },
+        "skip_type_checking": {
+          "type": "boolean",
+          "description": "Whether to skip type checking for this result"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the result"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Condition under which this result is returned"
+        },
+        "key_name": {
+          "type": "string",
+          "description": "Name of the key in the response object"
+        },
+        "inner": {
+          "type": "array",
+          "description": "For complex types, describes the inner structure",
+          "items": {
+            "$ref": "#/definitions/result"
+          }
+        }
+      }
+    }
+  }
+} 
