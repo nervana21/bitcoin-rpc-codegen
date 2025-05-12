@@ -30,6 +30,8 @@ pub struct ApiResult {
     #[serde(rename = "type")]
     pub type_: String,
     pub description: String,
+    pub inner: Vec<ApiResult>,
+    pub optional: bool,
 }
 
 /// Supported Bitcoin‐Core RPC versions

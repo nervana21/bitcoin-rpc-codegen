@@ -55,6 +55,8 @@ fn api_result_roundtrip() {
         key_name: "result_key".into(),
         type_: "number".into(),
         description: "a test result".into(),
+        inner: vec![],
+        optional: false,
     };
     let json = serde_json::to_string(&res).expect("serialize ApiResult");
     let de: ApiResult = serde_json::from_str(&json).expect("deserialize ApiResult");
@@ -79,6 +81,8 @@ fn api_method_roundtrip() {
             key_name: "".into(),
             type_: "none".into(),
             description: "".into(),
+            inner: vec![],
+            optional: false,
         }],
     };
     let json = serde_json::to_string(&method).expect("serialize ApiMethod");
