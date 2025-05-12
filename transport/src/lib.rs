@@ -3,7 +3,7 @@
 use base64::Engine;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 use thiserror::Error;
 
@@ -16,11 +16,28 @@ pub struct Transport {
 
 #[derive(Debug, Error)]
 pub enum TransportError {
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    #[error("HTTP error (status {0}): {1}")]
+    Http(u16, #[source] reqwest::Error),
 
     #[error("RPC error: {0}")]
     Rpc(Value),
+
+    #[error("Invalid JSON: {0}")]
+    Serialization(#[from] serde_json::Error),
+
+    #[error("Missing result field in response")]
+    MissingResult,
+}
+
+impl From<reqwest::Error> for TransportError {
+    fn from(e: reqwest::Error) -> Self {
+        TransportError::Http(
+            e.status()
+                .unwrap_or(reqwest::StatusCode::from_u16(0).unwrap())
+                .as_u16(),
+            e,
+        )
+    }
 }
 
 impl Transport {
@@ -51,6 +68,7 @@ impl Transport {
     }
 
     /// Send a JSON‑RPC request with given `method` and `params`, returning the `result` field.
+    /// This is a low-level method that works with raw JSON values.
     pub async fn send_request<P: Serialize>(
         &self,
         method: &str,
@@ -74,8 +92,21 @@ impl Transport {
 
         if let Some(err) = resp.get("error") {
             Err(TransportError::Rpc(err.clone()))
+        } else if !resp.is_object() || resp.get("result").is_none() {
+            Err(TransportError::MissingResult)
         } else {
             Ok(resp["result"].clone())
         }
+    }
+
+    /// Send a JSON‑RPC request with given `method` and `params`, returning a deserialized response.
+    /// This is a high-level method that handles type conversion and serialization.
+    pub async fn call<T: Serialize, R: DeserializeOwned>(
+        &self,
+        method: &str,
+        params: &[T],
+    ) -> Result<R, TransportError> {
+        let response = self.send_request(method, params).await?;
+        Ok(serde_json::from_value(response)?)
     }
 }
