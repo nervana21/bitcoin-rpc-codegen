@@ -8,10 +8,13 @@ anyhow = "1.0"
 tracing = "0.1"
 config = { path = "../config" }
 
-clap = { version = "4", features = ["derive"] }
-parser = { path = "../parser" }
-schema = { path = "../schema" }
+clap = { version = "4.4", features = ["derive"] }
+tracing-subscriber = "0.3"
+
 codegen = { path = "../codegen" }
-transport = { path = "../transport" }
 client = { path = "../client" }
 logging = { path = "../logging" }
+parser = { path = "../parser" }
+rpc-api = { path = "../rpc-api" }
+schema = { path = "../schema" }
+transport = { path = "../transport" }
