@@ -4,17 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-node = { path = "../node" }
-client = { path = "../client" }
-verify = { path = "../verify" }
-rpc-api = { path = "../rpc-api" }
-tokio = { version = "1.36", features = ["full"] }
+
+
 anyhow = "1.0"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 futures = "0.3"
 serde_json = "1.0"
+tokio = { version = "1.36", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+client = { path = "../client" }
+node = { path = "../node" }
+rpc-api = { path = "../rpc-api" }
+transport = { path = "../transport" }
+verify = { path = "../verify" }
 
 [[test]]
 name = "btc_node_integration_tests"
