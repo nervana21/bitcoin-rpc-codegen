@@ -1,43 +1,92 @@
-//! Code generation for Bitcoin Core RPC methods and types.
-//! This crate provides tools to generate type-safe Rust functions and corresponding response types
-//! for Bitcoin Core RPC calls. It automatically generates:
-//! - Type-safe response structs for each RPC method
-//! - Async functions to call the RPC methods
-//! - Documentation and examples for each generated item
+//! Code generation utilities for Bitcoin Core RPC.
 //!
-//! # Example
-//!
-//! ```bash
-//! cargo run --bin bitcoin-rpc-codegen -- --url http://127.0.0.1:18443
-//! ```
-//!
-//! # Example
-//!
-//! ```rust
-//! use bitcoin_rpc_codegen::TransportCodeGenerator;
-//! use bitcoin_rpc_codegen::Transport;
-//! use bitcoin_rpc_codegen::TransportError;
-//!
+//! The crate’s job is *only* to turn `ApiMethod` descriptors
+//! into ready‑to‑`cargo check` Rust modules.  Runtime testing,
+//! node spawning, and schema extraction belong in other crates.
+
 #![warn(missing_docs)]
 
+use anyhow::Result;
 use rpc_api::ApiMethod;
 use std::{fs, io::Write, path::Path};
 
-/// A code generator that turns a list of `ApiMethod` into Rust source files.
+// ---------------------------------------------------------------------------
+//  Sub‑crates that do the heavy lifting
+// ---------------------------------------------------------------------------
+
+/// **`client_macros`** – Emits the `macro_rules!` blocks that expand into
+/// ergonomic, version‑scoped client wrappers.  
+/// A downstream crate can simply `impl_client_latest__getblockchaininfo!()` and
+/// obtain a fully‑typed `fn getblockchaininfo(&self) -> …` on its `Client`.
+pub mod client_macros;
+
+/// **`discover`** – Runtime discovery helpers.  
+/// Talks to a local `bitcoin-cli` binary to list available RPC methods,
+/// download their help‑text, and turn that into a minimal `ApiMethod` set.
+/// Used by the *discovery* pipeline mode so we can generate against whatever
+/// node version happens to be on `PATH`.
+pub mod discover;
+
+/// **`docs`** – Rust‑doc & Markdown generation utilities.  
+/// Converts `ApiMethod` metadata into nice triple‑slash comments and “Example:”
+/// blocks that are injected at the top of every generated source file.
 pub mod docs;
-/// A code generator that turns a list of `ApiMethod` into Rust source files.
+
+/// **`module_generator`** – Writes the `mod.rs` scaffolding.  
+/// Given a set of schema versions (`v28`, `v29`, `latest`…) it produces:
+///  generated/
+///   ├─ client/ v28/ v29/ …
+///   └─ types/  v28_types/ …
+///   plus top‑level mod.rs that re‑export everything
+/// so that downstream crates can just `use generated::client::*;`.
+pub mod module_generator;
+
+/// **`types`** – Shapes the JSON you get back from Core into real Rust.  
+///   * Parses each method’s _Result:_ section (or the pre‑built `api.json`)  
+///   * Builds a strongly‑typed `…Response` struct with the right `serde`
+///     attributes (`Option<T>` + `skip_serializing_if`)  
+///   * Exposes **`TypesCodeGenerator`** which writes one
+///     `<method>_response.rs` file per RPC – these are imported by the
+///     transport wrapper so users work with first‑class Rust types instead of
+///     raw `Value`.
 pub mod types;
 
-/// A code generator that turns a list of `ApiMethod` into Rust source files.
-///
-/// Returns a `Vec` of `(module_name, source_code)` tuples.
+// Re‑export so downstream crates can just `use codegen::ClientCodeGenerator`
+// pub use client_macros::ClientGenerator as ClientCodeGenerator;
+pub use types::TypesCodeGenerator;
+
+/// ---------------------------------------------------------------------------
+/// 1. Common helper traits / functions
+/// ---------------------------------------------------------------------------
+
+/// Anything that outputs `(module_name, source_code)` pairs.
 pub trait CodeGenerator {
-    /// Generate the source code for the given methods.
+    /// Create Rust source files for the supplied API methods.
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)>;
+
+    /// Optional post‑generation check (defaults to a no‑op).
+    fn validate(&self, _methods: &[ApiMethod]) -> Result<()> {
+        Ok(())
+    }
 }
 
-/// A minimal generator that creates one file per RPC method,
-/// each containing an empty `pub fn <method_name>() { unimplemented!() }` stub.
+/// Write each `(name, src)` pair to `<out_dir>/<name>.rs`.
+pub fn write_generated<P: AsRef<Path>>(
+    out_dir: P,
+    files: &[(String, String)],
+) -> std::io::Result<()> {
+    fs::create_dir_all(&out_dir)?;
+    for (name, src) in files {
+        let path = out_dir.as_ref().join(format!("{name}.rs"));
+        let mut f = fs::File::create(path)?;
+        f.write_all(src.as_bytes())?;
+    }
+    Ok(())
+}
+
+/// ---------------------------------------------------------------------------
+/// 2. A trivial stub generator (handy for tests / scaffolding)
+/// ---------------------------------------------------------------------------
 pub struct BasicCodeGenerator;
 
 impl CodeGenerator for BasicCodeGenerator {
@@ -45,167 +94,95 @@ impl CodeGenerator for BasicCodeGenerator {
         methods
             .iter()
             .map(|m| {
-                let name = m.name.clone();
                 let src = format!(
-                    r#"// Auto‑generated stub for RPC method `{name}`
+                    r#"// Auto‑generated stub for RPC method `{n}`
 
-pub fn {name}() {{
+pub fn {n}() {{
     unimplemented!();
 }}
 "#,
-                    name = name,
+                    n = m.name
                 );
-                (name, src)
+                (m.name.clone(), src)
             })
             .collect()
     }
 }
 
-/// Write generated modules to disk under `out_dir`.
-///
-/// Creates `out_dir` if needed, and writes each `(module_name, src)`
-/// pair to a `<module_name>.rs` file.
-pub fn write_generated<P: AsRef<Path>>(
-    out_dir: P,
-    files: &[(String, String)],
-) -> std::io::Result<()> {
-    let out_dir = out_dir.as_ref();
-    fs::create_dir_all(out_dir)?;
-    for (name, src) in files {
-        let path = out_dir.join(format!("{}.rs", name));
-        let mut file = fs::File::create(&path)?;
-        file.write_all(src.as_bytes())?;
-    }
-    Ok(())
-}
-
-/// A generator that emits fully‑templated JSON‑RPC async functions
-/// using `reqwest` and `serde_json`.
-pub struct JsonRpcCodeGenerator {
-    /// The URL of the Bitcoin node RPC endpoint, e.g. "http://127.0.0.1:18443"
-    pub url: String,
-}
-
-/// A code generator that creates type-safe Rust functions for Bitcoin Core RPC methods.
-///
-/// This generator takes a list of RPC methods and generates corresponding async Rust functions
-/// that communicate with a Bitcoin Core node using JSON-RPC over HTTP. Each generated function:
-///
-/// 1. Takes a `Transport` instance that handles the low-level HTTP communication
-/// 2. Returns a `Result<T, TransportError>` where:
-///    - `T` is the generated response type for the RPC method
-///    - `TransportError` captures both HTTP and RPC-level errors
-///
-/// The generated code provides a thin wrapper around the `Transport` layer, making it easy to
-/// call Bitcoin Core RPC methods while handling authentication, HTTP communication, and error
-/// handling in a consistent way.
-///
-/// # Example
-///
-/// For an RPC method like `getblockcount`, this generator will create:
-///
-/// ```rust,ignore
-/// pub async fn getblockcount(transport: &Transport) -> Result<GetblockcountResponse, TransportError> {
-///     let response = transport.send_request("getblockcount", &[] as &[Value]).await?;
-///     Ok(serde_json::from_value(response)?)
-/// }
-/// ```
-///
-/// This allows users to make RPC calls like:
-///
-/// ```rust,ignore
-/// let transport = Transport::new("http://127.0.0.1:18443");
-/// let block_count = getblockcount(&transport).await?;
-/// println!("Current block height: {}", block_count.count);
-/// ```
+/// ---------------------------------------------------------------------------
+/// 3. The real generator: async JSON‑RPC wrappers
+/// ---------------------------------------------------------------------------
 pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+        use types::{capitalize, generate_return_type, sanitize_method_name};
+
         methods
             .iter()
             .map(|m| {
-                let name = &m.name;
-                let sanitized_name = types::sanitize_method_name(name);
+                /* ---------- fn signature ---------- */
+                let fn_args = std::iter::once("transport: &Transport".into())
+                    .chain(
+                        m.arguments
+                            .iter()
+                            .map(|a| format!("{}: serde_json::Value", a.names[0])),
+                    )
+                    .collect::<Vec<_>>()
+                    .join(", ");
 
-                // 1) Build the fn signature args
-                let mut fn_args = vec!["transport: &Transport".to_string()];
-                for arg in &m.arguments {
-                    let arg_name = &arg.names[0];
-                    let arg_type = types::map_type_to_rust(&arg.type_);
-                    fn_args.push(format!("{}: {}", arg_name, arg_type));
-                }
-                let fn_args = fn_args.join(", ");
-
-                // 2) Build the params vector literal
-                let params_expr = if m.arguments.is_empty() {
-                    "Vec::<Value>::new()".to_string()
+                /* ---------- params vec ---------- */
+                let params_vec = if m.arguments.is_empty() {
+                    "Vec::<Value>::new()".into()
                 } else {
-                    let elems: Vec<_> = m
+                    let elems = m
                         .arguments
                         .iter()
-                        .map(|arg| format!("json!({})", &arg.names[0]))
-                        .collect();
-                    format!("vec![{}]", elems.join(", "))
+                        .map(|a| format!("json!({})", a.names[0]))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("vec![{elems}]")
                 };
 
-                // 3) Generate documentation
-                let docs = docs::generate_example_docs(m, "latest");
-
-                // 4) Generate response type and return type
-                let response_type = types::generate_return_type(m);
-                let return_type = response_type
-                    .as_ref()
-                    .map(|_| {
-                        format!(
-                            " -> Result<{}Response, TransportError>",
-                            types::capitalize(name)
-                        )
-                    })
-                    .unwrap_or_else(|| " -> Result<Value, TransportError>".to_string());
-
-                // 5) Emit the module source with conditional imports
-                let imports = if m.arguments.is_empty() {
-                    "use serde_json::Value;"
+                /* ---------- docs + types ---------- */
+                let docs_md = docs::generate_example_docs(m, "latest");
+                let response_struct = generate_return_type(m).unwrap_or_default();
+                let ok_ty = if response_struct.is_empty() {
+                    "Value".into()
                 } else {
-                    "use serde_json::{json, Value};"
+                    format!("{0}Response", capitalize(&m.name))
                 };
 
-                let response_handler = if response_type.is_some() {
-                    "Ok(serde_json::from_value(response)?)"
-                } else {
-                    "Ok(response)"
-                };
-                let response_type_str = response_type.unwrap_or_default();
+                /* ---------- source file ---------- */
                 let src = format!(
                     r#"{docs}
 
-use serde::{{Deserialize, Serialize}};
-use transport::Transport;
-{imports}
-use transport::TransportError;
+use serde_json::{{json, Value}};
+use transport::{{Transport, TransportError}};
+{resp_struct}
 
-{response_type}
-
-/// Calls the `{name}` RPC method.
-pub async fn {sanitized_name}({fn_args}){return_type} {{
-    let params = {params_expr};
-    let response = transport.send_request("{name}", &params).await?;
-    {response_handler}
+/// Calls the `{rpc}` RPC method.
+pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
+    let params = {params_vec};
+    let raw = transport.send_request("{rpc}", &params).await?;
+    {handler}
 }}
 "#,
-                    docs = docs,
-                    name = name,
-                    sanitized_name = sanitized_name,
+                    docs = docs_md,
+                    resp_struct = response_struct,
+                    rpc = m.name,
+                    fn_name = sanitize_method_name(&m.name),
                     fn_args = fn_args,
-                    return_type = return_type,
-                    params_expr = params_expr,
-                    response_type = response_type_str,
-                    imports = imports,
-                    response_handler = response_handler
+                    ok_ty = ok_ty,
+                    params_vec = params_vec,
+                    handler = if response_struct.is_empty() {
+                        "Ok(raw)".into()
+                    } else {
+                        format!("Ok(serde_json::from_value::<{ok_ty}>(raw)?)")
+                    }
                 );
 
-                (name.clone(), src)
+                (m.name.clone(), src)
             })
             .collect()
     }
