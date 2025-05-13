@@ -31,12 +31,13 @@ pub enum TransportError {
 
 impl From<reqwest::Error> for TransportError {
     fn from(e: reqwest::Error) -> Self {
-        TransportError::Http(
-            e.status()
-                .unwrap_or(reqwest::StatusCode::from_u16(0).unwrap())
-                .as_u16(),
-            e,
-        )
+        if let Some(status) = e.status() {
+            TransportError::Http(status.as_u16(), e)
+        } else {
+            // Use 0 as a sentinel value for network errors (timeouts, connection refused, etc.)
+            // where no HTTP status code is available
+            TransportError::Http(0, e)
+        }
     }
 }
 
