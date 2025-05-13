@@ -19,7 +19,7 @@ fn test_json_rpc_codegen_transport() {
     assert_eq!(mod_name, "foo");
 
     // now should reference Transport
-    assert!(src.contains("use transport::Transport;"));
+    assert!(src.contains("use transport::{Transport, TransportError};"));
     assert!(src.contains("transport.send_request(\"foo\""));
     assert!(src.contains("pub async fn foo"));
 }
@@ -59,4 +59,24 @@ fn transport_codegen_with_args() {
     assert!(src.contains("let params = vec![json!(arg1), json!(arg2)];"));
     // 3) send_request call remains correct
     assert!(src.contains("transport.send_request(\"foo\", &params).await"));
+}
+
+#[test]
+fn transport_codegen_error_handling() {
+    let methods = vec![ApiMethod {
+        name: "foo".into(),
+        description: "".into(),
+        arguments: vec![],
+        results: vec![],
+    }];
+
+    let gen = TransportCodeGenerator;
+    let files = gen.generate(&methods);
+    assert_eq!(files.len(), 1);
+
+    let (_mod, src) = &files[0];
+    // Verify error handling is properly generated
+    assert!(src.contains("Result<"));
+    assert!(src.contains("TransportError"));
+    assert!(src.contains(".await?"));
 }
