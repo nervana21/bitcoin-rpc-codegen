@@ -1,4 +1,13 @@
-// transport/src/lib.rs
+#![warn(missing_docs)]
+
+//! **`Transport`**
+//! A thin, configurable JSON‑RPC over HTTP transport layer for communicating with Bitcoin Core nodes.
+//!
+//! Features:
+//! - HTTP client setup with optional basic authentication via `new_with_auth`
+//! - Low‑level `send_request` returning raw `serde_json::Value` for maximum flexibility
+//! - High‑level `call` with automatic serialization/deserialization to Rust types
+//! - Unified error handling through the `TransportError` enum, covering HTTP, RPC, and JSON errors
 
 use base64::Engine;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
@@ -7,24 +16,29 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 use thiserror::Error;
 
-/// Thin JSON‑RPC transport layer.
+/// Encapsulates an HTTP client and endpoint URL for sending JSON‑RPC requests.
 #[derive(Clone)]
 pub struct Transport {
     client: Client,
     url: String,
 }
 
+/// Errors that can occur while sending or receiving JSON‑RPC requests.
 #[derive(Debug, Error)]
 pub enum TransportError {
+    /// HTTP transport error, includes status code and underlying transport error.
     #[error("HTTP error (status {0}): {1}")]
     Http(u16, #[source] reqwest::Error),
 
+    /// The JSON‑RPC response contained an error object.
     #[error("RPC error: {0}")]
     Rpc(Value),
 
+    /// Failed to parse JSON response.
     #[error("Invalid JSON: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    /// The JSON‑RPC response did not include a `result` field.
     #[error("Missing result field in response")]
     MissingResult,
 }
@@ -43,6 +57,9 @@ impl From<reqwest::Error> for TransportError {
 
 impl Transport {
     /// Create a new transport pointing at `url` (e.g. "http://127.0.0.1:18443").
+    ///
+    /// # Parameters
+    /// - `url`: The HTTP endpoint of the Bitcoin Core JSON‑RPC server.
     pub fn new<U: Into<String>>(url: U) -> Self {
         Transport {
             client: Client::new(),
@@ -50,11 +67,19 @@ impl Transport {
         }
     }
 
-    /// Create a new transport pointing at `url` with basic authentication.
-    pub fn new_with_auth<U: Into<String>>(url: U, username: &str, password: &str) -> Self {
+    /// Create a new transport with HTTP basic authentication.
+    ///
+    /// # Parameters
+    /// - `url`: The HTTP endpoint of the Bitcoin Core JSON‑RPC server.
+    /// - `rpcuser`: RPC username.
+    /// - `rpcpass`: RPC password.
+    ///
+    /// # Panics
+    /// Panics if default headers cannot be constructed.
+    pub fn new_with_auth<U: Into<String>>(url: U, rpcuser: &str, rpcpass: &str) -> Self {
         let mut headers = HeaderMap::new();
         let auth =
-            base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", username, password));
+            base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", rpcuser, rpcpass));
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Basic {}", auth)).unwrap(),
@@ -68,8 +93,18 @@ impl Transport {
         }
     }
 
-    /// Send a JSON‑RPC request with given `method` and `params`, returning the `result` field.
-    /// This is a low-level method that works with raw JSON values.
+    /// Send a JSON‑RPC request with given `method` and `params`, returning the raw `result` field.
+    ///
+    /// # Type Parameters
+    /// - `P`: The type of the parameters, must implement `Serialize`.
+    ///
+    /// # Parameters
+    /// - `method`: The RPC method name.
+    /// - `params`: The parameters to pass to the RPC call.
+    ///
+    /// # Errors
+    /// Returns `TransportError` if the HTTP request fails, the server returns an error object,
+    /// or the response cannot be parsed or is missing the `result`.
     pub async fn send_request<P: Serialize>(
         &self,
         method: &str,
@@ -100,8 +135,18 @@ impl Transport {
         }
     }
 
-    /// Send a JSON‑RPC request with given `method` and `params`, returning a deserialized response.
-    /// This is a high-level method that handles type conversion and serialization.
+    /// Send a JSON‑RPC request with given `method` and `params`, deserializing the `result` into `R`.
+    ///
+    /// # Type Parameters
+    /// - `T`: The type of the parameters, must implement `Serialize`.
+    /// - `R`: The expected return type, must implement `DeserializeOwned`.
+    ///
+    /// # Parameters
+    /// - `method`: The RPC method name.
+    /// - `params`: The parameters to pass to the RPC call.
+    ///
+    /// # Errors
+    /// Returns `TransportError` if the HTTP request fails or deserialization fails.
     pub async fn call<T: Serialize, R: DeserializeOwned>(
         &self,
         method: &str,
