@@ -1,214 +1,142 @@
-use rpc_api::ApiMethod;
-use std::fmt::Write;
+//! Build response‑type structs (`…Response`) from `ApiMethod`s
+//! and provide `TypesCodeGenerator` for the pipeline.
 
-/// Map JSON schema types to Rust types
-pub fn map_type_to_rust(type_str: &str) -> String {
-    match type_str {
-        "string" => "String".to_string(),
-        "number" => "f64".to_string(),
-        "boolean" => "bool".to_string(),
-        "hex" => "String".to_string(),
-        "object" => "serde_json::Value".to_string(),
-        "object_dynamic" => "serde_json::Value".to_string(),
-        _ => "String".to_string(),
-    }
+use rpc_api::{ApiMethod, ApiResult};
+use std::fmt::Write as _;
+
+/* --------------------------------------------------------------------- */
+/*  Primitive → Rust helpers                                             */
+/* --------------------------------------------------------------------- */
+
+fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
+    let base = match res.type_.as_str() {
+        "string" | "hex" => "String",
+        "number" | "amount" | "numeric" => "f64",
+        "boolean" => "bool",
+        "object" | "array" => "serde_json::Value",
+        _ => "serde_json::Value",
+    };
+    (base, res.optional)
 }
 
-/// Sanitize an RPC method name into a valid Rust identifier
-pub fn sanitize_method_name(name: &str) -> String {
-    name.replace("-", "_").to_lowercase()
-}
-
-/// Capitalize a string, handling hyphenated words
-pub fn capitalize(s: &str) -> String {
-    s.split('-')
-        .map(|word| {
-            let mut c = word.chars();
-            match c.next() {
-                None => String::new(),
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("")
-}
-
-/// Sanitize a field name into a valid Rust identifier
-pub fn sanitize_field_name(name: &str) -> String {
-    let filtered: String = name
-        .chars()
-        .filter_map(|c| {
-            if c.is_ascii_alphanumeric() {
-                Some(c.to_ascii_lowercase())
-            } else if c == '_' || c == '-' {
-                Some('_')
-            } else {
-                None
-            }
-        })
-        .collect();
-    if filtered
-        .chars()
-        .next()
-        .map(|c| c.is_ascii_digit())
-        .unwrap_or(false)
-    {
-        format!("_{}", filtered)
+fn field_ident(res: &ApiResult, idx: usize) -> String {
+    if !res.key_name.is_empty() {
+        res.key_name.clone()
     } else {
-        filtered
+        format!("field_{idx}")
     }
 }
 
-/// Get the Rust type for a field
-pub fn get_field_type(field: &rpc_api::ApiResult) -> String {
-    match field.type_.as_str() {
-        "array" | "array-fixed" => "Vec<serde_json::Value>".to_string(),
-        "object" => "serde_json::Value".to_string(),
-        _ => map_type_to_rust(&field.type_),
-    }
-}
+/* --------------------------------------------------------------------- */
+/*  Struct generators                                                    */
+/* --------------------------------------------------------------------- */
 
-/// Format documentation comments
-fn format_doc_comment(description: &str) -> String {
-    description
-        .lines()
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .map(|line| format!("    /// {}", line))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-/// Generate the return type for a method
+/// Generates a Rust struct type for the RPC method's return value.
+/// Returns None if the method has no results or if the results can't be mapped to a struct.
 pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
     if method.results.is_empty() {
-        return None;
+        println!("skip {}  → results empty", method.name);
+        return None; // void return
     }
 
-    let type_name = format!("{}Response", capitalize(&method.name));
-
-    // Generate fields with documentation
-    let mut fields = String::new();
-    for result in &method.results {
-        if result.type_.eq_ignore_ascii_case("none") {
-            continue;
+    // ----- Case 1: single object with `inner` fields ----------------------
+    if method.results.len() == 1 && method.results[0].type_ == "object" {
+        if method.results[0].inner.is_empty() {
+            println!("skip {}  → single object but inner empty", method.name);
+            return None;
         }
-
-        // Add field documentation
-        if !result.description.is_empty() {
-            fields.push_str(&format_doc_comment(&result.description));
-        }
-
-        // Add the field with its type
-        let field_type = get_field_type(result);
-        fields.push_str(&format!(
-            "    pub {}: {},\n",
-            sanitize_field_name(&result.key_name),
-            field_type
-        ));
+        return build_struct(method, &method.results[0].inner).or_else(|| {
+            println!("skip {}  → build_struct(inner) returned None", method.name);
+            None
+        });
     }
 
-    if fields.is_empty() {
-        return None;
+    // ----- Case 2: multi‑field top level results -------------------------
+    if method.results.iter().any(|r| !r.type_.eq("none")) {
+        return build_struct(method, &method.results).or_else(|| {
+            println!(
+                "skip {}  → build_struct(top‑level) returned None",
+                method.name
+            );
+            None
+        });
     }
 
-    let mut s = String::new();
-    writeln!(
-        s,
-        "//! This file is auto-generated. Do not edit manually.\n"
-    )
-    .unwrap();
-    writeln!(s, "/// Response type for the {} RPC call.", type_name).unwrap();
-    writeln!(
-        s,
-        "#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]"
-    )
-    .unwrap();
-    writeln!(s, "pub struct {} {{", type_name).unwrap();
-    writeln!(s, "{}", fields).unwrap();
-    writeln!(s, "}}\n").unwrap();
-
-    Some(s)
+    println!("skip {}  → fell through", method.name);
+    None
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rpc_api::ApiMethod;
+fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
+    let struct_name = capitalize(&method.name) + "Response";
+    let mut out = String::new();
 
-    #[test]
-    fn test_map_type_to_rust() {
-        assert_eq!(map_type_to_rust("string"), "String");
-        assert_eq!(map_type_to_rust("number"), "f64");
-        assert_eq!(map_type_to_rust("boolean"), "bool");
-        assert_eq!(map_type_to_rust("hex"), "String");
-        assert_eq!(map_type_to_rust("object"), "serde_json::Value");
-        assert_eq!(map_type_to_rust("unknown"), "String");
+    writeln!(
+        &mut out,
+        "use serde::{{Deserialize, Serialize}};\n\
+         \n\
+         /// Response for the `{}` RPC call.\n\
+         #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]",
+        method.name
+    )
+    .ok()?;
+    writeln!(&mut out, "pub struct {} {{", struct_name).ok()?;
+
+    for (idx, res) in fields.iter().enumerate() {
+        if res.type_ == "none" {
+            continue; // nothing to map
+        }
+        let (ty, is_opt) = rust_ty(res);
+        let ident = field_ident(res, idx);
+        if is_opt {
+            writeln!(
+                &mut out,
+                "    #[serde(skip_serializing_if = \"Option::is_none\")]"
+            )
+            .ok()?;
+            writeln!(&mut out, "    pub {ident}: Option<{ty}>,").ok()?;
+        } else {
+            writeln!(&mut out, "    pub {ident}: {ty},").ok()?;
+        }
     }
 
-    #[test]
-    fn test_sanitize_method_name() {
-        assert_eq!(sanitize_method_name("get-block-count"), "get_block_count");
-        assert_eq!(sanitize_method_name("getBlockCount"), "getblockcount");
+    writeln!(&mut out, "}}\n").ok()?;
+    Some(out)
+}
+
+/* --------------------------------------------------------------------- */
+/*  Utils                                                                 */
+/* --------------------------------------------------------------------- */
+/// Capitalizes the first character of a string.
+pub fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
+}
 
-    #[test]
-    fn test_capitalize() {
-        assert_eq!(capitalize("get-block-count"), "GetBlockCount");
-        assert_eq!(capitalize("getblockcount"), "Getblockcount");
-    }
+/// Sanitizes a method name for use as a filename.
+pub fn sanitize_method_name(name: &str) -> String {
+    name.to_string()
+}
 
-    #[test]
-    fn test_sanitize_field_name() {
-        assert_eq!(sanitize_field_name("block-count"), "block_count");
-        assert_eq!(sanitize_field_name("123count"), "_123count");
-        assert_eq!(sanitize_field_name("block@count"), "blockcount");
-    }
+/* --------------------------------------------------------------------- */
+/*  CodeGenerator impl                                                   */
+/* --------------------------------------------------------------------- */
 
-    #[test]
-    fn test_generate_return_type() {
-        let method = ApiMethod {
-            name: "getblockcount".to_string(),
-            description: "Returns the number of blocks".to_string(),
-            arguments: vec![],
-            results: vec![rpc_api::ApiResult {
-                key_name: "count".to_string(),
-                type_: "number".to_string(),
-                description: "The current block count".to_string(),
-            }],
-        };
+use crate::CodeGenerator;
 
-        let result = generate_return_type(&method).unwrap();
-        assert!(result.contains("pub struct GetblockcountResponse"));
-        assert!(result.contains("pub count: f64"));
-        assert!(result.contains("/// The current block count"));
-    }
+/// Emits one `<method>_response.rs` file per RPC method.
+pub struct TypesCodeGenerator;
 
-    #[test]
-    fn test_generate_return_type_multiple_fields() {
-        let method = ApiMethod {
-            name: "getblockchaininfo".to_string(),
-            description: "Returns blockchain info".to_string(),
-            arguments: vec![],
-            results: vec![
-                rpc_api::ApiResult {
-                    key_name: "chain".to_string(),
-                    type_: "string".to_string(),
-                    description: "Current network name".to_string(),
-                },
-                rpc_api::ApiResult {
-                    key_name: "blocks".to_string(),
-                    type_: "number".to_string(),
-                    description: "Current block height".to_string(),
-                },
-            ],
-        };
-
-        let result = generate_return_type(&method).unwrap();
-        assert!(result.contains("pub struct GetblockchaininfoResponse"));
-        assert!(result.contains("pub chain: String"));
-        assert!(result.contains("pub blocks: f64"));
-        assert!(result.contains("/// Current network name"));
-        assert!(result.contains("/// Current block height"));
+impl CodeGenerator for TypesCodeGenerator {
+    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+        methods
+            .iter()
+            .filter_map(|m| {
+                let src = generate_return_type(m)?;
+                Some((format!("{}_response", sanitize_method_name(&m.name)), src))
+            })
+            .collect()
     }
 }

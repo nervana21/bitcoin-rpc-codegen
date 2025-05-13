@@ -88,6 +88,8 @@ mod tests {
                 key_name: "count".to_string(),
                 type_: "number".to_string(),
                 description: "The current block count".to_string(),
+                inner: vec![],
+                optional: false,
             }],
         };
 
