@@ -51,8 +51,6 @@ pub mod module_generator;
 ///     raw `Value`.
 pub mod types;
 
-// Re‑export so downstream crates can just `use codegen::ClientCodeGenerator`
-// pub use client_macros::ClientGenerator as ClientCodeGenerator;
 pub use types::TypesCodeGenerator;
 
 /// ---------------------------------------------------------------------------
