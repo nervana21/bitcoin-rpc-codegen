@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use integration_test::{
-    create_test_client, create_test_config, create_test_node_manager, init_test_env, TestNode,
+    create_test_client, create_test_config, create_test_node_manager, init_test_env,
+    wait_for_condition, TestNode,
 };
 use node::NodeManager;
 use std::time::Duration;
@@ -86,27 +87,35 @@ async fn test_node_startup_shutdown() -> Result<()> {
     init_test_env();
     let config = create_test_config()?;
 
+    // start & verify up
     let test_node = TestNode::spawn_and_ready(
         Box::new(create_test_node_manager(&config).await?),
         &config.rpc_username,
         &config.rpc_password,
     )
     .await?;
-
     let info = test_node
         .client
         .call_method("getblockchaininfo", &[])
         .await?;
     assert!(info.get("chain").is_some());
 
-    test_node.client.call_method("stop", &[]).await?;
+    // send stop RPC and assert immediate response
+    let stop_msg = test_node.client.call_method("stop", &[]).await?;
+    assert_eq!(stop_msg.as_str().unwrap(), "Bitcoin Core stopping");
 
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
+    // now poll for shutdown instead of sleeping 5 s
     let client = create_test_client(&config).await?;
+    let down = wait_for_condition(
+        || async {
+            // if RPC errors out, we're down
+            Ok(client.call_method("getblockchaininfo", &[]).await.is_err())
+        },
+        Duration::from_secs(1),
+    )
+    .await?;
 
-    let result = client.call_method("getblockchaininfo", &[]).await;
-    assert!(result.is_err(), "Node is still responding after shutdown");
+    assert!(down, "Node still responding after shutdown");
     Ok(())
 }
 
