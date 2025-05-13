@@ -49,3 +49,21 @@ fn send_request_rpc_error() {
         other => panic!("expected Rpc error, got {:?}", other),
     }
 }
+
+#[test]
+fn test_connection_error() {
+    // Create a transport pointing to a non-existent port
+    let tx = Transport::new("http://127.0.0.1:0");
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    let err = rt
+        .block_on(tx.send_request("foo", &[] as &[u8]))
+        .unwrap_err();
+
+    match err {
+        TransportError::Http(0, _) => {
+            // Success - we got a connection error with status 0
+        }
+        other => panic!("expected Http(0, _) error, got {:?}", other),
+    }
+}
