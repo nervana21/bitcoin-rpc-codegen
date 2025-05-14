@@ -25,7 +25,7 @@ pub mod client_macros;
 /// download their help‑text, and turn that into a minimal `ApiMethod` set.
 /// Used by the *discovery* pipeline mode so we can generate against whatever
 /// node version happens to be on `PATH`.
-pub mod discover;
+pub mod rpc_method_discovery;
 
 /// **`docs`** – Rust‑doc & Markdown generation utilities.  
 /// Converts `ApiMethod` metadata into nice triple‑slash comments and “Example:”

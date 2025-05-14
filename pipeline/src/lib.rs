@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use codegen::{
-    discover, write_generated, BasicCodeGenerator, CodeGenerator, TransportCodeGenerator,
-    TypesCodeGenerator,
+    rpc_method_discovery, write_generated, BasicCodeGenerator, CodeGenerator,
+    TransportCodeGenerator, TypesCodeGenerator,
 };
 use parser::{DefaultHelpParser, HelpParser, MethodHelp};
 use rpc_api::parse_api_json;
@@ -84,7 +84,7 @@ pub fn run(input_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
 pub fn run_discovery(bitcoind_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
     tracing::info!(?bitcoind_path, ?out_dir, "Running discovery pipeline");
     // Discover --------------------------------------------------------------
-    let discovered = discover::discover_methods(bitcoind_path)
+    let discovered = rpc_method_discovery::discover_methods(bitcoind_path)
         .map_err(|e| anyhow::anyhow!("Discovery failed: {e}"))?;
     tracing::info!("Discovered {} methods", discovered.len());
 

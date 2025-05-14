@@ -1,4 +1,4 @@
-//! Discovery module for bitcoin-rpc-codegen.
+//! RPC Method Discovery module for bitcoin-rpc-codegen.
 //!
 //! Provides functionality to list RPC methods supported by a given bitcoin-cli binary
 //! and to dump their help texts into versioned resource folders.
