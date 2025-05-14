@@ -41,6 +41,19 @@ pub mod docs;
 /// so that downstream crates can just `use generated::client::*;`.
 pub mod module_generator;
 
+/// **`rust_helpers`** – Shared helpers for argument and result type mapping.
+/// Provides utilities for converting between RPC types and Rust types.
+// pub mod rust_helpers;
+
+/// **`transport_codegen`** – Generates transport layer code.
+/// Creates async RPC method wrappers that handle parameter serialization
+/// and response deserialization.
+pub mod rpc_client_generator;
+
+/// **`types_codegen`** – Generates response type definitions.
+/// Creates strongly-typed response structs for RPC methods.
+// pub mod types_codegen;
+
 /// **`types`** – Shapes the JSON you get back from Core into real Rust.  
 ///   * Parses each method’s _Result:_ section (or the pre‑built `api.json`)  
 ///   * Builds a strongly‑typed `…Response` struct with the right `serde`
