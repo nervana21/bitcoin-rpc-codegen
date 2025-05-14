@@ -169,7 +169,7 @@ impl CodeGenerator for TransportCodeGenerator {
                     r#"{docs}
 
 use serde_json::{{json, Value}};
-use transport::{{Transport, TransportError}};
+use crate::transport::{{Transport, TransportError}};
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.
