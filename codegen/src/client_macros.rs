@@ -18,6 +18,7 @@
 //! * Centralises all string‑munging; the rest of code‑gen stays data‑driven.  
 //! * Pure function: emit the string, write it wherever you like.
 
+use crate::docs::format_doc_comment;
 use crate::types::{capitalize, sanitize_method_name};
 use rpc_api::ApiMethod;
 
@@ -141,16 +142,6 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         macro_name,
         indent(&impl_block, 12)
     )
-}
-
-fn format_doc_comment(description: &str) -> String {
-    description
-        .lines()
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .map(|line| format!("/// {}", line))
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 fn generate_method_args(method: &ApiMethod) -> String {
