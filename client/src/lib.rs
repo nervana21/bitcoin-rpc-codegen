@@ -19,7 +19,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 use thiserror::Error;
-use transport::{Transport, TransportError};
+pub use transport::{Transport, TransportError};
 
 /// **`RpcClient`**
 ///
