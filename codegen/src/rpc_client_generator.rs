@@ -94,7 +94,12 @@ impl CodeGenerator for RpcClientGenerator {
             let mut code = String::new();
 
             /* doc comment */
-            writeln!(code, "{}", docs::format_doc_comment(&m.description)).unwrap();
+            writeln!(
+                code,
+                "{}",
+                doc_comment_generator::format_doc_comment(&m.description)
+            )
+            .unwrap();
 
             /* wrap inside impl RpcClient */
             writeln!(code, "impl crate::RpcClient {{").unwrap();
