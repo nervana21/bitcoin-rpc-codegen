@@ -4,6 +4,7 @@
 /target/
 !/target/generated/
 /client/src/generated/
+codegen/resources/
 
 # Rust artifacts
 Cargo.lock
