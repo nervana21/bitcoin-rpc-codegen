@@ -25,10 +25,8 @@ pub fn run(input_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
     // Prepare output tree ---------------------------------------------------
     fs::create_dir_all(out_dir)?;
     let transport_dir = out_dir.join("transport");
-    let client_dir = out_dir.join("client");
     let types_dir = out_dir.join("types");
     fs::create_dir_all(&transport_dir)?;
-    fs::create_dir_all(&client_dir)?;
     fs::create_dir_all(&types_dir)?;
 
     // Parse input -----------------------------------------------------------
