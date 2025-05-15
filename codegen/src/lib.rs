@@ -18,7 +18,7 @@ use std::{fs, io::Write, path::Path};
 /// ergonomic, version‑scoped client wrappers.  
 /// A downstream crate can simply `impl_client_latest__getblockchaininfo!()` and
 /// obtain a fully‑typed `fn getblockchaininfo(&self) -> …` on its `Client`.
-pub mod client_macros;
+pub mod rpc_method_macro_generator;
 
 /// **`discover`** – Runtime discovery helpers.  
 /// Talks to a local `bitcoin-cli` binary to list available RPC methods,
