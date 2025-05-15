@@ -189,8 +189,8 @@ impl CodeGenerator for TransportCodeGenerator {
                 let src = format!(
                     r#"{docs}
 
-use serde_json::{{json, Value}};
-use crate::transport::{{Transport, TransportError}};
+use serde_json::Value;
+use transport::{{Transport, TransportError}};
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.
