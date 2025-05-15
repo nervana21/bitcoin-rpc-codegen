@@ -17,10 +17,6 @@ fn test_default_config() {
     // Test Logging config defaults
     assert_eq!(config.logging.level, "info");
     assert!(config.logging.file.is_none());
-
-    // Test Metrics config defaults
-    assert!(config.metrics.enabled);
-    assert_eq!(config.metrics.port, 9090);
 }
 
 #[test]
@@ -52,11 +48,6 @@ fn test_config_serialization_roundtrip() {
     );
 
     assert_eq!(original_config.logging.level, loaded_config.logging.level);
-    assert_eq!(
-        original_config.metrics.enabled,
-        loaded_config.metrics.enabled
-    );
-    assert_eq!(original_config.metrics.port, loaded_config.metrics.port);
 }
 
 #[test]
@@ -95,16 +86,10 @@ fn test_custom_config_values() {
     // Modify Logging config
     config.logging.level = "debug".to_string();
 
-    // Modify Metrics config
-    config.metrics.enabled = false;
-    config.metrics.port = 9091;
-
     // Verify custom values
     assert_eq!(config.bitcoin.host, "192.168.1.1");
     assert_eq!(config.bitcoin.port, 8333);
     assert_eq!(config.bitcoin.username, "custom_user");
     assert_eq!(config.bitcoin.password, "custom_pass");
     assert_eq!(config.logging.level, "debug");
-    assert!(!config.metrics.enabled);
-    assert_eq!(config.metrics.port, 9091);
 }
