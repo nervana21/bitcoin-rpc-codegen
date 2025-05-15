@@ -1,11 +1,28 @@
 // node/tests/basic.rs
 
-use node::{BitcoinNodeManager, NodeManager};
+use node::{BitcoinNodeManager, NodeManager, TestConfig};
 use tokio_test::block_on;
+
+fn init_test_env() {
+    let _ = tracing_subscriber::fmt()
+        .with_target(true)
+        .with_thread_ids(true)
+        .with_file(true)
+        .with_line_number(true)
+        .try_init();
+}
+
+fn get_available_port() -> u16 {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    listener.local_addr().unwrap().port()
+}
 
 #[test]
 fn test_node_lifecycle() {
-    let mut node_manager = BitcoinNodeManager::new().unwrap();
+    init_test_env();
+    let mut test_config = TestConfig::default();
+    test_config.rpc_port = get_available_port();
+    let mut node_manager = BitcoinNodeManager::new_with_config(&test_config).unwrap();
 
     // Test initial state
     let initial_state = block_on(node_manager.get_state()).unwrap();
@@ -25,7 +42,10 @@ fn test_node_lifecycle() {
 
 #[test]
 fn test_multiple_start_stop() {
-    let mut node_manager = BitcoinNodeManager::new().unwrap();
+    init_test_env();
+    let mut test_config = TestConfig::default();
+    test_config.rpc_port = get_available_port();
+    let mut node_manager = BitcoinNodeManager::new_with_config(&test_config).unwrap();
 
     // Multiple starts should be idempotent
     block_on(node_manager.start()).unwrap();
