@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 use client::RpcClient;
-use node::NodeManager;
+use node::{Config, NodeManager};
 use std::time::{Duration, Instant};
 
 /// Bundles a running node and a ready RPC client.
@@ -17,18 +17,12 @@ impl TestNode {
     ///
     /// # Arguments
     /// * `manager` - The node manager that will control the Bitcoin node
-    /// * `rpc_url` - The RPC URL to connect to the node
-    /// * `rpc_username` - The RPC username to connect to the node
-    /// * `rpc_password` - The RPC password to connect to the node
+    /// * `config` - The configuration containing RPC credentials
     ///
     /// # Returns
     /// A Result containing the TestNode if successful, or an error if the node fails to start
     /// or become ready within the timeout period.
-    pub async fn spawn_and_ready(
-        manager: Box<dyn NodeManager>,
-        rpc_username: &str,
-        rpc_password: &str,
-    ) -> Result<Self> {
+    pub async fn spawn_and_ready(manager: Box<dyn NodeManager>, config: &Config) -> Result<Self> {
         // 1) spawn bitcoind
         manager
             .start()
@@ -43,8 +37,8 @@ impl TestNode {
 
         let client = RpcClient::new_with_auth(
             format!("http://127.0.0.1:{}", actual_port),
-            rpc_username,
-            rpc_password,
+            &config.bitcoin.username,
+            &config.bitcoin.password,
         );
 
         // 3) poll getnetworkinfo until it parses
