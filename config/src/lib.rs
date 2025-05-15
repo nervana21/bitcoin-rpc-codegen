@@ -18,15 +18,6 @@ pub enum ConfigError {
     NotFound(PathBuf),
 }
 
-/// Pipeline configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PipelineConfig {
-    /// Path to the `bitcoin-cli help` dump
-    pub input_path: PathBuf,
-    /// Where to write generated modules
-    pub output_dir: PathBuf,
-}
-
 /// Main configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -34,10 +25,8 @@ pub struct Config {
     pub bitcoin: BitcoinConfig,
     /// Logging configuration
     pub logging: LoggingConfig,
-    /// Metrics configuration
-    pub metrics: MetricsConfig,
-    /// Pipeline configuration
-    pub pipeline: PipelineConfig,
+    /// Code generation settings
+    pub codegen: CodegenConfig,
 }
 
 /// Bitcoin Core RPC connection settings
@@ -64,13 +53,13 @@ pub struct LoggingConfig {
     pub file: Option<PathBuf>,
 }
 
-/// Metrics configuration
+/// Code generation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MetricsConfig {
-    /// Enable metrics collection
-    pub enabled: bool,
-    /// Metrics port
-    pub port: u16,
+pub struct CodegenConfig {
+    /// Path to the `bitcoin-cli help` dump
+    pub input_path: PathBuf,
+    /// Where to write generated modules
+    pub output_dir: PathBuf,
 }
 
 impl Config {
@@ -122,11 +111,7 @@ impl Default for Config {
                 level: "info".to_string(),
                 file: None,
             },
-            metrics: MetricsConfig {
-                enabled: true,
-                port: 9090,
-            },
-            pipeline: PipelineConfig {
+            codegen: CodegenConfig {
                 input_path: Self::default_help_path(),
                 output_dir: Self::default_output_dir(),
             },
