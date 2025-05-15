@@ -31,8 +31,6 @@ fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
                 || k.contains("index")
             {
                 "u64"
-            } else if k.contains("progress") || k.contains("ratio") || k.contains("probability") {
-                "f64"
             } else {
                 "f64"
             }
@@ -113,7 +111,7 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
         return None; // void return
     }
 
-    // ----- Case 1: single object with `inner` fields ----------------------
+    // ----- Case 1: single object with `inner` fields ----------------------
     if method.results.len() == 1 && method.results[0].type_ == "object" {
         if method.results[0].inner.is_empty() {
             println!("skip {}  → single object but inner empty", method.name);
@@ -125,7 +123,7 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
         });
     }
 
-    // ----- Case 2: multi‑field top level results -------------------------
+    // ----- Case 2: multi‑field top level results -------------------------
     if method.results.iter().any(|r| !r.type_.eq("none")) {
         return build_struct(method, &method.results).or_else(|| {
             println!(

@@ -1,6 +1,6 @@
-//! Code generation utilities for Bitcoin Core RPC.
+//! Code generation utilities for Bitcoin Core RPC.
 //!
-//! The crate’s job is *only* to turn `ApiMethod` descriptors
+//! The crate's job is *only* to turn `ApiMethod` descriptors
 //! into ready‑to‑`cargo check` Rust modules.  Runtime testing,
 //! node spawning, and schema extraction belong in other crates.
 
@@ -28,7 +28,7 @@ pub mod rpc_method_macro_generator;
 pub mod rpc_method_discovery;
 
 /// **`docs`** – Rust‑doc & Markdown generation utilities.  
-/// Converts `ApiMethod` metadata into nice triple‑slash comments and “Example:”
+/// Converts `ApiMethod` metadata into nice triple‑slash comments and "Example:"
 /// blocks that are injected at the top of every generated source file.
 pub mod doc_comment_generator;
 
@@ -47,7 +47,7 @@ pub mod namespace_scaffolder;
 pub mod rpc_client_generator;
 
 /// **`types`** – Shapes the JSON you get back from Core into real Rust.  
-///   * Parses each method’s _Result:_ section (or the pre‑built `api.json`)  
+///   * Parses each method's _Result:_ section (or the pre‑built `api.json`)  
 ///   * Builds a strongly‑typed `…Response` struct with the right `serde`
 ///     attributes (`Option<T>` + `skip_serializing_if`)  
 ///   * Exposes **`TypesCodeGenerator`** which writes one
@@ -59,9 +59,8 @@ pub mod response_type_generator;
 pub use response_type_generator::TypesCodeGenerator;
 
 /// ---------------------------------------------------------------------------
-/// 1. Common helper traits / functions
+/// 1. Common helper traits / functions
 /// ---------------------------------------------------------------------------
-
 /// Anything that outputs `(module_name, source_code)` pairs.
 pub trait CodeGenerator {
     /// Create Rust source files for the supplied API methods.
@@ -88,7 +87,7 @@ pub fn write_generated<P: AsRef<Path>>(
 }
 
 /// ---------------------------------------------------------------------------
-/// 2. A trivial stub generator (handy for tests / scaffolding)
+/// 2. A trivial stub generator (handy for tests / scaffolding)
 /// ---------------------------------------------------------------------------
 pub struct BasicCodeGenerator;
 
@@ -134,7 +133,7 @@ pub fn {n}() -> {ret} {{
 }
 
 /// ---------------------------------------------------------------------------
-/// 3. The real generator: async JSON‑RPC wrappers
+/// 3. The real generator: async JSON‑RPC wrappers
 /// ---------------------------------------------------------------------------
 pub struct TransportCodeGenerator;
 
