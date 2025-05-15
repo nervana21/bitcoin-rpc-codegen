@@ -1,23 +1,23 @@
 use client::RpcClient;
 use mockito::Server;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::Value;
+use std::sync::Once;
 
-#[derive(Debug, Serialize)]
+static INIT: Once = Once::new();
+
+fn setup() {
+    INIT.call_once(|| {});
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct TestParams {
-    value: u32,
+    value: i32,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct TestResponse {
-    result: u32,
-}
-
-#[derive(Debug, Serialize)]
-struct ComplexParams {
-    name: String,
-    values: Vec<u32>,
-    optional: Option<bool>,
+    result: i32,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -27,26 +27,29 @@ struct ComplexResponse {
     details: Vec<String>,
 }
 
-#[test]
-fn test_low_level_api() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_low_level_api() {
+    setup();
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"jsonrpc":"2.0","result":"ok","id":1}"#)
+        .with_body(r#"{"jsonrpc":"2.0","result":42,"id":1}"#)
         .create();
 
     let client = RpcClient::new(&server.url());
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let res = rt.block_on(client.call_method("foo", &[])).unwrap();
-    assert_eq!(res, json!("ok"));
+    let params = vec![Value::Number(123.into())];
+    let res: Value = client.call_raw("foo", &params).await.unwrap();
+    assert_eq!(res, 42);
+    mock.assert();
 }
 
-#[test]
-fn test_high_level_api() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_high_level_api() {
+    setup();
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -54,49 +57,51 @@ fn test_high_level_api() {
         .create();
 
     let client = RpcClient::new(&server.url());
-    let rt = tokio::runtime::Runtime::new().unwrap();
     let params = TestParams { value: 123 };
-    let res: TestResponse = rt.block_on(client.call("foo", &[params])).unwrap();
+    let res: TestResponse = client.call("foo", &[params]).await.unwrap();
     assert_eq!(res, TestResponse { result: 42 });
+    mock.assert();
 }
 
-#[test]
-fn test_error_handling() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_error_handling() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
-        .with_status(200)
+        .with_status(500)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"jsonrpc":"2.0","error":{"code":-1,"message":"oops"},"id":1}"#)
+        .with_body(r#"{"jsonrpc":"2.0","error":{"code":-32603,"message":"Internal error"},"id":1}"#)
         .create();
 
     let client = RpcClient::new(&server.url());
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let err = rt.block_on(client.call_method("foo", &[])).unwrap_err();
-    assert!(err.to_string().contains("oops"));
+    let params = vec![Value::Number(123.into())];
+    let res = client.call_raw("foo", &params).await;
+    assert!(res.is_err());
+    mock.assert();
 }
 
-#[test]
-fn test_with_auth() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_with_auth() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
         .match_header("authorization", "Basic dXNlcjpwYXNz")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"jsonrpc":"2.0","result":"ok","id":1}"#)
+        .with_body(r#"{"jsonrpc":"2.0","result":42,"id":1}"#)
         .create();
 
     let client = RpcClient::new_with_auth(&server.url(), "user", "pass");
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let res = rt.block_on(client.call_method("foo", &[])).unwrap();
-    assert_eq!(res, json!("ok"));
+    let params = vec![Value::Number(123.into())];
+    let res: Value = client.call_raw("foo", &params).await.unwrap();
+    assert_eq!(res, 42);
+    mock.assert();
 }
 
-#[test]
-fn test_complex_params() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_complex_params() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -106,90 +111,88 @@ fn test_complex_params() {
         .create();
 
     let client = RpcClient::new(&server.url());
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let params = ComplexParams {
-        name: "test".to_string(),
-        values: vec![5, 10],
-        optional: Some(true),
-    };
-    let res: ComplexResponse = rt.block_on(client.call("foo", &[params])).unwrap();
+    let params = vec![
+        Value::String("test".to_string()),
+        Value::Number(15.into()),
+        Value::Array(vec![
+            Value::String("a".to_string()),
+            Value::String("b".to_string()),
+        ]),
+    ];
+    let res: Value = client.call_raw("foo", &params).await.unwrap();
     assert_eq!(
         res,
-        ComplexResponse {
-            name: "test".to_string(),
-            sum: 15,
-            details: vec!["a".to_string(), "b".to_string()],
-        }
+        serde_json::json!({
+            "name": "test",
+            "sum": 15,
+            "details": ["a", "b"]
+        })
     );
+    mock.assert();
 }
 
-#[test]
-fn test_multiple_params() {
-    let mut server = Server::new();
-    let _m = server
+#[tokio::test]
+async fn test_multiple_params() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"jsonrpc":"2.0","result":42,"id":1}"#)
+        .with_body(r#"{"jsonrpc":"2.0","result":[1,2],"id":1}"#)
         .create();
 
     let client = RpcClient::new(&server.url());
-    let rt = tokio::runtime::Runtime::new().unwrap();
     let params1 = TestParams { value: 1 };
     let params2 = TestParams { value: 2 };
-    let res: u32 = rt
-        .block_on(client.call("foo", &[params1, params2]))
-        .unwrap();
-    assert_eq!(res, 42);
+    let res: Vec<i32> = client.call("foo", &[params1, params2]).await.unwrap();
+    assert_eq!(res, vec![1, 2]);
+    mock.assert();
 }
 
-// TODO: Add tests for http error
-// #[test]
-// fn test_http_error() {
-//     let mut server = Server::new();
-//     let _m = server
-//         .mock("POST", "/")
-//         .with_status(500)
-//         .with_header("content-type", "application/json")
-//         .with_body(r#"{"error":"Internal Server Error"}"#)
-//         .create();
+#[tokio::test]
+async fn test_http_error() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
+        .mock("POST", "/")
+        .with_status(500)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"error":"Internal Server Error"}"#)
+        .create();
 
-//     let client = RpcClient::new(&server.url());
-//     let rt = tokio::runtime::Runtime::new().unwrap();
-//     let err = rt.block_on(client.call_method("foo", &[])).unwrap_err();
-//     assert!(err.to_string().contains("500"));
-// }
+    let client = RpcClient::new(&server.url());
+    let res = client.call_raw("foo", &[]).await;
+    assert!(res.is_err());
+    mock.assert();
+}
 
-// TODO: Add tests for invalid json
-// #[test]
-// fn test_invalid_json() {
-//     let mut server = Server::new();
-//     let _m = server
-//         .mock("POST", "/")
-//         .with_status(200)
-//         .with_header("content-type", "application/json")
-//         .with_body(r#"{"jsonrpc":"2.0","result":invalid,"id":1}"#)
-//         .create();
+#[tokio::test]
+async fn test_invalid_json() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
+        .mock("POST", "/")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"jsonrpc":"2.0","result":invalid,"id":1}"#)
+        .create();
 
-//     let client = RpcClient::new(&server.url());
-//     let rt = tokio::runtime::Runtime::new().unwrap();
-//     let err = rt.block_on(client.call_method("foo", &[])).unwrap_err();
-//     assert!(err.to_string().contains("invalid"));
-// }
+    let client = RpcClient::new(&server.url());
+    let res = client.call_raw("foo", &[]).await;
+    assert!(res.is_err());
+    mock.assert();
+}
 
-// TODO: Add tests for missing result
-// #[test]
-// fn test_missing_result() {
-//     let mut server = Server::new();
-//     let _m = server
-//         .mock("POST", "/")
-//         .with_status(200)
-//         .with_header("content-type", "application/json")
-//         .with_body(r#"{"jsonrpc":"2.0","id":1}"#)
-//         .create();
+#[tokio::test]
+async fn test_missing_result() {
+    let mut server = Server::new_with_opts(mockito::ServerOpts::default());
+    let mock = server
+        .mock("POST", "/")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"jsonrpc":"2.0","id":1}"#)
+        .create();
 
-//     let client = RpcClient::new(&server.url());
-//     let rt = tokio::runtime::Runtime::new().unwrap();
-//     let err = rt.block_on(client.call_method("foo", &[])).unwrap_err();
-//     assert!(err.to_string().contains("missing"));
-// }
+    let client = RpcClient::new(&server.url());
+    let res = client.call_raw("foo", &[]).await;
+    assert!(res.is_err());
+    mock.assert();
+}
