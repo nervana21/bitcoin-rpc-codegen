@@ -1,5 +1,8 @@
 // node/src/test_config.rs
 
+use crate::config::{BitcoinConfig, Config};
+use std::env;
+
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
 /// This struct is the single source of truth for test‑node settings: RPC port, username, and password.
 /// Defaults are:
@@ -13,7 +16,7 @@
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// let mut cfg = TestConfig::default();
 /// cfg.rpc_port = 18545;
 /// cfg.rpc_username = "alice".into();
@@ -52,17 +55,40 @@ impl TestConfig {
     /// - `RPC_PASS`: overrides `rpc_password`
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
-        if let Ok(port_str) = std::env::var("RPC_PORT") {
+        if let Ok(port_str) = env::var("RPC_PORT") {
             if let Ok(port) = port_str.parse() {
                 cfg.rpc_port = port;
             }
         }
-        if let Ok(user) = std::env::var("RPC_USER") {
+        if let Ok(user) = env::var("RPC_USER") {
             cfg.rpc_username = user;
         }
-        if let Ok(pass) = std::env::var("RPC_PASS") {
+        if let Ok(pass) = env::var("RPC_PASS") {
             cfg.rpc_password = pass;
         }
         cfg
+    }
+
+    /// Convert this test configuration into a full Config instance
+    pub fn into_config(self) -> Config {
+        Config {
+            bitcoin: BitcoinConfig {
+                host: "127.0.0.1".to_string(),
+                port: self.rpc_port,
+                username: self.rpc_username,
+                password: self.rpc_password,
+                core_version: None,
+            },
+            ..Config::default()
+        }
+    }
+
+    /// Create a TestConfig from a full Config instance
+    pub fn from_config(config: &Config) -> Self {
+        Self {
+            rpc_port: config.bitcoin.port,
+            rpc_username: config.bitcoin.username.clone(),
+            rpc_password: config.bitcoin.password.clone(),
+        }
     }
 }
