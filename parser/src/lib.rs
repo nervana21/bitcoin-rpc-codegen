@@ -2,8 +2,8 @@
 //! The `parser` crate: tokenizes `bitcoin-cli help` output into method blocks.
 use thiserror::Error;
 
-pub mod discover;
-pub use discover::{discover_methods, parse_help_output, DiscoverError};
+pub mod cli_interface;
+pub use cli_interface::{BitcoinCli, CliError};
 
 /// A raw help block for one RPC method.
 #[derive(Debug, Clone)]
