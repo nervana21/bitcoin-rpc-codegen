@@ -41,10 +41,6 @@ pub mod doc_comment_generator;
 /// so that downstream crates can just `use generated::client::*;`.
 pub mod namespace_scaffolder;
 
-/// **`rust_helpers`** – Shared helpers for argument and result type mapping.
-/// Provides utilities for converting between RPC types and Rust types.
-// pub mod rust_helpers;
-
 /// **`rpc_client_generator`** – Generates transport layer code.
 /// Creates async RPC method wrappers that handle parameter serialization
 /// and response deserialization.
