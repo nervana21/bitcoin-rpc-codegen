@@ -1,6 +1,6 @@
 // node/src/test_config.rs
 
-use crate::config::{BitcoinConfig, Config};
+use config::{BitcoinConfig, Config};
 use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
