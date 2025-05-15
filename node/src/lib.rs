@@ -12,8 +12,10 @@ use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info, warn};
 pub mod test_config;
+pub use config;
+pub use config::{BitcoinConfig, Config};
 use std::process::Stdio;
-use test_config::TestConfig;
+pub use test_config::TestConfig;
 
 /// Represents the state of a Bitcoin node
 #[derive(Debug, Clone)]
