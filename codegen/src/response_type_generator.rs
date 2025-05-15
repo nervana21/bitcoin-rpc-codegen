@@ -9,11 +9,85 @@ use std::fmt::Write as _;
 /* --------------------------------------------------------------------- */
 
 fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
+    // Map JSON‐RPC types & field names to more precise Rust types
     let base = match res.type_.as_str() {
-        "string" | "hex" => "String",
-        "number" | "amount" | "numeric" => "f64",
+        // Plain strings
+        "string" => "String",
+
+        // Bitcoin money values
+        "amount" => "bitcoin::Amount",
+
+        // Generic JSON numbers:
+        // - use u64 for heights, sizes, timestamps
+        // - otherwise treat as f64
+        "number" | "numeric" => {
+            let k = res.key_name.as_str();
+            if k.ends_with("height")
+                || k == "blocks"
+                || k == "headers"
+                || k.ends_with("time")
+                || k.ends_with("size")
+                || k.contains("count")
+                || k.contains("index")
+            {
+                "u64"
+            } else if k.contains("progress") || k.contains("ratio") || k.contains("probability") {
+                "f64"
+            } else {
+                "f64"
+            }
+        }
+
+        // Booleans
         "boolean" => "bool",
-        "object" | "array" => "serde_json::Value",
+
+        // Hex‑encoded values
+        "hex" => {
+            let k = res.key_name.as_str();
+            if k.contains("txid") {
+                "bitcoin::Txid"
+            } else if k.contains("blockhash") {
+                "bitcoin::BlockHash"
+            } else if k.contains("script") {
+                "bitcoin::Script"
+            } else if k.contains("pubkey") {
+                "bitcoin::PublicKey"
+            } else {
+                "String"
+            }
+        }
+
+        // Arrays: special‑case known vectors and warnings
+        "array" => {
+            let k = res.key_name.as_str();
+            if k.contains("address") {
+                "Vec<bitcoin::Address>"
+            } else if k.contains("txid") {
+                "Vec<bitcoin::Txid>"
+            } else if k.contains("blockhash") {
+                "Vec<bitcoin::BlockHash>"
+            } else if k.contains("script") {
+                "Vec<bitcoin::Script>"
+            } else if k.contains("warning") || k.contains("error") || k.contains("message") {
+                "Vec<String>"
+            } else {
+                "Vec<serde_json::Value>"
+            }
+        }
+
+        // Nested objects
+        "object" => {
+            let k = res.key_name.as_str();
+            if k.contains("transaction") {
+                "bitcoin::Transaction"
+            } else if k.contains("block") {
+                "bitcoin::Block"
+            } else {
+                "serde_json::Value"
+            }
+        }
+
+        // Fallback catch‑all
         _ => "serde_json::Value",
     };
     (base, res.optional)
@@ -73,6 +147,7 @@ fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
     writeln!(
         &mut out,
         "use serde::{{Deserialize, Serialize}};\n\
+         use bitcoin::{{Amount, Address, BlockHash, Script, PublicKey, Txid, Transaction, Block}};\n\
          \n\
          /// Response for the `{}` RPC call.\n\
          #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]",
@@ -87,6 +162,11 @@ fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
         }
         let (ty, is_opt) = rust_ty(res);
         let ident = field_ident(res, idx);
+
+        if !res.description.is_empty() {
+            writeln!(&mut out, "    /// {}", res.description.trim()).ok()?;
+        }
+
         if is_opt {
             writeln!(
                 &mut out,

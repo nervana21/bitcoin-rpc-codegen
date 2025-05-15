@@ -19,7 +19,7 @@
 //! * Pure function: emit the string, write it wherever you like.
 
 use crate::doc_comment_generator::format_doc_comment;
-use crate::types::{capitalize, sanitize_method_name};
+use crate::response_type_generator::{capitalize, sanitize_method_name};
 use rpc_api::ApiMethod;
 
 /// Generates a client-side macro implementation for an RPC method

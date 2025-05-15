@@ -62,9 +62,9 @@ pub mod rpc_client_generator;
 ///     `<method>_response.rs` file per RPC – these are imported by the
 ///     transport wrapper so users work with first‑class Rust types instead of
 ///     raw `Value`.
-pub mod types;
+pub mod response_type_generator;
 
-pub use types::TypesCodeGenerator;
+pub use response_type_generator::TypesCodeGenerator;
 
 /// ---------------------------------------------------------------------------
 /// 1. Common helper traits / functions
@@ -105,14 +105,35 @@ impl CodeGenerator for BasicCodeGenerator {
         methods
             .iter()
             .map(|m| {
+                // Format the documentation
+                let docs = doc_comment_generator::format_doc_comment(&m.description);
+
+                // Determine return type from results
+                let return_type = if m.results.is_empty() {
+                    "()".to_string()
+                } else {
+                    match m.results[0].type_.as_str() {
+                        "boolean" => "bool".to_string(),
+                        "string" => "String".to_string(),
+                        "number" => "f64".to_string(),
+                        "array" => "Vec<serde_json::Value>".to_string(),
+                        "object" => "serde_json::Value".to_string(),
+                        _ => "serde_json::Value".to_string(),
+                    }
+                };
+
                 let src = format!(
                     r#"// Auto‑generated stub for RPC method `{n}`
 
-pub fn {n}() {{
+{docs}
+
+pub fn {n}() -> {ret} {{
     unimplemented!();
 }}
 "#,
-                    n = m.name
+                    n = m.name,
+                    docs = docs,
+                    ret = return_type
                 );
                 (m.name.clone(), src)
             })
@@ -127,7 +148,7 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use types::{capitalize, generate_return_type, sanitize_method_name};
+        use response_type_generator::{capitalize, generate_return_type, sanitize_method_name};
 
         methods
             .iter()
