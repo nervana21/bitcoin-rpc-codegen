@@ -12,5 +12,6 @@ tracing = "0.1"
 
 integration-test = { path = "../integration-test" }
 node = { path = "../node" }
+parser = { path = "../parser" }
 rpc-api = { path = "../rpc-api" }
 transport = { path = "../transport" }
