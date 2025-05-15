@@ -14,13 +14,13 @@ use std::{fs, io::Write, path::Path};
 //  Sub‑crates that do the heavy lifting
 // ---------------------------------------------------------------------------
 
-/// **`client_macros`** – Emits the `macro_rules!` blocks that expand into
+/// **`rpc_method_macro_generator`** – Emits the `macro_rules!` blocks that expand into
 /// ergonomic, version‑scoped client wrappers.  
 /// A downstream crate can simply `impl_client_latest__getblockchaininfo!()` and
 /// obtain a fully‑typed `fn getblockchaininfo(&self) -> …` on its `Client`.
 pub mod rpc_method_macro_generator;
 
-/// **`discover`** – Runtime discovery helpers.  
+/// **`rpc_method_discovery`** – Runtime discovery helpers.  
 /// Talks to a local `bitcoin-cli` binary to list available RPC methods,
 /// download their help‑text, and turn that into a minimal `ApiMethod` set.
 /// Used by the *discovery* pipeline mode so we can generate against whatever
@@ -32,7 +32,7 @@ pub mod rpc_method_discovery;
 /// blocks that are injected at the top of every generated source file.
 pub mod doc_comment_generator;
 
-/// **`module_generator`** – Writes the `mod.rs` scaffolding.  
+/// **`namespace_scaffolder`** – Writes the `mod.rs` scaffolding.  
 /// Given a set of schema versions (`v28`, `v29`, `latest`…) it produces:
 ///  generated/
 ///   ├─ client/ v28/ v29/ …
@@ -45,7 +45,7 @@ pub mod namespace_scaffolder;
 /// Provides utilities for converting between RPC types and Rust types.
 // pub mod rust_helpers;
 
-/// **`transport_codegen`** – Generates transport layer code.
+/// **`rpc_client_generator`** – Generates transport layer code.
 /// Creates async RPC method wrappers that handle parameter serialization
 /// and response deserialization.
 pub mod rpc_client_generator;
