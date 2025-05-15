@@ -60,16 +60,9 @@ impl ModuleGenerator {
     /// 2. `types/<version>_types/mod.rs`
     /// 3. top‑level re‑export files (`client/mod.rs`, `types/mod.rs`)
     pub fn generate_all(&self) -> io::Result<()> {
-        self.generate_client_mod_rs()?;
         self.generate_types_mod_rs()?;
         self.generate_top_level_modules()?;
         Ok(())
-    }
-
-    /// Writes _one_ `mod.rs` that lives in  
-    /// `…/client/mod.rs` and declares `pub mod v28; pub mod v29; …`.
-    pub fn generate_client_mod_rs(&self) -> io::Result<()> {
-        generate_versioned_mod_rs(&self.versions, &self.out_dir, "client", "pub mod {};")
     }
 
     /// Writes _one_ `mod.rs` that lives in  
