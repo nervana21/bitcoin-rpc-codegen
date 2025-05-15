@@ -39,7 +39,7 @@ pub mod doc_comment_generator;
 ///   └─ types/  v28_types/ …
 ///   plus top‑level mod.rs that re‑export everything
 /// so that downstream crates can just `use generated::client::*;`.
-pub mod module_generator;
+pub mod namespace_scaffolder;
 
 /// **`rust_helpers`** – Shared helpers for argument and result type mapping.
 /// Provides utilities for converting between RPC types and Rust types.
