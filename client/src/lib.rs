@@ -1,16 +1,11 @@
 //! High‑level, ergonomic wrapper around [`transport::Transport`].
 //!
-//! `RpcClient` exposes two flavours of call:
-//! * **`call_method()`** – low‑level, returns raw `serde_json::Value`; you
-//!   hand‑craft the parameters yourself.  Handy for debugging or when a
-//!   response type has not (yet) been code‑generated.
-//! * **`call()`** – high‑level, generic over both the *param* and *result*
-//!   types.  It JSON‑serialises your input slice and de‑serialises the
-//!   `"result"` field into the requested output type `R`.
+//! `RpcClient` provides a strongly-typed interface for making Bitcoin RPC calls.
+//! It supports both low-level raw JSON calls and high-level typed calls.
 //!
 //! ```rust,ignore
 //! let client = RpcClient::new("http://127.0.0.1:8332");
-//! let height : GetblockcountResponse = client
+//! let height: GetblockcountResponse = client
 //!     .call("getblockcount", &[])
 //!     .await?;
 //! println!("block height = {}", height.count);
@@ -21,23 +16,13 @@ use serde_json::Value;
 use thiserror::Error;
 pub use transport::{Transport, TransportError};
 
-/// **`RpcClient`**
-///
-/// Thin convenience layer that keeps a configured [`Transport`] value and
-/// offers strongly‑typed helper methods.
-///
-/// The struct is **`Clone`** so you can pass it around freely – it merely
-/// wraps an `Arc<Client>` internally.
+/// High-level client for Bitcoin RPC calls
 #[derive(Clone)]
 pub struct RpcClient {
     transport: Transport,
 }
 
-/// Errors surfaced by the *high‑level* client layer.
-///
-/// All networking / protocol failures are converted from
-/// `transport::TransportError`; anything else indicates an unexpected JSON
-/// shape that the caller attempted to parse into `R`.
+/// Errors that can occur during RPC calls
 #[derive(Debug, Error)]
 pub enum ClientError {
     #[error(transparent)]
@@ -45,55 +30,35 @@ pub enum ClientError {
 
     #[error("Invalid response: {0}")]
     InvalidResponse(String),
+
+    #[error("RPC error: {0}")]
+    RpcError(String),
 }
 
 impl RpcClient {
-    // ---------------------------------------------------------------------
-    //  Constructors
-    // ---------------------------------------------------------------------
-
-    /// Build a client against `url`, e.g. `"http://127.0.0.1:18443"`.
-    ///
-    /// Uses default cookie‑file auth (Bitcoin Core’s standard `~/.cookie`)
-    /// or whatever authentication the underlying [`Transport::new()`]
-    /// decides to apply.
+    /// Create a new client with the given URL
     pub fn new<U: Into<String>>(url: U) -> Self {
-        RpcClient {
+        Self {
             transport: Transport::new(url),
         }
     }
 
-    /// Same as [`new`](Self::new) but wires HTTP *Basic* authentication.
+    /// Create a new client with HTTP Basic authentication
     pub fn new_with_auth<U: Into<String>>(url: U, username: &str, password: &str) -> Self {
-        RpcClient {
+        Self {
             transport: Transport::new_with_auth(url, username, password),
         }
     }
 
-    // ---------------------------------------------------------------------
-    //  Generic call helpers
-    // ---------------------------------------------------------------------
-
-    /// **Low‑level** JSON‑RPC call – returns the raw `"result"` field as
-    /// `serde_json::Value`.
-    ///
-    /// Use this when you want to poke an RPC that does not yet have a
-    /// generated response struct.
-    pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value, ClientError> {
-        Ok(self.transport.send_request(method, params).await?)
+    /// Make a low-level RPC call, returning the raw result as JSON
+    pub async fn call_raw(&self, method: &str, params: &[Value]) -> Result<Value, ClientError> {
+        self.transport
+            .send_request(method, params)
+            .await
+            .map_err(Into::into)
     }
 
-    /// **High‑level** JSON‑RPC call – automatic (de)serialisation.
-    ///
-    /// * `T` – type that is *serialisable* (each param is turned into JSON);  
-    /// * `R` – type that is *deserialisable* (the `"result"` field will be
-    ///   parsed into this, or an error bubbles up).
-    ///
-    /// # Errors
-    /// * Any transport‑level error (`io`, HTTP, RPC‑level) arrives as
-    ///   `ClientError::Transport`.
-    /// * If the JSON does not match `R`, the underlying `serde_json::Error`
-    ///   is wrapped in `ClientError::InvalidResponse`.
+    /// Make a typed RPC call, automatically handling serialization/deserialization
     pub async fn call<T: Serialize, R: DeserializeOwned>(
         &self,
         method: &str,
@@ -103,5 +68,13 @@ impl RpcClient {
             .call(method, params)
             .await
             .map_err(Into::into)
+    }
+}
+
+// For backward compatibility
+impl RpcClient {
+    /// Alias for `call_raw` to maintain backward compatibility
+    pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value, ClientError> {
+        self.call_raw(method, params).await
     }
 }
