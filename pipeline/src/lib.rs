@@ -13,7 +13,7 @@ use rpc_api::parse_api_json;
 use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /* --------------------------------------------------------------------- */
 /*  Public entry: run() – file‑driven                                    */
@@ -53,6 +53,7 @@ pub fn run(input_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
     // Generate transport modules -------------------------------------------
     let transport_files = TransportCodeGenerator.generate(&norm);
     write_generated(&transport_dir, &transport_files)?;
+    write_mod_rs(&transport_dir, &transport_files)?;
 
     // Generate response‑type structs ---------------------------------------
     let type_files = TypesCodeGenerator.generate(&norm);
@@ -61,16 +62,18 @@ pub fn run(input_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
         println!("Type file: {}", name);
     }
     write_generated(&types_dir, &type_files)?;
+    write_mod_rs(&types_dir, &type_files)?;
 
-    // Generate client stubs (placeholder) -----------------------------------
-    let client_files = BasicCodeGenerator.generate(&norm);
-    write_generated(&client_dir, &client_files)?;
+    let root_files = vec![
+        ("transport".to_string(), String::new()),
+        ("types".to_string(), String::new()),
+    ];
+    write_mod_rs(out_dir, &root_files)?;
 
     println!(
-        "✅ Wrote {} transport, {} types, {} client stubs into {:?}",
+        "✅ Wrote {} transport and {} types {:?}",
         transport_files.len(),
         type_files.len(),
-        client_files.len(),
         out_dir
     );
     Ok(())
@@ -115,5 +118,19 @@ pub fn run_discovery(bitcoind_path: &PathBuf, out_dir: &PathBuf) -> Result<()> {
     write_generated(&types_dir, &TypesCodeGenerator.generate(&norm))?;
     write_generated(&client_dir, &BasicCodeGenerator.generate(&norm))?;
 
+    Ok(())
+}
+
+fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> anyhow::Result<()> {
+    let mut body = String::new();
+    for (path, _) in files {
+        let stem = Path::new(path)
+            .file_stem()
+            .expect("no file name")
+            .to_str()
+            .unwrap();
+        body.push_str(&format!("pub mod {};\n", stem));
+    }
+    std::fs::write(dir.join("mod.rs"), body)?;
     Ok(())
 }
