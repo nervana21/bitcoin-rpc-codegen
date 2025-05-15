@@ -13,12 +13,9 @@ async fn test_get_blockchain_info() -> Result<()> {
     init_test_env();
     let config = create_test_config()?;
 
-    let test_node = TestNode::spawn_and_ready(
-        Box::new(create_test_node_manager(&config).await?),
-        &config.rpc_username,
-        &config.rpc_password,
-    )
-    .await?;
+    let test_node =
+        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
+            .await?;
 
     let info = test_node
         .client
@@ -37,12 +34,9 @@ async fn test_get_network_info() -> Result<()> {
     init_test_env();
     let config = create_test_config()?;
 
-    let test_node = TestNode::spawn_and_ready(
-        Box::new(create_test_node_manager(&config).await?),
-        &config.rpc_username,
-        &config.rpc_password,
-    )
-    .await?;
+    let test_node =
+        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
+            .await?;
 
     let info = test_node.client.call_method("getnetworkinfo", &[]).await?;
     assert!(info.get("version").and_then(|v| v.as_i64()).unwrap_or(0) > 0);
@@ -57,12 +51,9 @@ async fn test_regtest_connection() -> Result<()> {
     init_test_env();
     let config = create_test_config()?;
 
-    let test_node = TestNode::spawn_and_ready(
-        Box::new(create_test_node_manager(&config).await?),
-        &config.rpc_username,
-        &config.rpc_password,
-    )
-    .await?;
+    let test_node =
+        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
+            .await?;
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 
@@ -88,12 +79,9 @@ async fn test_node_startup_shutdown() -> Result<()> {
     let config = create_test_config()?;
 
     // start & verify up
-    let test_node = TestNode::spawn_and_ready(
-        Box::new(create_test_node_manager(&config).await?),
-        &config.rpc_username,
-        &config.rpc_password,
-    )
-    .await?;
+    let test_node =
+        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
+            .await?;
     let info = test_node
         .client
         .call_method("getblockchaininfo", &[])
@@ -104,7 +92,7 @@ async fn test_node_startup_shutdown() -> Result<()> {
     let stop_msg = test_node.client.call_method("stop", &[]).await?;
     assert_eq!(stop_msg.as_str().unwrap(), "Bitcoin Core stopping");
 
-    // now poll for shutdown instead of sleeping 5 s
+    // now poll for shutdown instead of sleeping 5 s
     let client = create_test_client(&config).await?;
     let down = wait_for_condition(
         || async {
