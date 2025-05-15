@@ -18,7 +18,7 @@
 //! * Centralises all string‑munging; the rest of code‑gen stays data‑driven.  
 //! * Pure function: emit the string, write it wherever you like.
 
-use crate::docs::format_doc_comment;
+use crate::doc_comment_generator::format_doc_comment;
 use crate::types::{capitalize, sanitize_method_name};
 use rpc_api::ApiMethod;
 

@@ -10,7 +10,7 @@
 //  • if the RPC returns non‑null → inlines a `CamelCaseMethodNameResponse`
 //    struct and deserialises into it; else returns `()`
 // ──────────────────────────────────────────────────────────────────────────────
-use crate::{docs, CodeGenerator};
+use crate::{doc_comment_generator, CodeGenerator};
 use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
 

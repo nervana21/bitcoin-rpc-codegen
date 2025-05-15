@@ -30,7 +30,7 @@ pub mod rpc_method_discovery;
 /// **`docs`** – Rust‑doc & Markdown generation utilities.  
 /// Converts `ApiMethod` metadata into nice triple‑slash comments and “Example:”
 /// blocks that are injected at the top of every generated source file.
-pub mod docs;
+pub mod doc_comment_generator;
 
 /// **`module_generator`** – Writes the `mod.rs` scaffolding.  
 /// Given a set of schema versions (`v28`, `v29`, `latest`…) it produces:
@@ -156,7 +156,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 /* ---------- docs + types ---------- */
-                let docs_md = docs::generate_example_docs(m, "latest");
+                let docs_md = doc_comment_generator::generate_example_docs(m, "latest");
                 let response_struct = generate_return_type(m).unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
