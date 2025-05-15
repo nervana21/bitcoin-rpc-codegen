@@ -30,14 +30,11 @@ fn main() -> Result<()> {
         cfg.bitcoin.core_version = Some(v);
     }
 
-    // 3) init logging & metrics
+    // 3) init logging
     logging::init();
-    if cfg.metrics.enabled {
-        rpc_metrics::init(&format!("0.0.0.0:{}", cfg.metrics.port))?;
-    }
 
     // 4) run the pipeline
-    pipeline::run(&cfg.pipeline.input_path, &cfg.pipeline.output_dir)?;
+    pipeline::run(&cfg.codegen.input_path, &cfg.codegen.output_dir)?;
 
     Ok(())
 }
