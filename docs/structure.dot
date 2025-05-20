@@ -12,7 +12,6 @@ digraph BitcoinRpcCodegen {
     legend_transport [label="Transport\n(JSON‑RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
     legend_client    [label="Client\n(RpcClient)" fillcolor="#ccffff" color="#888888"];
     legend_node_mgr  [label="Node Manager\n(bitcoind spawn & control)" fillcolor="#ccffff" color="#888888"];
-    legend_rpc_cli   [label="RPC-CLI / Pipeline" fillcolor="#ffccff" color="#888888"];
     legend_cross     [label="Cross‑cutting Crates" fillcolor="#ffffff" color="#888888"];
     legend_tests     [label="Testing Harnesses" fillcolor="#ffcc80" color="#888888"];
   }
@@ -61,11 +60,10 @@ digraph BitcoinRpcCodegen {
     node_mgr [label="node\n(NodeManager)"];
   }
 
-  // ───────────── RPC_CLI / Pipeline crate ─────────────
+  // ───────────── Pipeline crate ─────────────
   subgraph cluster_rpc_cli {
     label="rpc-cli"; style=filled; fillcolor="#ffccff"; color="#CC66CC";
     pipeline [label="pipeline\n(Code Generation)"];
-    rpc_cli  [label="rpc-cli\n(RPC-CLI)"];
   }
 
   // ───────────── Cross‑cutting crates ─────────────

@@ -87,7 +87,6 @@ The project is organized into several focused crates:
 - `client/`: RPC client implementation
 - `node/`: Bitcoin node management
 - `pipeline/`: Code generation pipeline
-- `rpc-cli/`: Command-line interface
 - `config/`: Configuration management
 - `logging/`: Logging infrastructure
 - `rpc-metrics/`: RPC metrics collection
