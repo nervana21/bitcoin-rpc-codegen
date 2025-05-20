@@ -80,3 +80,28 @@ fn transport_codegen_error_handling() {
     assert!(src.contains("TransportError"));
     assert!(src.contains(".await?"));
 }
+
+#[test]
+fn transport_codegen_imports() {
+    let methods = vec![ApiMethod {
+        name: "foo".into(),
+        description: "".into(),
+        arguments: vec![],
+        results: vec![],
+    }];
+
+    let gen = TransportCodeGenerator;
+    let files = gen.generate(&methods);
+    assert_eq!(files.len(), 1);
+
+    let (_mod, src) = &files[0];
+    // Verify required imports are present
+    assert!(
+        src.contains("use serde_json::{Value, json};"),
+        "Missing serde_json imports"
+    );
+    assert!(
+        src.contains("use transport::{Transport, TransportError};"),
+        "Missing transport imports"
+    );
+}
