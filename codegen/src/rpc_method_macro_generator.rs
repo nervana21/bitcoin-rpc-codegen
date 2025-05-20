@@ -1,7 +1,7 @@
 //! # RPC‑to‑Rust Macro Generator
 //!
 //! `generate_client_macro` turns **one** `ApiMethod` + a version tag  
-//! (e.g. `"v29"`) ➜ a `macro_rules! impl_client_v29__<method>()` string.
+//! (e.g. `"v28"`) ➜ a `macro_rules! impl_client_v28__<method>()` string.
 //!
 //! **What you get**
 //! ```rust,ignore
@@ -149,9 +149,38 @@ fn generate_method_args(method: &ApiMethod) -> String {
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
         let arg_type = match arg.type_.as_str() {
-            "hex" => "String".to_string(),
+            "hex" => {
+                let k = arg_name.as_str();
+                if k.contains("txid") {
+                    "bitcoin::Txid".to_string()
+                } else if k.contains("blockhash") {
+                    "bitcoin::BlockHash".to_string()
+                } else if k.contains("script") {
+                    "bitcoin::ScriptBuf".to_string()
+                } else if k.contains("pubkey") {
+                    "bitcoin::PublicKey".to_string()
+                } else {
+                    "String".to_string()
+                }
+            }
             "string" => "String".to_string(),
-            "number" => "i64".to_string(),
+            "number" | "numeric" | "amount" => {
+                let k = arg_name.as_str();
+                if k.ends_with("height")
+                    || k == "blocks"
+                    || k == "headers"
+                    || k.ends_with("time")
+                    || k.ends_with("size")
+                    || k.contains("count")
+                    || k.contains("index")
+                {
+                    "u64".to_string()
+                } else if k.contains("amount") || k.contains("fee") {
+                    "bitcoin::Amount".to_string()
+                } else {
+                    "f64".to_string()
+                }
+            }
             "boolean" => "bool".to_string(),
             "array" => {
                 if arg_name == "inputs" {
@@ -159,16 +188,23 @@ fn generate_method_args(method: &ApiMethod) -> String {
                 } else if arg_name == "outputs" {
                     "Vec<Output>".to_string()
                 } else {
-                    "Vec<String>".to_string()
+                    "Vec<serde_json::Value>".to_string()
                 }
             }
-            "object" | "object-named-parameters" => "serde_json::Value".to_string(),
-            _ => arg.type_.clone(),
+            "object" => "serde_json::Value".to_string(),
+            "object-named-parameters" => "Option<serde_json::Value>".to_string(),
+            _ => "serde_json::Value".to_string(),
+        };
+        // Escape reserved keywords
+        let escaped_name = if arg_name == "type" {
+            format!("r#{}", arg_name)
+        } else {
+            arg_name.clone()
         };
         if arg.optional {
-            args.push_str(&format!(", {}: Option<{}>", arg_name, arg_type));
+            args.push_str(&format!(", {}: Option<{}>", escaped_name, arg_type));
         } else {
-            args.push_str(&format!(", {}: {}", arg_name, arg_type));
+            args.push_str(&format!(", {}: {}", escaped_name, arg_type));
         }
     }
     args
@@ -179,15 +215,23 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
     let mut optional_args = Vec::new();
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
+        // Escape reserved keywords
+        let escaped_name = if arg_name == "type" {
+            format!("r#{}", arg_name)
+        } else {
+            arg_name.clone()
+        };
         let arg_expr = if method.name == "addnode" && arg_name == "command" {
             "serde_json::to_value(command)?".to_string()
+        } else if arg.type_ == "object-named-parameters" {
+            format!("into_json({}.unwrap_or_default())?", escaped_name)
         } else {
-            format!("into_json({})?", arg_name)
+            format!("into_json({})?", escaped_name)
         };
         if arg.optional {
             optional_args.push(format!(
                 "if let Some({}) = {} {{\n    params.push(into_json({})?);\n}}",
-                arg_name, arg_name, arg_name
+                escaped_name, escaped_name, escaped_name
             ));
         } else {
             required_args.push(arg_expr);
