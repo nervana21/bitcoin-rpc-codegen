@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Result};
 use node::{Config, NodeManager};
+use pipeline::RpcClient;
 use std::time::{Duration, Instant};
 
 /// Bundles a running node and a ready RPC client.
@@ -80,5 +81,15 @@ impl TestNode {
             .stop()
             .await
             .context("Failed to stop Bitcoin node")
+    }
+
+    /// Creates a new test node with default configuration.
+    /// This is the most ergonomic way to create a test node.
+    pub async fn new() -> Result<Self> {
+        Self::spawn_and_ready(
+            Box::new(node::BitcoinNodeManager::new()?),
+            &Config::default(),
+        )
+        .await
     }
 }
