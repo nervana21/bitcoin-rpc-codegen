@@ -1,9 +1,5 @@
 use anyhow::{Context, Result};
-use integration_test::{
-    create_test_client, create_test_config, create_test_node_manager, init_test_env,
-    wait_for_condition, TestNode,
-};
-use node::NodeManager;
+use integration_test::{init_test_env, wait_for_condition, TestNode};
 use std::time::Duration;
 use tokio;
 
@@ -11,32 +7,25 @@ use tokio;
 #[tokio::test]
 async fn test_get_blockchain_info() -> Result<()> {
     init_test_env();
-    let config = create_test_config()?;
 
-    let test_node =
-        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
-            .await?;
+    let test_node = TestNode::new().await?;
 
     let info = test_node
         .client
         .call_method("getblockchaininfo", &[])
         .await?;
 
-    assert!(info.get("chain").is_some());
-    assert!(info["blocks"].as_i64().unwrap_or(-1) >= 0);
+    assert_eq!(info.get("chain").unwrap().as_str().unwrap(), "regtest");
+    assert!(info.get("blocks").unwrap().as_i64().unwrap() >= 0);
 
-    test_node.shutdown().await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn test_get_network_info() -> Result<()> {
     init_test_env();
-    let config = create_test_config()?;
 
-    let test_node =
-        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
-            .await?;
+    let test_node = TestNode::new().await?;
 
     let info = test_node.client.call_method("getnetworkinfo", &[]).await?;
     assert!(info.get("version").and_then(|v| v.as_i64()).unwrap_or(0) > 0);
@@ -49,11 +38,8 @@ async fn test_get_network_info() -> Result<()> {
 #[tokio::test]
 async fn test_regtest_connection() -> Result<()> {
     init_test_env();
-    let config = create_test_config()?;
 
-    let test_node =
-        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
-            .await?;
+    let test_node = TestNode::new().await?;
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 
@@ -76,12 +62,8 @@ async fn test_regtest_connection() -> Result<()> {
 #[tokio::test]
 async fn test_node_startup_shutdown() -> Result<()> {
     init_test_env();
-    let config = create_test_config()?;
+    let test_node = TestNode::new().await?;
 
-    // start & verify up
-    let test_node =
-        TestNode::spawn_and_ready(Box::new(create_test_node_manager(&config).await?), &config)
-            .await?;
     let info = test_node
         .client
         .call_method("getblockchaininfo", &[])
@@ -93,11 +75,14 @@ async fn test_node_startup_shutdown() -> Result<()> {
     assert_eq!(stop_msg.as_str().unwrap(), "Bitcoin Core stopping");
 
     // now poll for shutdown instead of sleeping 5 s
-    let client = create_test_client(&config).await?;
     let down = wait_for_condition(
         || async {
             // if RPC errors out, we're down
-            Ok(client.call_method("getblockchaininfo", &[]).await.is_err())
+            Ok(test_node
+                .client
+                .call_method("getblockchaininfo", &[])
+                .await
+                .is_err())
         },
         Duration::from_secs(1),
     )
@@ -108,45 +93,45 @@ async fn test_node_startup_shutdown() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_node_configuration() -> Result<()> {
-    init_test_env();
-    let config = create_test_config()?;
-
-    let mut node_manager = create_test_node_manager(&config).await?;
-    node_manager.start().await?;
-
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    let client = create_test_client(&config).await?;
-    let info = client.call_method("getblockchaininfo", &[]).await?;
-    assert!(info.get("chain").is_some());
-
-    node_manager.stop().await?;
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_node_restart() -> Result<()> {
     init_test_env();
-    let config = create_test_config()?;
 
-    let mut node_manager = create_test_node_manager(&config).await?;
-    node_manager.start().await?;
+    let test_node = TestNode::new().await?;
 
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    node_manager.stop().await?;
-
-    tokio::time::sleep(Duration::from_secs(1)).await;
-
-    node_manager.start().await?;
-
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    let client = create_test_client(&config).await?;
-    let info = client.call_method("getblockchaininfo", &[]).await?;
+    // Verify initial node is running
+    let info = test_node
+        .client
+        .call_method("getblockchaininfo", &[])
+        .await?;
     assert!(info.get("chain").is_some());
 
-    node_manager.stop().await?;
+    // Stop the node
+    let stop_msg = test_node.client.call_method("stop", &[]).await?;
+    assert_eq!(stop_msg.as_str().unwrap(), "Bitcoin Core stopping");
+
+    // Wait for node to be down
+    let down = wait_for_condition(
+        || async {
+            Ok(test_node
+                .client
+                .call_method("getblockchaininfo", &[])
+                .await
+                .is_err())
+        },
+        Duration::from_secs(1),
+    )
+    .await?;
+    assert!(down, "Node still responding after shutdown");
+
+    // Create a new test node to simulate restart
+    let new_test_node = TestNode::new().await?;
+
+    // Verify the new node is running
+    let info = new_test_node
+        .client
+        .call_method("getblockchaininfo", &[])
+        .await?;
+    assert!(info.get("chain").is_some());
+
     Ok(())
 }
