@@ -32,6 +32,17 @@ impl Default for NodeState {
     }
 }
 
+/// Configuration for port selection behavior
+#[derive(Debug, Clone)]
+pub enum PortSelection {
+    /// Use the specified port number
+    Fixed(u16),
+    /// Let the OS assign an available port
+    Dynamic,
+    /// Use port 0 (not recommended, may cause bitcoind to fail)
+    Zero,
+}
+
 /// Trait defining the interface for a Bitcoin node manager
 #[async_trait]
 pub trait NodeManager: Send + Sync + std::any::Any {
@@ -59,7 +70,20 @@ impl BitcoinNodeManager {
 
     pub fn new_with_config(config: &TestConfig) -> Result<Self> {
         let datadir = TempDir::new()?;
-        let rpc_port = config.rpc_port;
+
+        // Handle automatic port selection:
+        // When rpc_port is 0, we need to find an available port dynamically.
+        // This is important because:
+        // 1. It allows multiple test instances to run in parallel without port conflicts
+        // 2. It prevents the "Invalid port specified in -rpcport: '0'" error from bitcoind
+        // 3. It makes the code more robust by not requiring manual port selection
+        let rpc_port = if config.rpc_port == 0 {
+            // Bind to port 0 to let the OS assign an available port
+            let listener = std::net::TcpListener::bind(("127.0.0.1", 0))?;
+            listener.local_addr()?.port()
+        } else {
+            config.rpc_port
+        };
 
         Ok(Self {
             state: Arc::new(RwLock::new(NodeState::default())),
