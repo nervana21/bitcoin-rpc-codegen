@@ -62,7 +62,7 @@ digraph BitcoinRpcCodegen {
 
   // ───────────── Pipeline crate ─────────────
   subgraph cluster_rpc_cli {
-    label="rpc-cli"; style=filled; fillcolor="#ffccff"; color="#CC66CC";
+    label="pipeline"; style=filled; fillcolor="#ffccff"; color="#CC66CC";
     pipeline [label="pipeline\n(Code Generation)"];
   }
 
