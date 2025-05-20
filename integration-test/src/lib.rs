@@ -3,9 +3,11 @@
 use anyhow::Result;
 use node::BitcoinNodeManager;
 use node::{Config, TestConfig};
+use pipeline::RpcClient;
 use std::time::Duration;
 
-mod test_node;
+pub mod test_node;
+
 pub use test_node::TestNode;
 
 /// Helper function to create a test configuration with an available port
