@@ -8,7 +8,7 @@
 
 use anyhow::Result;
 use rpc_api::ApiMethod;
-use std::{fs, io::Write, path::Path};
+use std::{fs, path::Path};
 
 // ---------------------------------------------------------------------------
 //  Sub‑crates that do the heavy lifting
@@ -46,6 +46,11 @@ pub mod namespace_scaffolder;
 /// and response deserialization.
 pub mod rpc_client_generator;
 
+/// **`test_node_generator`** – Generates convenience methods for TestNode.
+/// Creates simple wrapper methods that delegate to the underlying RPC client,
+/// making the API more ergonomic for users.
+pub mod test_node_generator;
+
 /// **`types`** – Shapes the JSON you get back from Core into real Rust.  
 ///   * Parses each method's _Result:_ section (or the pre‑built `api.json`)  
 ///   * Builds a strongly‑typed `…Response` struct with the right `serde`
@@ -80,8 +85,11 @@ pub fn write_generated<P: AsRef<Path>>(
     fs::create_dir_all(&out_dir)?;
     for (name, src) in files {
         let path = out_dir.as_ref().join(format!("{name}.rs"));
-        let mut f = fs::File::create(path)?;
-        f.write_all(src.as_bytes())?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        // Force write the file
+        fs::write(path, src.as_bytes())?;
     }
     Ok(())
 }
@@ -146,11 +154,14 @@ impl CodeGenerator for TransportCodeGenerator {
             .map(|m| {
                 /* ---------- fn signature ---------- */
                 let fn_args = std::iter::once("transport: &Transport".into())
-                    .chain(
-                        m.arguments
-                            .iter()
-                            .map(|a| format!("{}: serde_json::Value", a.names[0])),
-                    )
+                    .chain(m.arguments.iter().map(|a| {
+                        let name = if a.names[0] == "type" {
+                            format!("r#{}", a.names[0])
+                        } else {
+                            a.names[0].clone()
+                        };
+                        format!("{}: serde_json::Value", name)
+                    }))
                     .collect::<Vec<_>>()
                     .join(", ");
 
@@ -161,7 +172,14 @@ impl CodeGenerator for TransportCodeGenerator {
                     let elems = m
                         .arguments
                         .iter()
-                        .map(|a| format!("json!({})", a.names[0]))
+                        .map(|a| {
+                            let name = if a.names[0] == "type" {
+                                format!("r#{}", a.names[0])
+                            } else {
+                                a.names[0].clone()
+                            };
+                            format!("json!({})", name)
+                        })
                         .collect::<Vec<_>>()
                         .join(", ");
                     format!("vec![{elems}]")
@@ -180,7 +198,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 let src = format!(
                     r#"{docs}
 
-use serde_json::Value;
+use serde_json::{{Value, json}};
 use transport::{{Transport, TransportError}};
 {resp_struct}
 
