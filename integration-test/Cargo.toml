@@ -13,7 +13,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 node = { path = "../node" }
+pipeline = { path = "../pipeline", features = ["generated"] }
 rpc-api = { path = "../rpc-api" }
+schema = { path = "../schema" }
 transport = { path = "../transport" }
 verify = { path = "../verify" }
 
