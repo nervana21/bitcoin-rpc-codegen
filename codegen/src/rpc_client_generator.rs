@@ -29,6 +29,7 @@ fn snake(s: &str) -> String {
     }
     out
 }
+
 fn camel(s: &str) -> String {
     let mut out = String::new();
     let mut up = true;
@@ -70,6 +71,7 @@ fn rust_res_ty(res: &ApiResult) -> (&'static str, bool) {
         _ => ("serde_json::Value", false),
     }
 }
+
 fn rust_arg_ty(arg: &ApiArgument) -> (&'static str, bool) {
     let dummy = ApiResult {
         key_name: arg.names[0].clone(),
@@ -78,12 +80,11 @@ fn rust_arg_ty(arg: &ApiArgument) -> (&'static str, bool) {
         inner: vec![],
         optional: arg.optional,
     };
-    rust_res_ty(&dummy)
+    let (ty, _) = rust_res_ty(&dummy);
+    (ty, arg.optional)
 }
 
-/// This abstraction is responsible for generating Rust code for transporting data between different parts of the system.
-/// It encapsulates the logic for converting API methods into Rust functions and data structures, ensuring efficient and
-/// type-safe data exchange.
+/// Generates type-safe client methods for Bitcoin RPC calls
 pub struct RpcClientGenerator;
 
 impl CodeGenerator for RpcClientGenerator {
@@ -159,7 +160,8 @@ impl CodeGenerator for RpcClientGenerator {
             writeln!(code, "        let mut ps = Vec::new();").unwrap();
             for arg in &m.arguments {
                 let id = snake(&arg.names[0]);
-                if arg.optional {
+                let (_, opt) = rust_arg_ty(arg);
+                if opt {
                     writeln!(
                         code,
                         "        ps.push(match {0} {{ Some(v) => serde_json::to_value(v)?, None => serde_json::Value::Null }});",
@@ -186,7 +188,7 @@ impl CodeGenerator for RpcClientGenerator {
             writeln!(code, "    }}\n}}\n").unwrap();
 
             /* file path */
-            let path = format!("client/src/generated/client/{}.rs", snake(&m.name));
+            let path = format!("{}.rs", snake(&m.name));
             out.push((path, code));
         }
 
