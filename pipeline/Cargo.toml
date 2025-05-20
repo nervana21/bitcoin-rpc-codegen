@@ -12,7 +12,6 @@ clap = { version = "4.4", features = ["derive"] }
 tracing-subscriber = "0.3"
 
 codegen = { path = "../codegen" }
-client = { path = "../client" }
 logging = { path = "../logging" }
 parser = { path = "../parser" }
 rpc-api = { path = "../rpc-api" }

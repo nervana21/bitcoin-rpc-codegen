@@ -6,7 +6,6 @@ members = [
     "schema",
     "codegen",
     "transport",
-    "client",
     "node",
     "pipeline",
     "rpc-cli",

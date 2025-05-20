@@ -1,7 +1,6 @@
 // integration-test/src/lib.rs
 
 use anyhow::Result;
-use client::RpcClient;
 use node::BitcoinNodeManager;
 use node::{Config, TestConfig};
 use std::time::Duration;

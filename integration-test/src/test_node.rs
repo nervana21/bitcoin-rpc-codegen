@@ -1,7 +1,6 @@
 // integration-test/src/test_node.rs
 
 use anyhow::{Context, Result};
-use client::RpcClient;
 use node::{Config, NodeManager};
 use std::time::{Duration, Instant};
 
