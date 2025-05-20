@@ -24,3 +24,6 @@ target/tmp/
 
 # Track main project resources
 !/resources/
+
+# Pipeline generated code
+/pipeline/src/generated/
