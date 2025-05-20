@@ -23,6 +23,15 @@ pub struct Transport {
     url: String,
 }
 
+impl std::fmt::Debug for Transport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Transport")
+            .field("url", &self.url)
+            .field("client", &"<reqwest::Client>")
+            .finish()
+    }
+}
+
 /// Errors that can occur while sending or receiving JSON‑RPC requests.
 #[derive(Debug, Error)]
 pub enum TransportError {
