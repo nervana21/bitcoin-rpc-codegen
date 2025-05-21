@@ -85,7 +85,6 @@ pub use type_registry::{TypeMapping, TypeRegistry};
 /// ---------------------------------------------------------------------------
 /// Common code-generation traits and utilities
 /// ---------------------------------------------------------------------------
-
 /// Trait for any code generator that produces `(module_name, source_code)` pairs.
 pub trait CodeGenerator {
     /// Generate Rust source files for the provided API methods.
@@ -116,7 +115,6 @@ pub fn write_generated<P: AsRef<Path>>(
 /// ---------------------------------------------------------------------------
 /// TransportCodeGenerator: generates async JSON‑RPC wrapper functions
 /// ---------------------------------------------------------------------------
-
 pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
