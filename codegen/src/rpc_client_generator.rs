@@ -10,6 +10,7 @@
 //  • if the RPC returns non‑null → inlines a `CamelCaseMethodNameResponse`
 //    struct and deserialises into it; else returns `()`
 // ──────────────────────────────────────────────────────────────────────────────
+use crate::TYPE_REGISTRY;
 use crate::{doc_comment_generator, CodeGenerator};
 use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
@@ -48,40 +49,11 @@ fn camel(s: &str) -> String {
 
 /* ── Primitive‑to‑Rust type mapping ───────────────────────────── */
 fn rust_res_ty(res: &ApiResult) -> (&'static str, bool) {
-    match res.type_.as_str() {
-        "string" => ("String", false),
-        "number" | "amount" | "numeric" => ("bitcoin::Amount", false),
-        "boolean" => ("bool", false),
-        "hex" => {
-            let k = res.key_name.as_str();
-            if k.contains("txid") {
-                ("bitcoin::Txid", false)
-            } else if k.contains("blockhash") {
-                ("bitcoin::BlockHash", false)
-            } else if k.contains("script") {
-                ("bitcoin::Script", false)
-            } else if k.contains("pubkey") {
-                ("bitcoin::PublicKey", false)
-            } else {
-                ("String", false)
-            }
-        }
-        "array" | "object" | "mixed" => ("serde_json::Value", false),
-        "null" => ("()", false),
-        _ => ("serde_json::Value", false),
-    }
+    TYPE_REGISTRY.map_result_type(res)
 }
 
 fn rust_arg_ty(arg: &ApiArgument) -> (&'static str, bool) {
-    let dummy = ApiResult {
-        key_name: arg.names[0].clone(),
-        type_: arg.type_.clone(),
-        description: String::new(),
-        inner: vec![],
-        optional: arg.optional,
-    };
-    let (ty, _) = rust_res_ty(&dummy);
-    (ty, arg.optional)
+    TYPE_REGISTRY.map_argument_type(arg)
 }
 
 /// Generates type-safe client methods for Bitcoin RPC calls

@@ -1,6 +1,7 @@
 //! Build response‑type structs (`…Response`) from `ApiMethod`s
 //! and provide `TypesCodeGenerator` for the pipeline.
 
+use crate::TYPE_REGISTRY;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
@@ -9,86 +10,7 @@ use std::fmt::Write as _;
 /* --------------------------------------------------------------------- */
 
 fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
-    // Map JSON‐RPC types & field names to more precise Rust types
-    let base = match res.type_.as_str() {
-        // Plain strings
-        "string" => "String",
-
-        // Bitcoin money values
-        "amount" => "bitcoin::Amount",
-
-        // Generic JSON numbers:
-        // - use u64 for heights, sizes, timestamps
-        // - otherwise treat as f64
-        "number" | "numeric" => {
-            let k = res.key_name.as_str();
-            if k.ends_with("height")
-                || k == "blocks"
-                || k == "headers"
-                || k.ends_with("time")
-                || k.ends_with("size")
-                || k.contains("count")
-                || k.contains("index")
-            {
-                "u64"
-            } else {
-                "f64"
-            }
-        }
-
-        // Booleans
-        "boolean" => "bool",
-
-        // Hex‑encoded values
-        "hex" => {
-            let k = res.key_name.as_str();
-            if k.contains("txid") {
-                "bitcoin::Txid"
-            } else if k.contains("blockhash") {
-                "bitcoin::BlockHash"
-            } else if k.contains("script") {
-                "bitcoin::ScriptBuf"
-            } else if k.contains("pubkey") {
-                "bitcoin::PublicKey"
-            } else {
-                "String"
-            }
-        }
-
-        // Arrays: special‑case known vectors and warnings
-        "array" => {
-            let k = res.key_name.as_str();
-            if k.contains("address") {
-                "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>"
-            } else if k.contains("txid") {
-                "Vec<bitcoin::Txid>"
-            } else if k.contains("blockhash") {
-                "Vec<bitcoin::BlockHash>"
-            } else if k.contains("script") {
-                "Vec<bitcoin::ScriptBuf>"
-            } else if k.contains("warning") || k.contains("error") || k.contains("message") {
-                "Vec<String>"
-            } else {
-                "Vec<serde_json::Value>"
-            }
-        }
-
-        // Nested objects
-        "object" => {
-            let k = res.key_name.as_str();
-            if k.contains("transaction") {
-                "bitcoin::Transaction"
-            } else if k.contains("block") {
-                "bitcoin::Block"
-            } else {
-                "serde_json::Value"
-            }
-        }
-
-        // Fallback catch‑all
-        _ => "serde_json::Value",
-    };
-    (base, res.optional)
+    TYPE_REGISTRY.map_result_type(res)
 }
 
 fn field_ident(res: &ApiResult, idx: usize) -> String {

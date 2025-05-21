@@ -3,7 +3,7 @@
 //! Until we have a TypesCodeGenerator that emits concrete `*Response` structs
 //! every RPC simply returns `serde_json::Value`.
 
-use crate::{doc_comment_generator, CodeGenerator};
+use crate::{doc_comment_generator, CodeGenerator, TYPE_REGISTRY};
 use rpc_api::ApiMethod;
 use std::fmt::Write as _;
 
@@ -120,42 +120,8 @@ impl CodeGenerator for TestNodeGenerator {
 /* ── helpers ──────────────────────────────────────────────────── */
 
 fn rust_type_for(param_name: &str, api_ty: &str) -> &'static str {
-    match api_ty {
-        "string" => "String",
-        "boolean" => "bool",
-        "object-named-parameters" | "object-user-keys" | "object" => "Value",
-        "number" | "numeric" => {
-            if param_name.ends_with("height")
-                || param_name == "blocks"
-                || param_name == "headers"
-                || param_name.ends_with("time")
-                || param_name.ends_with("size")
-                || param_name.contains("count")
-                || param_name.contains("index")
-            {
-                "u64"
-            } else if param_name.contains("amount") || param_name.contains("fee") {
-                "Amount"
-            } else {
-                "f64"
-            }
-        }
-        "hex" => {
-            if param_name.contains("txid") {
-                "Txid"
-            } else if param_name.contains("blockhash") {
-                "BlockHash"
-            } else if param_name.contains("script") {
-                "ScriptBuf"
-            } else if param_name.contains("pubkey") {
-                "PublicKey"
-            } else {
-                "String"
-            }
-        }
-        "array" => "Vec<Value>",
-        _ => "Value",
-    }
+    let (ty, _) = TYPE_REGISTRY.map_type(api_ty, param_name);
+    ty
 }
 
 fn snake(s: &str) -> String {

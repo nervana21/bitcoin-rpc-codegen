@@ -20,6 +20,7 @@
 
 use crate::doc_comment_generator::format_doc_comment;
 use crate::response_type_generator::{capitalize, sanitize_method_name};
+use crate::TYPE_REGISTRY;
 use rpc_api::ApiMethod;
 
 /// Generates a client-side macro implementation for an RPC method
@@ -148,52 +149,9 @@ fn generate_method_args(method: &ApiMethod) -> String {
     let mut args = String::new();
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
-        let arg_type = match arg.type_.as_str() {
-            "hex" => {
-                let k = arg_name.as_str();
-                if k.contains("txid") {
-                    "bitcoin::Txid".to_string()
-                } else if k.contains("blockhash") {
-                    "bitcoin::BlockHash".to_string()
-                } else if k.contains("script") {
-                    "bitcoin::ScriptBuf".to_string()
-                } else if k.contains("pubkey") {
-                    "bitcoin::PublicKey".to_string()
-                } else {
-                    "String".to_string()
-                }
-            }
-            "string" => "String".to_string(),
-            "number" | "numeric" | "amount" => {
-                let k = arg_name.as_str();
-                if k.ends_with("height")
-                    || k == "blocks"
-                    || k == "headers"
-                    || k.ends_with("time")
-                    || k.ends_with("size")
-                    || k.contains("count")
-                    || k.contains("index")
-                {
-                    "u64".to_string()
-                } else if k.contains("amount") || k.contains("fee") {
-                    "bitcoin::Amount".to_string()
-                } else {
-                    "f64".to_string()
-                }
-            }
-            "boolean" => "bool".to_string(),
-            "array" => {
-                if arg_name == "inputs" {
-                    "Vec<Input>".to_string()
-                } else if arg_name == "outputs" {
-                    "Vec<Output>".to_string()
-                } else {
-                    "Vec<serde_json::Value>".to_string()
-                }
-            }
-            "object" => "serde_json::Value".to_string(),
-            "object-named-parameters" => "Option<serde_json::Value>".to_string(),
-            _ => "serde_json::Value".to_string(),
+        let arg_type = {
+            let (ty, _) = TYPE_REGISTRY.map_type(&arg.type_, &arg.names[0]);
+            ty.to_string()
         };
         // Escape reserved keywords
         let escaped_name = if arg_name == "type" {
