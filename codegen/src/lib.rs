@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 use anyhow::Result;
+use lazy_static::lazy_static;
 use rpc_api::ApiMethod;
 use std::{fs, path::Path};
 
