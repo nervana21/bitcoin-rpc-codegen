@@ -1,9 +1,10 @@
-//! Code generation utilities for Bitcoin Core RPC.
+//! Code generation utilities for Bitcoin Core JSON-RPC.
 //!
-//! The crate's job is *only* to turn `ApiMethod` descriptors
-//! into ready‑to‑`cargo check` Rust modules.  Runtime testing,
-//! node spawning, and schema extraction belong in other crates.
-
+//! This crate turns `ApiMethod` descriptors into ready-to-`cargo check` Rust modules.
+//! It focuses solely on code generation: parsing API metadata, scaffolding module hierarchies,
+//! generating transport-layer clients, strongly-typed response structs, and test-node helpers.
+//!
+//! Other responsibilities—such as runtime testing, node spawning, or API discovery logic—reside in companion crates.
 #![warn(missing_docs)]
 
 use anyhow::Result;
@@ -11,57 +12,67 @@ use lazy_static::lazy_static;
 use rpc_api::ApiMethod;
 use std::{fs, path::Path};
 
-// ---------------------------------------------------------------------------
-//  Sub‑crates that do the heavy lifting
-// ---------------------------------------------------------------------------
-
-/// **`rpc_method_macro_generator`** – Emits the `macro_rules!` blocks that expand into
-/// ergonomic, version‑scoped client wrappers.  
-/// A downstream crate can simply `impl_client_latest__getblockchaininfo!()` and
-/// obtain a fully‑typed `fn getblockchaininfo(&self) -> …` on its `Client`.
+/// Sub-crate: **`rpc_method_macro_generator`**
+///
+/// Generates `macro_rules!` definitions for version-scoped client wrappers.
+/// Downstream crates can write:
+///
+/// ```rust
+/// impl_client_latest__getblockchaininfo!();
+/// ```
+///
+/// to obtain a fully-typed `fn getblockchaininfo(&self) -> ...` method on their `Client`.
 pub mod rpc_method_macro_generator;
 
-/// **`rpc_method_discovery`** – Runtime discovery helpers.  
-/// Talks to a local `bitcoin-cli` binary to list available RPC methods,
-/// download their help‑text, and turn that into a minimal `ApiMethod` set.
-/// Used by the *discovery* pipeline mode so we can generate against whatever
-/// node version happens to be on `PATH`.
+/// Sub-crate: **`rpc_method_discovery`**
+///
+/// Discovers available RPC methods at runtime using `bitcoin-cli`.
+/// Queries the node for `help` output and converts it into an `ApiMethod` list.
+/// Useful for generating code against whichever node version is on your `PATH`.
 pub mod rpc_method_discovery;
 
-/// **`docs`** – Rust‑doc & Markdown generation utilities.  
-/// Converts `ApiMethod` metadata into nice triple‑slash comments and "Example:"
-/// blocks that are injected at the top of every generated source file.
+/// Sub-crate: **`doc_comment_generator`**
+///
+/// Produces Rust-doc comments and Markdown "Example:" blocks.
+/// Transforms each `ApiMethod` into triple-slash doc comments injected into generated files.
 pub mod doc_comment_generator;
 
-/// **`namespace_scaffolder`** – Writes the `mod.rs` scaffolding.  
-/// Given a set of schema versions (`v28`, `v29`, `latest`…) it produces:
-///  generated/
-///   ├─ client/ v28/ v29/ …
-///   └─ types/  v28_types/ …
-///   plus top‑level mod.rs that re‑export everything
-/// so that downstream crates can just `use generated::client::*;`.
+/// Sub-crate: **`namespace_scaffolder`**
+///
+/// Writes `mod.rs` scaffolding for generated modules.
+/// Given schema versions (`v28`, `v29`, `latest`, etc.), it creates:
+///
+/// - `generated/client/{versions}`
+/// - `generated/types/{versions}`
+///
+/// plus a top-level `mod.rs` that re-exports everything, so downstream crates can simply:
+///
+/// ```rust
+/// use generated::client::*;
+/// ```
 pub mod namespace_scaffolder;
 
-/// **`rpc_client_generator`** – Generates transport layer code.
-/// Creates async RPC method wrappers that handle parameter serialization
-/// and response deserialization.
+/// Sub-crate: **`rpc_client_generator`**
+///
+/// Generates the transport-layer client code: async RPC method wrappers
+/// that handle parameter serialization and response deserialization.
 pub mod rpc_client_generator;
 
-/// **`test_node_generator`** – Generates convenience methods for TestNode.
-/// Creates simple wrapper methods that delegate to the underlying RPC client,
-/// making the API more ergonomic for users.
+/// Sub-crate: **`test_node_generator`**
+///
+/// Generates ergonomic TestNode methods that delegate to the underlying RPC client,
+/// simplifying common integration-test workflows.
 pub mod test_node_generator;
 
-/// **`types`** – Shapes the JSON you get back from Core into real Rust.  
-///   * Parses each method's _Result:_ section (or the pre‑built `api.json`)  
-///   * Builds a strongly‑typed `…Response` struct with the right `serde`
-///     attributes (`Option<T>` + `skip_serializing_if`)  
-///   * Exposes **`TypesCodeGenerator`** which writes one
-///     `<method>_response.rs` file per RPC – these are imported by the
-///     transport wrapper so users work with first‑class Rust types instead of
-///     raw `Value`.
+/// Sub-crate: **`response_type_generator`**
+///
+/// Defines strongly-typed response structs for RPC methods:
+///
+/// - Parses each method's "Result:" section (or `api.json`).
+/// - Builds a `<method>_response.rs` file with appropriate `serde` attributes
+///   (`Option<T>`, `skip_serializing_if`).
+/// - Exported as `TypesCodeGenerator`, used by the transport generator.
 pub mod response_type_generator;
-
 pub use response_type_generator::TypesCodeGenerator;
 
 /// Sub-crate: **`type_registry`**
@@ -72,14 +83,15 @@ pub mod type_registry;
 pub use type_registry::{TypeMapping, TypeRegistry};
 
 /// ---------------------------------------------------------------------------
-/// 1. Common helper traits / functions
+/// Common code-generation traits and utilities
 /// ---------------------------------------------------------------------------
-/// Anything that outputs `(module_name, source_code)` pairs.
+
+/// Trait for any code generator that produces `(module_name, source_code)` pairs.
 pub trait CodeGenerator {
-    /// Create Rust source files for the supplied API methods.
+    /// Generate Rust source files for the provided API methods.
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)>;
 
-    /// Optional post‑generation check (defaults to a no‑op).
+    /// Optional validation step after generation (default is no-op).
     fn validate(&self, _methods: &[ApiMethod]) -> Result<()> {
         Ok(())
     }
@@ -96,7 +108,6 @@ pub fn write_generated<P: AsRef<Path>>(
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        // Force write the file
         fs::write(path, src.as_bytes())?;
     }
     Ok(())
