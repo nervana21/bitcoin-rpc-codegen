@@ -103,54 +103,9 @@ pub fn write_generated<P: AsRef<Path>>(
 }
 
 /// ---------------------------------------------------------------------------
-/// 2. A trivial stub generator (handy for tests / scaffolding)
+/// TransportCodeGenerator: generates async JSON‑RPC wrapper functions
 /// ---------------------------------------------------------------------------
-pub struct BasicCodeGenerator;
 
-impl CodeGenerator for BasicCodeGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        methods
-            .iter()
-            .map(|m| {
-                // Format the documentation
-                let docs = doc_comment_generator::format_doc_comment(&m.description);
-
-                // Determine return type from results
-                let return_type = if m.results.is_empty() {
-                    "()".to_string()
-                } else {
-                    match m.results[0].type_.as_str() {
-                        "boolean" => "bool".to_string(),
-                        "string" => "String".to_string(),
-                        "number" => "f64".to_string(),
-                        "array" => "Vec<serde_json::Value>".to_string(),
-                        "object" => "serde_json::Value".to_string(),
-                        _ => "serde_json::Value".to_string(),
-                    }
-                };
-
-                let src = format!(
-                    r#"// Auto‑generated stub for RPC method `{n}`
-
-{docs}
-
-pub fn {n}() -> {ret} {{
-    unimplemented!();
-}}
-"#,
-                    n = m.name,
-                    docs = docs,
-                    ret = return_type
-                );
-                (m.name.clone(), src)
-            })
-            .collect()
-    }
-}
-
-/// ---------------------------------------------------------------------------
-/// 3. The real generator: async JSON‑RPC wrappers
-/// ---------------------------------------------------------------------------
 pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
