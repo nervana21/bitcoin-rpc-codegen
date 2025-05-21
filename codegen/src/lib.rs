@@ -168,6 +168,8 @@ use transport::{{Transport, TransportError}};
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.
+///
+/// Generated transport wrapper for JSON-RPC.
 pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
     let params = {params_vec};
     let raw = transport.send_request("{rpc}", &params).await?;
