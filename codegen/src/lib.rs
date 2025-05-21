@@ -149,7 +149,9 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 /* ---------- docs + types ---------- */
-                let docs_md = doc_comment_generator::generate_example_docs(m, "latest");
+                let docs_md = doc_comment_generator::generate_example_docs(m, "latest")
+                    .trim_end()
+                    .to_string();
                 let response_struct = generate_return_type(m).unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
