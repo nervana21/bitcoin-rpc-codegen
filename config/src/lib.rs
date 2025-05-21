@@ -88,12 +88,12 @@ impl Config {
 
     /// Get the path to the default help.txt file
     pub fn default_help_path() -> PathBuf {
-        PathBuf::from("../resources/help.txt")
+        PathBuf::from("resources/help.txt")
     }
 
     /// Get the default output directory for generated code
     pub fn default_output_dir() -> PathBuf {
-        PathBuf::from("../client/src/generated")
+        PathBuf::from("pipeline/src/generated")
     }
 }
 
