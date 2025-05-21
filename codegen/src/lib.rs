@@ -64,6 +64,13 @@ pub mod response_type_generator;
 
 pub use response_type_generator::TypesCodeGenerator;
 
+/// Sub-crate: **`type_registry`**
+///
+/// Central registry for mapping Bitcoin RPC types to Rust types.
+/// Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
+pub mod type_registry;
+pub use type_registry::{TypeMapping, TypeRegistry};
+
 /// ---------------------------------------------------------------------------
 /// 1. Common helper traits / functions
 /// ---------------------------------------------------------------------------
@@ -228,4 +235,15 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
             })
             .collect()
     }
+}
+
+lazy_static! {
+    /// Canonical Type Registry: the single source of truth for Bitcoin‑RPC ⇢ Rust mappings.
+    ///
+    /// - Normalized RPC primitives → Rust primitives
+    /// - Named structs/enums discovered during parsing
+    /// - Version-specific overrides (e.g., `Numeric` vs `Amount`)
+    ///
+    /// All code-generation phases consult this registry to ensure consistent type conversions.
+    pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
 }
