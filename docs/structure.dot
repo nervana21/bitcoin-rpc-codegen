@@ -9,10 +9,10 @@ digraph BitcoinRpcCodegen {
     legend_parser    [label="Parser" fillcolor="#ccffcc" color="#888888"];
     legend_schema    [label="Schema\n(norm & val)" fillcolor="#ccccff" color="#888888"];
     legend_codegen   [label="Codegen" fillcolor="#ffcccc" color="#888888"];
-    legend_transport [label="Transport\n(JSON‑RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
+    legend_transport [label="Transport\n(JSON-RPC HTTP)" fillcolor="#ffffcc" color="#888888"];
     legend_client    [label="Client\n(RpcClient)" fillcolor="#ccffff" color="#888888"];
     legend_node_mgr  [label="Node Manager\n(bitcoind spawn & control)" fillcolor="#ccffff" color="#888888"];
-    legend_cross     [label="Cross‑cutting Crates" fillcolor="#ffffff" color="#888888"];
+    legend_cross     [label="Cross-cutting Crates" fillcolor="#ffffff" color="#888888"];
     legend_tests     [label="Testing Harnesses" fillcolor="#ffcc80" color="#888888"];
   }
 
@@ -45,7 +45,7 @@ digraph BitcoinRpcCodegen {
   // ───────────── Transport crate ─────────────
   subgraph cluster_transport {
     label="transport"; style=filled; fillcolor="#ffffcc"; color="#CCCC66";
-    transport [label="transport\n(JSON‑RPC HTTP)"];
+    transport [label="transport\n(JSON-RPC HTTP)"];
   }
 
   // ───────────── Client crate ─────────────
@@ -66,46 +66,26 @@ digraph BitcoinRpcCodegen {
     pipeline [label="pipeline\n(Code Generation)"];
   }
 
-  // ───────────── Cross‑cutting crates ─────────────
-  config  [label="config"  shape=box style=filled fillcolor="#ffffff"];
-  logging [label="logging" shape=box style=filled fillcolor="#ffffff"];
+  // ───────────── Cross-cutting crates ─────────────
+  config      [label="config"      shape=box style=filled fillcolor="#ffffff"];
+  logging     [label="logging"     shape=box style=filled fillcolor="#ffffff"];
   rpc_metrics [label="rpc_metrics" shape=box style=filled fillcolor="#ffffff"];
 
   // ───────────── Testing harnesses ─────────────
   integration_test [label="integration-test" shape=box style=filled fillcolor="#ffcc80"];
-  fuzz             [label="fuzz"            shape=box style=filled fillcolor="#ffcc80"];
-  verify           [label="verify"          shape=box style=filled fillcolor="#ffcc80"];
+  fuzz             [label="fuzz"             shape=box style=filled fillcolor="#ffcc80"];
+  verify           [label="verify"           shape=box style=filled fillcolor="#ffcc80"];
 
   // ───────────── Dependencies ─────────────
-  parser           -> rpc_api;
-  schema_norm      -> parser;
-  schema_norm      -> rpc_api;
-  schema_val       -> schema_norm;
-  schema_val       -> rpc_api;
-  codegen          -> schema_norm;
-  codegen          -> schema_val;
-  codegen          -> rpc_api;
-  client           -> codegen;
-  client           -> transport;
-  client           -> rpc_api;
-  node_mgr         -> rpc_api;
-  node_mgr         -> config;
-  pipeline         -> parser;
-  pipeline         -> schema_norm;
-  pipeline         -> schema_val;
-  pipeline         -> codegen;
-  pipeline         -> transport;
-  pipeline         -> client;
-  pipeline         -> node_mgr;
-  rpc_cli          -> pipeline;
-  rpc_cli          -> config;
-  rpc_cli          -> logging;
-  rpc_cli          -> rpc_metrics;
-  integration_test          -> node_mgr;
-  integration_test -> client;
-  integration_test -> verify;
-  fuzz             -> parser;
-  fuzz             -> transport;
-  verify           -> client;
-  verify           -> schema_norm;
+  parser      -> rpc_api;
+  schema_norm -> parser;
+  schema_norm -> rpc_api;
+  schema_val  -> schema_norm;
+  codegen     -> schema_norm;
+  codegen     -> transport;
+  pipeline    -> parser;
+  pipeline    -> rpc_api;
+  pipeline    -> schema_norm;
+  pipeline    -> schema_val;
+  pipeline    -> codegen;
 }
