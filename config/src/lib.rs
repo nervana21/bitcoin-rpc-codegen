@@ -93,7 +93,9 @@ impl Config {
 
     /// Get the default output directory for generated code
     pub fn default_output_dir() -> PathBuf {
-        PathBuf::from("pipeline/src/generated")
+        std::env::var("OUT_DIR")
+            .map(PathBuf::from)
+            .expect("OUT_DIR must be set for code generation")
     }
 }
 
