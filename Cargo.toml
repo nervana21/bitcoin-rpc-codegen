@@ -10,8 +10,4 @@ members = [
     "pipeline",
     "config",
     "logging",
-    "rpc-metrics",
-    "integration-test",
-    "fuzz",
-    "verify",
 ]
