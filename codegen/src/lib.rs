@@ -89,10 +89,12 @@ pub use type_registry::{TypeMapping, TypeRegistry};
 pub mod transport_core_generator;
 pub use transport_core_generator::TransportCoreGenerator;
 
-/// ---------------------------------------------------------------------------
-/// Common code-generation traits and utilities
-/// ---------------------------------------------------------------------------
-/// Trait for any code generator that produces `(module_name, source_code)` pairs.
+/// Defines the core interface for generating Rust source files from a collection of
+/// Bitcoin Core RPC API methods. Implementors produce a set of `(filename, source)`
+/// pairs and may optionally perform post-generation validation.
+///
+/// This trait is used by the `TransportCodeGenerator` to produce the transport-layer
+/// client code for each `ApiMethod`.
 pub trait CodeGenerator {
     /// Generate Rust source files for the provided API methods.
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)>;
@@ -103,7 +105,8 @@ pub trait CodeGenerator {
     }
 }
 
-/// Write each `(name, src)` pair to `<out_dir>/<name>.rs`.
+/// Persist a list of generated source files to disk under the given output directory,
+/// creating any necessary subdirectories and appending `.rs` if missing.
 pub fn write_generated<P: AsRef<Path>>(
     out_dir: P,
     files: &[(String, String)],
@@ -123,9 +126,14 @@ pub fn write_generated<P: AsRef<Path>>(
     Ok(())
 }
 
-/// ---------------------------------------------------------------------------
-/// TransportCodeGenerator: generates async JSON‑RPC wrapper functions
-/// ---------------------------------------------------------------------------
+/// Emits async JSON-RPC transport wrappers for Bitcoin Core RPC methods.
+///
+/// `TransportCodeGenerator` implements the `CodeGenerator` trait to produce, for each
+/// `ApiMethod`, a self-contained Rust source file containing:
+/// 1. An `async fn` that accepts a `&dyn Transport` and JSON-serializable parameters.
+/// 2. Logic to serialize those parameters into a `Vec<serde_json::Value>`.
+/// 3. A call to `transport.send_request(method_name, &params).await`.
+/// 4. Deserialization of the raw response into a typed `Response` struct (or raw `Value`).
 pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
