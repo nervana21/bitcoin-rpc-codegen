@@ -193,7 +193,7 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     // Generate core transport types
     println!("[diagnostic] generating core transport types");
     let core_files = TransportCoreGenerator.generate(&norm);
-    write_generated(&out_dir.join("transport"), &core_files)
+    write_generated(out_dir.join("transport"), &core_files)
         .context("Failed to write core transport files")?;
 
     ensure_rpc_client(&out_dir.join("transport")).context("Failed to ensure rpc_client stub")?;
@@ -203,13 +203,13 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     // 4) Types
     println!("[diagnostic] generating types code");
     let ty_files = TypesCodeGenerator.generate(&norm);
-    write_generated(&out_dir.join("types"), &ty_files).context("Failed to write types files")?;
+    write_generated(out_dir.join("types"), &ty_files).context("Failed to write types files")?;
     write_mod_rs(&out_dir.join("types"), &ty_files).context("Failed to write types mod.rs")?;
 
     // 5) Test-node helpers
     println!("[diagnostic] generating test_node code");
     let tn_files = TestNodeGenerator.generate(&norm);
-    write_generated(&out_dir.join("test_node"), &tn_files)
+    write_generated(out_dir.join("test_node"), &tn_files)
         .context("Failed to write test_node files")?;
     write_mod_rs(&out_dir.join("test_node"), &tn_files)
         .context("Failed to write test_node mod.rs")?;
