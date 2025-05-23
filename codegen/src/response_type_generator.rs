@@ -13,14 +13,33 @@ fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
     TYPE_REGISTRY.map_result_type(res)
 }
 
+/// Converts a camelCase string to snake_case
+fn camel_to_snake_case(s: &str) -> String {
+    let mut out = String::new();
+    for (i, ch) in s.chars().enumerate() {
+        if ch.is_ascii_uppercase() {
+            if i != 0 {
+                out.push('_');
+            }
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
 fn field_ident(res: &ApiResult, idx: usize) -> String {
     if !res.key_name.is_empty() {
         // First convert hyphens to underscores
         let sanitized = res.key_name.replace('-', "_");
 
+        // Convert camelCase to snake_case
+        let snake_case = camel_to_snake_case(&sanitized);
+
         // Handle all Rust keywords that need escaping
         let needs_escape = matches!(
-            sanitized.as_str(),
+            snake_case.as_str(),
             "type"
                 | "const"
                 | "static"
@@ -59,9 +78,9 @@ fn field_ident(res: &ApiResult, idx: usize) -> String {
         );
 
         if needs_escape {
-            format!("r#{}", sanitized)
+            format!("r#{}", snake_case)
         } else {
-            sanitized
+            snake_case
         }
     } else {
         format!("field_{idx}")
@@ -125,45 +144,6 @@ pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
 fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
     let struct_name = capitalize(&method.name) + "Response";
     let mut out = String::new();
-
-    // First analyze which types we actually need
-    let mut needed_types = std::collections::HashSet::new();
-    for res in fields {
-        if res.type_ == "none" {
-            continue;
-        }
-        match res.type_.as_str() {
-            "amount" => {
-                needed_types.insert("Amount");
-            }
-            "hex" => {
-                let k = res.key_name.as_str();
-                if k.contains("txid") {
-                    needed_types.insert("Txid");
-                } else if k.contains("blockhash") {
-                    needed_types.insert("BlockHash");
-                } else if k.contains("script") {
-                    needed_types.insert("ScriptBuf");
-                } else if k.contains("pubkey") {
-                    needed_types.insert("PublicKey");
-                }
-            }
-            _ => {}
-        }
-    }
-
-    // Generate imports based on needed types
-    writeln!(&mut out, "use serde::{{Deserialize, Serialize}};").ok()?;
-    if !needed_types.is_empty() {
-        let types: Vec<_> = needed_types.into_iter().collect();
-        writeln!(&mut out, "use bitcoin::{{{}}};", types.join(", ")).ok()?;
-    }
-    // Only add NetworkUnchecked if we have address-related fields
-    if fields.iter().any(|f| f.type_ == "address") {
-        writeln!(&mut out, "use bitcoin::address::NetworkUnchecked;\n").ok()?;
-    } else {
-        writeln!(&mut out, "").ok()?;
-    }
 
     writeln!(
         &mut out,
@@ -230,30 +210,54 @@ pub struct TypesCodeGenerator;
 impl CodeGenerator for TypesCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
         let mut out = String::new();
+        let mut used_types = std::collections::HashSet::new();
+        let mut structs = Vec::new();
 
-        // Add common imports at the top - only once
-        writeln!(&mut out, "use serde::{{Deserialize, Serialize}};").unwrap();
-        writeln!(
-            &mut out,
-            "use bitcoin::{{Amount, BlockHash, PublicKey, ScriptBuf, Txid}};"
-        )
-        .unwrap();
-        writeln!(&mut out, "use bitcoin::address::NetworkUnchecked;\n").unwrap();
-
-        // Generate all response types in a single file
+        // First pass: collect all structs and track used types
         for method in methods {
             if let Some(struct_def) = generate_return_type(method) {
-                // Remove the imports from each struct definition
+                // Look for actual type names in the struct definition
+                for line in struct_def.lines() {
+                    if line.contains(": Amount") || line.contains(": Option<Amount>") {
+                        used_types.insert("Amount");
+                    }
+                    if line.contains(": Txid") || line.contains(": Option<Txid>") {
+                        used_types.insert("Txid");
+                    }
+                    if line.contains(": BlockHash") || line.contains(": Option<BlockHash>") {
+                        used_types.insert("BlockHash");
+                    }
+                    if line.contains(": ScriptBuf") || line.contains(": Option<ScriptBuf>") {
+                        used_types.insert("ScriptBuf");
+                    }
+                    if line.contains(": PublicKey") || line.contains(": Option<PublicKey>") {
+                        used_types.insert("PublicKey");
+                    }
+                }
+
+                // Store the struct without its imports
                 let struct_def = struct_def
                     .lines()
-                    .filter(|line| !line.contains("use serde::") && !line.contains("use bitcoin::"))
+                    .filter(|line| !line.contains("use "))
                     .collect::<Vec<_>>()
                     .join("\n");
-                writeln!(&mut out, "{}", struct_def).unwrap();
+                structs.push(struct_def);
             }
         }
 
-        // Return a single file instead of multiple files
+        // Add imports at the top
+        writeln!(&mut out, "use serde::{{Deserialize, Serialize}};").unwrap();
+        if !used_types.is_empty() {
+            let types: Vec<_> = used_types.into_iter().collect();
+            writeln!(&mut out, "use bitcoin::{{{}}};", types.join(", ")).unwrap();
+        }
+        writeln!(&mut out).unwrap();
+
+        // Add all structs
+        for struct_def in structs {
+            writeln!(&mut out, "{}", struct_def).unwrap();
+        }
+
         vec![("latest_types".to_string(), out)]
     }
 }

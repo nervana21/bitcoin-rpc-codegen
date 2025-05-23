@@ -36,7 +36,7 @@ impl CodeGenerator for TestNodeGenerator {
                 let field = if p.names[0] == "type" {
                     "_type".to_string()
                 } else {
-                    snake(&p.names[0]).replace('-', "_")
+                    camel_to_snake_case(&p.names[0]).replace('-', "_")
                 };
                 let ty = rust_type_for(&p.names[0], &p.type_);
                 writeln!(params_code, "    pub {}: {},", field, ty).unwrap();
@@ -83,7 +83,7 @@ impl CodeGenerator for TestNodeGenerator {
 
         /* ---------- per-RPC helpers ---------- */
         for m in methods {
-            let method_snake = snake(&m.name);
+            let method_snake = camel_to_snake_case(&m.name);
             let ret_ty = if m.results.is_empty() { "()" } else { "Value" };
 
             writeln!(
@@ -221,7 +221,7 @@ impl CodeGenerator for TestNodeGenerator {
 
         writeln!(
             test_node_code,
-            "    /// Check if the node is ready by attempting to call getnetworkinfo."
+            "    /// Check if the node is ready by verifying it's fully initialized."
         )
         .unwrap();
         writeln!(
@@ -231,14 +231,60 @@ impl CodeGenerator for TestNodeGenerator {
         .unwrap();
         writeln!(
             test_node_code,
-            "        self.node.getnetworkinfo().await.is_ok()"
+            "        // First check if we can get network info"
         )
         .unwrap();
-        writeln!(test_node_code, "    }}\n").unwrap();
+        writeln!(
+            test_node_code,
+            "        match self.node.getnetworkinfo().await {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "            Ok(_) => {{").unwrap();
+        writeln!(
+            test_node_code,
+            "                // Then check if the node is fully initialized"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                match self.node.getblockchaininfo().await {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "                    Ok(info) => {{").unwrap();
+        writeln!(
+            test_node_code,
+            "                        // Check if the node is still in initial block download"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                        if let Some(initial_block_download) = info.get(\"initialblockdownload\") {{"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                            if let Some(ibd) = initial_block_download.as_bool() {{"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                                return !ibd;"
+        )
+        .unwrap();
+        writeln!(test_node_code, "                            }}").unwrap();
+        writeln!(test_node_code, "                        }}").unwrap();
+        writeln!(test_node_code, "                        false").unwrap();
+        writeln!(test_node_code, "                    }}").unwrap();
+        writeln!(test_node_code, "                    Err(_) => false").unwrap();
+        writeln!(test_node_code, "                }}").unwrap();
+        writeln!(test_node_code, "            }}").unwrap();
+        writeln!(test_node_code, "            Err(_) => false").unwrap();
+        writeln!(test_node_code, "        }}").unwrap();
+        writeln!(test_node_code, "    }}").unwrap();
 
         /* ---------- Delegate RPC methods to TestNode ---------- */
         for m in methods {
-            let method_snake = snake(&m.name);
+            let method_snake = camel_to_snake_case(&m.name);
             let ret_ty = if m.results.is_empty() { "()" } else { "Value" };
 
             writeln!(
@@ -302,7 +348,7 @@ fn rust_type_for(param_name: &str, api_ty: &str) -> &'static str {
     ty
 }
 
-fn snake(s: &str) -> String {
+fn camel_to_snake_case(s: &str) -> String {
     let mut out = String::new();
     for (i, ch) in s.chars().enumerate() {
         if ch.is_ascii_uppercase() {

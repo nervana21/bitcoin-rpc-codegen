@@ -16,7 +16,7 @@ use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
 /* ── Tiny case‑conversion helpers ─────────────────────────────── */
-fn snake(s: &str) -> String {
+fn camel_to_snake_case(s: &str) -> String {
     let mut out = String::new();
     for (i, ch) in s.chars().enumerate() {
         if ch.is_ascii_uppercase() {
@@ -93,7 +93,7 @@ impl CodeGenerator for RpcClientGenerator {
                 .unwrap();
                 for r in &m.results {
                     let (ty, opt) = rust_res_ty(r);
-                    let field = snake(&r.key_name);
+                    let field = camel_to_snake_case(&r.key_name);
                     if opt {
                         writeln!(code, "        pub {}: Option<{}>,", field, ty).unwrap();
                     } else {
@@ -104,7 +104,7 @@ impl CodeGenerator for RpcClientGenerator {
             }
 
             /* function signature */
-            write!(code, "    pub async fn {}(", snake(&m.name)).unwrap();
+            write!(code, "    pub async fn {}(", camel_to_snake_case(&m.name)).unwrap();
             let mut params = Vec::new();
             for arg in m
                 .arguments
@@ -113,7 +113,7 @@ impl CodeGenerator for RpcClientGenerator {
                 .chain(m.arguments.iter().filter(|a| a.optional))
             {
                 let (ty, opt) = rust_arg_ty(arg);
-                let ident = snake(&arg.names[0]);
+                let ident = camel_to_snake_case(&arg.names[0]);
                 params.push(if opt {
                     format!("{}: Option<{}>", ident, ty)
                 } else {
@@ -136,7 +136,7 @@ impl CodeGenerator for RpcClientGenerator {
             /* build params vec */
             writeln!(code, "        let mut ps = Vec::new();").unwrap();
             for arg in &m.arguments {
-                let id = snake(&arg.names[0]);
+                let id = camel_to_snake_case(&arg.names[0]);
                 let (_, opt) = rust_arg_ty(arg);
                 if opt {
                     writeln!(
@@ -165,7 +165,7 @@ impl CodeGenerator for RpcClientGenerator {
             writeln!(code, "    }}\n}}\n").unwrap();
 
             /* file path */
-            let path = format!("{}.rs", snake(&m.name));
+            let path = format!("{}.rs", camel_to_snake_case(&m.name));
             out.push((path, code));
         }
 
