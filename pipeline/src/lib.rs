@@ -152,7 +152,7 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     let (norm, src_desc) = if input_path
         .extension()
         .and_then(|e| e.to_str())
-        .map_or(false, |e| e.eq_ignore_ascii_case("json"))
+        .is_some_and(|e| e.eq_ignore_ascii_case("json"))
     {
         println!("[diagnostic] parsing JSON at {:?}", input_path);
         let json = fs::read_to_string(input_path)
@@ -187,7 +187,7 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     // 3) Transport layer
     println!("[diagnostic] generating transport code");
     let tx_files = TransportCodeGenerator.generate(&norm);
-    write_generated(&out_dir.join("transport"), &tx_files)
+    write_generated(out_dir.join("transport"), &tx_files)
         .context("Failed to write transport files")?;
 
     // Generate core transport types
