@@ -158,7 +158,12 @@ fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
         let types: Vec<_> = needed_types.into_iter().collect();
         writeln!(&mut out, "use bitcoin::{{{}}};", types.join(", ")).ok()?;
     }
-    writeln!(&mut out, "use bitcoin::address::NetworkUnchecked;\n").ok()?;
+    // Only add NetworkUnchecked if we have address-related fields
+    if fields.iter().any(|f| f.type_ == "address") {
+        writeln!(&mut out, "use bitcoin::address::NetworkUnchecked;\n").ok()?;
+    } else {
+        writeln!(&mut out, "").ok()?;
+    }
 
     writeln!(
         &mut out,
@@ -224,26 +229,32 @@ pub struct TypesCodeGenerator;
 
 impl CodeGenerator for TypesCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        let mut files = Vec::new();
+        let mut out = String::new();
 
-        // Generate individual response type files
-        for m in methods {
-            if let Some(src) = generate_return_type(m) {
-                files.push((format!("{}_response", sanitize_method_name(&m.name)), src));
+        // Add common imports at the top - only once
+        writeln!(&mut out, "use serde::{{Deserialize, Serialize}};").unwrap();
+        writeln!(
+            &mut out,
+            "use bitcoin::{{Amount, BlockHash, PublicKey, ScriptBuf, Txid}};"
+        )
+        .unwrap();
+        writeln!(&mut out, "use bitcoin::address::NetworkUnchecked;\n").unwrap();
+
+        // Generate all response types in a single file
+        for method in methods {
+            if let Some(struct_def) = generate_return_type(method) {
+                // Remove the imports from each struct definition
+                let struct_def = struct_def
+                    .lines()
+                    .filter(|line| !line.contains("use serde::") && !line.contains("use bitcoin::"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                writeln!(&mut out, "{}", struct_def).unwrap();
             }
         }
 
-        // Generate mod.rs with re-exports
-        let mut mod_rs = String::new();
-        for m in methods {
-            if !m.results.is_empty() {
-                let mod_name = format!("{}_response", sanitize_method_name(&m.name));
-                let type_name = format!("{}Response", capitalize(&m.name));
-                writeln!(mod_rs, "pub mod {};", mod_name).unwrap();
-                writeln!(mod_rs, "pub use {}::{};", mod_name, type_name).unwrap();
-            }
-        }
-        files
+        // Return a single file instead of multiple files
+        vec![("latest_types".to_string(), out)]
     }
 }
 
@@ -316,11 +327,10 @@ mod tests {
         let files = generator.generate(&methods);
 
         // Check that we have the right number of files
-        assert_eq!(files.len(), 2); // 2 response files
+        assert_eq!(files.len(), 1); // 1 response file
 
-        // Check that we have the expected response files
+        // Check that we have the expected response file
         let file_names: Vec<_> = files.iter().map(|(name, _)| name).collect();
-        assert!(file_names.contains(&&"test1_response".to_string()));
-        assert!(file_names.contains(&&"test2_response".to_string()));
+        assert!(file_names.contains(&&"latest_types".to_string()));
     }
 }

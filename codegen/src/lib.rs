@@ -1,6 +1,6 @@
 //! Code generation utilities for Bitcoin Core JSON-RPC.
 //!
-//! This crate turns `ApiMethod` descriptors into ready-to-`cargo check` Rust modules.
+//! This crate turns `ApiMethod` descriptors into ready-to`cargo check` Rust modules.
 //! It focuses solely on code generation: parsing API metadata, scaffolding module hierarchies,
 //! generating transport-layer clients, strongly-typed response structs, and test-node helpers.
 //!
@@ -82,6 +82,13 @@ pub use response_type_generator::TypesCodeGenerator;
 pub mod type_registry;
 pub use type_registry::{TypeMapping, TypeRegistry};
 
+/// Sub-crate: **`transport_core_generator`**
+///
+/// Generates the core transport types: Transport trait, TransportError enum,
+/// and DefaultTransport implementation.
+pub mod transport_core_generator;
+pub use transport_core_generator::TransportCoreGenerator;
+
 /// ---------------------------------------------------------------------------
 /// Common code-generation traits and utilities
 /// ---------------------------------------------------------------------------
@@ -103,7 +110,11 @@ pub fn write_generated<P: AsRef<Path>>(
 ) -> std::io::Result<()> {
     fs::create_dir_all(&out_dir)?;
     for (name, src) in files {
-        let path = out_dir.as_ref().join(format!("{name}.rs"));
+        let path = if name.ends_with(".rs") {
+            out_dir.as_ref().join(name)
+        } else {
+            out_dir.as_ref().join(format!("{name}.rs"))
+        };
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -125,7 +136,7 @@ impl CodeGenerator for TransportCodeGenerator {
             .iter()
             .map(|m| {
                 /* ---------- fn signature ---------- */
-                let fn_args = std::iter::once("transport: &Transport".into())
+                let fn_args = std::iter::once("transport: &dyn Transport".into())
                     .chain(m.arguments.iter().map(|a| {
                         let name = if a.names[0] == "type" {
                             format!("r#{}", a.names[0])
@@ -173,7 +184,7 @@ impl CodeGenerator for TransportCodeGenerator {
                     r#"{docs}
 
 use serde_json::{{Value, json}};
-use transport::{{Transport, TransportError}};
+use crate::transport::core::{{Transport, TransportError}};
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.

@@ -75,6 +75,11 @@ impl CodeGenerator for RpcClientGenerator {
             .unwrap();
 
             /* wrap inside impl RpcClient */
+            writeln!(
+                code,
+                "use crate::transport::{{Transport, DefaultTransport}};"
+            )
+            .unwrap();
             writeln!(code, "impl crate::RpcClient {{").unwrap();
 
             /* inline Response struct if needed */

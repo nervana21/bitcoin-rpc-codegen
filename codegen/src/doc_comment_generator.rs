@@ -8,51 +8,30 @@ pub fn format_doc_comment(description: &str) -> String {
     let mut current_section = String::new();
     let mut in_section = false;
     let mut first_section = true;
+    let mut in_code_block = false;
 
     for line in description.lines() {
         let line = line.trim();
 
+        // Handle code block markers
+        if line.starts_with("```") {
+            if !in_code_block {
+                // Start of code block
+                if !current_section.is_empty() {
+                    // Process any pending section content
+                    process_section(&mut doc, &current_section, in_section, &mut first_section);
+                    current_section.clear();
+                }
+                doc.push_str("///\n");
+            }
+            doc.push_str(&format!("/// {}\n", line));
+            in_code_block = !in_code_block;
+            continue;
+        }
+
         if line.is_empty() {
             if !current_section.is_empty() {
-                // Process the current section
-                if !first_section {
-                    doc.push_str("///\n");
-                }
-                first_section = false;
-
-                if current_section.starts_with("Arguments:") {
-                    doc.push_str("/// # Arguments\n");
-                    for section_line in current_section.lines().skip(1) {
-                        let section_line = section_line.trim();
-                        if !section_line.is_empty() {
-                            doc.push_str(&format!("/// {}\n", section_line));
-                        }
-                    }
-                } else if current_section.starts_with("Result:") {
-                    doc.push_str("/// # Returns\n");
-                    for section_line in current_section.lines().skip(1) {
-                        let section_line = section_line.trim();
-                        if !section_line.is_empty() {
-                            doc.push_str(&format!("/// {}\n", section_line));
-                        }
-                    }
-                } else if current_section.starts_with("Examples:") {
-                    doc.push_str("/// # Examples\n");
-                    for section_line in current_section.lines().skip(1) {
-                        let section_line = section_line.trim();
-                        if !section_line.is_empty() {
-                            doc.push_str(&format!("/// {}\n", section_line));
-                        }
-                    }
-                } else if !in_section {
-                    // This is the description section
-                    for desc_line in current_section.lines() {
-                        let desc_line = desc_line.trim();
-                        if !desc_line.is_empty() {
-                            doc.push_str(&format!("/// {}\n", desc_line));
-                        }
-                    }
-                }
+                process_section(&mut doc, &current_section, in_section, &mut first_section);
                 current_section.clear();
             }
             in_section = false;
@@ -71,46 +50,51 @@ pub fn format_doc_comment(description: &str) -> String {
 
     // Process the last section
     if !current_section.is_empty() {
-        if !first_section {
-            doc.push_str("///\n");
-        }
-
-        if current_section.starts_with("Arguments:") {
-            doc.push_str("/// # Arguments\n");
-            for section_line in current_section.lines().skip(1) {
-                let section_line = section_line.trim();
-                if !section_line.is_empty() {
-                    doc.push_str(&format!("/// {}\n", section_line));
-                }
-            }
-        } else if current_section.starts_with("Result:") {
-            doc.push_str("/// # Returns\n");
-            for section_line in current_section.lines().skip(1) {
-                let section_line = section_line.trim();
-                if !section_line.is_empty() {
-                    doc.push_str(&format!("/// {}\n", section_line));
-                }
-            }
-        } else if current_section.starts_with("Examples:") {
-            doc.push_str("/// # Examples\n");
-            for section_line in current_section.lines().skip(1) {
-                let section_line = section_line.trim();
-                if !section_line.is_empty() {
-                    doc.push_str(&format!("/// {}\n", section_line));
-                }
-            }
-        } else if !in_section {
-            // This is the description section
-            for desc_line in current_section.lines() {
-                let desc_line = desc_line.trim();
-                if !desc_line.is_empty() {
-                    doc.push_str(&format!("/// {}\n", desc_line));
-                }
-            }
-        }
+        process_section(&mut doc, &current_section, in_section, &mut first_section);
     }
 
     doc.trim_end().to_string()
+}
+
+fn process_section(doc: &mut String, section: &str, in_section: bool, first_section: &mut bool) {
+    if !*first_section {
+        doc.push_str("///\n");
+    }
+    *first_section = false;
+
+    if section.starts_with("Arguments:") {
+        doc.push_str("/// # Arguments\n");
+        for section_line in section.lines().skip(1) {
+            let section_line = section_line.trim();
+            if !section_line.is_empty() {
+                doc.push_str(&format!("/// {}\n", section_line));
+            }
+        }
+    } else if section.starts_with("Result:") {
+        doc.push_str("/// # Returns\n");
+        for section_line in section.lines().skip(1) {
+            let section_line = section_line.trim();
+            if !section_line.is_empty() {
+                doc.push_str(&format!("/// {}\n", section_line));
+            }
+        }
+    } else if section.starts_with("Examples:") {
+        doc.push_str("/// # Examples\n");
+        for section_line in section.lines().skip(1) {
+            let section_line = section_line.trim();
+            if !section_line.is_empty() {
+                doc.push_str(&format!("/// {}\n", section_line));
+            }
+        }
+    } else if !in_section {
+        // This is the description section
+        for desc_line in section.lines() {
+            let desc_line = desc_line.trim();
+            if !desc_line.is_empty() {
+                doc.push_str(&format!("/// {}\n", desc_line));
+            }
+        }
+    }
 }
 
 /// Format a struct field with documentation
