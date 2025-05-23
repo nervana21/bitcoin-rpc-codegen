@@ -1,10 +1,11 @@
 # -----------------------------------------------------------------------------
-# Compiled outputs (target/)
+# Compiled outputs and generated files
 # -----------------------------------------------------------------------------
 /target/
 !/target/generated/
-/client/src/generated/
-codegen/resources/
+/midas/
+# /test-client/src/generated/
+/codegen/resources/
 
 # Rust artifacts
 Cargo.lock
@@ -21,9 +22,8 @@ target/tmp/
 
 # Project-specific
 /feedback/
+.DS_Store
+.cursorrules
 
 # Track main project resources
 !/resources/
-
-# Pipeline generated code
-/pipeline/src/generated/
