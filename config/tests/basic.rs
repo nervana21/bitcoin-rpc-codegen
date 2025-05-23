@@ -105,7 +105,7 @@ fn test_nonexistent_config_file() {
 
 #[test]
 fn test_custom_config_values() {
-    let _temp_dir = setup_test_env();
+    setup_test_env();
     let mut config = Config::default();
 
     // Modify Bitcoin config
