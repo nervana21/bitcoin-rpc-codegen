@@ -53,7 +53,7 @@ fn transport_codegen_with_args() {
     let (_mod, src) = &files[0];
     // 1) signature includes both args
     assert!(src.contains(
-        "pub async fn foo(transport: &Transport, arg1: serde_json::Value, arg2: serde_json::Value)"
+        "pub async fn foo(transport: &dyn Transport, arg1: serde_json::Value, arg2: serde_json::Value)"
     ));
     // 2) params vec serializes them in order
     assert!(src.contains("let params = vec![json!(arg1), json!(arg2)];"));
