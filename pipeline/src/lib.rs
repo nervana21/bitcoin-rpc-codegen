@@ -251,13 +251,14 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 bitcoin = { version = "0.32.6", features = ["rand", "serde"] }
 node = { path = "../node" }
-transport = { path = "../transport" }
-thiserror = "2.0.12"
 reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0.12"
+tokio = { version = "1.0", features = ["time"] }
+transport = { path = "../transport" }
 "#;
     fs::write(root.join("Cargo.toml"), toml)
         .with_context(|| format!("Failed to write midas Cargo.toml at {:?}", root))?;
