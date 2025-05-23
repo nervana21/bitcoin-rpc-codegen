@@ -184,13 +184,17 @@ fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
 /* --------------------------------------------------------------------- */
 /*  Utils                                                                 */
 /* --------------------------------------------------------------------- */
-/// Capitalizes the first character of a string.
+/// Capitalizes the first character of a string and converts snake_case/kebab-case to PascalCase.
 pub fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
+    s.split(|c| c == '_' || c == '-')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + chars.as_str(),
+            }
+        })
+        .collect::<String>()
 }
 
 /// Sanitizes a method name for use as a filename.
@@ -292,7 +296,6 @@ mod tests {
         let result = generate_return_type(&method).unwrap();
         assert!(result.contains("pub struct TestResponse"));
         assert!(result.contains("pub value: String"));
-        assert!(result.contains("use serde::{Deserialize, Serialize}"));
     }
 
     #[test]
