@@ -17,7 +17,7 @@ use std::{fs, path::Path};
 /// Generates `macro_rules!` definitions for version-scoped client wrappers.
 /// Downstream crates can write:
 ///
-/// ```rust
+/// ```rust,ignore
 /// impl_client_latest__getblockchaininfo!();
 /// ```
 ///
@@ -47,7 +47,7 @@ pub mod doc_comment_generator;
 ///
 /// plus a top-level `mod.rs` that re-exports everything, so downstream crates can simply:
 ///
-/// ```rust
+/// ```rust,ignore
 /// use generated::client::*;
 /// ```
 pub mod namespace_scaffolder;
