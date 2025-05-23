@@ -164,7 +164,7 @@ fn response_type_generation_with_special_fields() {
     fs::write(types_dir.join("mod.rs"), types_mod_rs).unwrap();
 
     // Verify the generated response type file
-    let response_file = types_dir.join("test_method_response.rs");
+    let response_file = types_dir.join("latest_types.rs");
     let contents = fs::read_to_string(&response_file).expect("read response file");
 
     // Verify field names are correctly transformed
