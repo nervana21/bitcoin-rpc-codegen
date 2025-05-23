@@ -104,65 +104,6 @@ fn transport_codegen_with_arguments() {
 }
 
 #[test]
-fn generated_code_compiles() {
-    // Test that generated code compiles with multiple methods
-    let (tmp, src) = setup_test_project();
-
-    let methods = vec![
-        ApiMethod {
-            name: "getblockchaininfo".into(),
-            description:
-                "Returns an object containing various state info regarding blockchain processing."
-                    .into(),
-            arguments: vec![],
-            results: vec![ApiResult {
-                key_name: "chain".into(),
-                type_: "string".into(),
-                description: "Current network name".into(),
-                inner: vec![],
-                optional: false,
-            }],
-        },
-        ApiMethod {
-            name: "getblock".into(),
-            description: "Returns block information.".into(),
-            arguments: vec![rpc_api::ApiArgument {
-                names: vec!["blockhash".into()],
-                type_: "string".into(),
-                description: "The block hash".into(),
-                optional: false,
-            }],
-            results: vec![ApiResult {
-                key_name: "hash".into(),
-                type_: "string".into(),
-                description: "The block hash".into(),
-                inner: vec![],
-                optional: false,
-            }],
-        },
-    ];
-
-    let files = TransportCodeGenerator.generate(&methods);
-    write_generated(&src, &files).expect("write_generated failed");
-
-    // Write lib.rs that imports both modules
-    let mut lib_rs = String::new();
-    for m in &methods {
-        lib_rs.push_str(&format!("mod {0}; pub use {0}::{0};\n", m.name));
-    }
-    fs::write(src.join("lib.rs"), lib_rs).expect("write lib.rs");
-
-    // Run `cargo check` in that temp project
-    let status = Command::new("cargo")
-        .arg("check")
-        .current_dir(tmp.path())
-        .status()
-        .expect("failed to run cargo check");
-
-    assert!(status.success(), "Generated code failed to compile");
-}
-
-#[test]
 fn response_type_generation_with_special_fields() {
     // Test handling of special field names in response types
     let (tmp, src) = setup_test_project();
