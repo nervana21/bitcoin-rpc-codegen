@@ -60,7 +60,7 @@ impl CodeGenerator for TestNodeGenerator {
         .unwrap();
 
         writeln!(test_node_code, "/// Low-level wrapper around a Transport.").unwrap();
-        writeln!(test_node_code, "#[derive(Clone)]").unwrap();
+        writeln!(test_node_code, "#[derive(Clone, Debug)]").unwrap();
         writeln!(test_node_code, "pub struct TestNode {{").unwrap();
         writeln!(test_node_code, "    client: Box<DefaultTransport>,").unwrap();
         writeln!(test_node_code, "}}\n").unwrap();
@@ -145,6 +145,7 @@ impl CodeGenerator for TestNodeGenerator {
             "/// High-level abstraction that combines node management and RPC functionality."
         )
         .unwrap();
+        writeln!(test_node_code, "#[derive(Debug)]").unwrap();
         writeln!(test_node_code, "pub struct BitcoinTestClient {{").unwrap();
         writeln!(test_node_code, "    manager: Box<dyn NodeManager>,").unwrap();
         writeln!(test_node_code, "    node: TestNode,").unwrap();

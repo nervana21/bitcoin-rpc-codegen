@@ -91,7 +91,7 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "}}\n").unwrap();
 
         // DefaultTransport implementation
-        writeln!(code, "#[derive(Clone)]").unwrap();
+        writeln!(code, "#[derive(Clone, Debug)]").unwrap();
         writeln!(code, "pub struct DefaultTransport {{").unwrap();
         writeln!(code, "    client: reqwest::Client,").unwrap();
         writeln!(code, "    url: String,").unwrap();

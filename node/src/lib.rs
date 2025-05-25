@@ -45,7 +45,7 @@ pub enum PortSelection {
 
 /// Trait defining the interface for a Bitcoin node manager
 #[async_trait]
-pub trait NodeManager: Send + Sync + std::any::Any {
+pub trait NodeManager: Send + Sync + std::any::Any + std::fmt::Debug {
     async fn start(&self) -> Result<()>;
     async fn stop(&mut self) -> Result<()>;
     async fn get_state(&self) -> Result<NodeState>;
@@ -54,6 +54,7 @@ pub trait NodeManager: Send + Sync + std::any::Any {
 }
 
 /// Implementation of the Bitcoin node manager
+#[derive(Debug)]
 pub struct BitcoinNodeManager {
     state: Arc<RwLock<NodeState>>,
     child: Arc<Mutex<Option<Child>>>,
