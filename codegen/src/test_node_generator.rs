@@ -154,15 +154,72 @@ impl CodeGenerator for TestNodeGenerator {
         writeln!(test_node_code, "impl BitcoinTestClient {{").unwrap();
         writeln!(
             test_node_code,
+            "    async fn wait_for_node_ready(&self, max_retries: u32, delay_ms: u64) -> Result<(), TransportError> {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "        let mut retries = 0;").unwrap();
+        writeln!(test_node_code, "        while retries < max_retries {{").unwrap();
+        writeln!(
+            test_node_code,
+            "            match self.getblockchaininfo().await {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "                Ok(_) => return Ok(()),").unwrap();
+        writeln!(test_node_code, "                Err(e) => {{").unwrap();
+        writeln!(
+            test_node_code,
+            "                    if e.to_string().contains(\"Loading block index\")"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                        || e.to_string().contains(\"Verifying blocks\")"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                        || e.to_string().contains(\"Starting up\") {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "                        retries += 1;").unwrap();
+        writeln!(
+            test_node_code,
+            "                        if retries < max_retries {{"
+        )
+        .unwrap();
+        writeln!(test_node_code, "                            tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;").unwrap();
+        writeln!(test_node_code, "                            continue;").unwrap();
+        writeln!(test_node_code, "                        }}").unwrap();
+        writeln!(test_node_code, "                    }}").unwrap();
+        writeln!(test_node_code, "                    return Err(e);").unwrap();
+        writeln!(test_node_code, "                }}").unwrap();
+        writeln!(test_node_code, "            }}").unwrap();
+        writeln!(test_node_code, "        }}").unwrap();
+        writeln!(
+            test_node_code,
+            "        Err(TransportError::Rpc(\"Node failed to become ready\".to_string()))"
+        )
+        .unwrap();
+        writeln!(test_node_code, "    }}").unwrap();
+
+        writeln!(
+            test_node_code,
             "    pub async fn new() -> Result<Self, TransportError> {{"
         )
         .unwrap();
         writeln!(
             test_node_code,
-            "        Self::new_with_config(&TestConfig::default()).await"
+            "        let client = Self::new_with_config(&TestConfig::default()).await?;"
         )
         .unwrap();
+        writeln!(
+            test_node_code,
+            "        client.wait_for_node_ready(10, 1000).await?;"
+        )
+        .unwrap();
+        writeln!(test_node_code, "        Ok(client)").unwrap();
         writeln!(test_node_code, "    }}\n").unwrap();
+
         writeln!(test_node_code, "    pub async fn new_with_config(config: &TestConfig) -> Result<Self, TransportError> {{").unwrap();
         writeln!(
             test_node_code,
@@ -187,7 +244,17 @@ impl CodeGenerator for TestNodeGenerator {
         .unwrap();
         writeln!(test_node_code, "        ));").unwrap();
         writeln!(test_node_code, "        let node = TestNode::new(client);").unwrap();
-        writeln!(test_node_code, "        Ok(Self {{ manager, node }})").unwrap();
+        writeln!(
+            test_node_code,
+            "        let client = Self {{ manager, node }};"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "        client.wait_for_node_ready(10, 1000).await?;"
+        )
+        .unwrap();
+        writeln!(test_node_code, "        Ok(client)").unwrap();
         writeln!(test_node_code, "    }}\n").unwrap();
 
         // Add method delegation for all RPC methods
