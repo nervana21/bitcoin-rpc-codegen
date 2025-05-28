@@ -1,6 +1,7 @@
 //! Build response‑type structs (`…Response`) from `ApiMethod`s
 //! and provide `TypesCodeGenerator` for the pipeline.
 
+use crate::utils::camel_to_snake_case;
 use crate::TYPE_REGISTRY;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
@@ -11,22 +12,6 @@ use std::fmt::Write as _;
 
 fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
     TYPE_REGISTRY.map_result_type(res)
-}
-
-/// Converts a camelCase string to snake_case
-fn camel_to_snake_case(s: &str) -> String {
-    let mut out = String::new();
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_ascii_uppercase() {
-            if i != 0 {
-                out.push('_');
-            }
-            out.push(ch.to_ascii_lowercase());
-        } else {
-            out.push(ch);
-        }
-    }
-    out
 }
 
 fn field_ident(res: &ApiResult, idx: usize) -> String {
