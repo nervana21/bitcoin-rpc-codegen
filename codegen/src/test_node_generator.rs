@@ -3,7 +3,8 @@
 //! Until we have a TypesCodeGenerator that emits concrete `*Response` structs
 //! every RPC simply returns `serde_json::Value`.
 
-use crate::{doc_comment_generator, CodeGenerator, TYPE_REGISTRY};
+use crate::utils::camel_to_snake_case;
+use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
 use rpc_api::ApiMethod;
 use std::fmt::Write as _;
 
@@ -104,7 +105,7 @@ impl CodeGenerator for TestNodeGenerator {
             writeln!(
                 test_node_code,
                 "{}",
-                doc_comment_generator::format_doc_comment(&m.description)
+                doc_comment::format_doc_comment(&m.description)
             )
             .unwrap();
 
@@ -292,7 +293,7 @@ impl CodeGenerator for TestNodeGenerator {
             writeln!(
                 test_node_code,
                 "{}",
-                doc_comment_generator::format_doc_comment(&m.description)
+                doc_comment::format_doc_comment(&m.description)
             )
             .unwrap();
 
@@ -380,21 +381,6 @@ impl CodeGenerator for TestNodeGenerator {
 fn rust_type_for(param_name: &str, api_ty: &str) -> &'static str {
     let (ty, _) = TYPE_REGISTRY.map_type(api_ty, param_name);
     ty
-}
-
-fn camel_to_snake_case(s: &str) -> String {
-    let mut out = String::new();
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_ascii_uppercase() {
-            if i != 0 {
-                out.push('_');
-            }
-            out.push(ch.to_ascii_lowercase());
-        } else {
-            out.push(ch);
-        }
-    }
-    out
 }
 
 fn camel(s: &str) -> String {
