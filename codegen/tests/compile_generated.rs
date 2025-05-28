@@ -1,4 +1,5 @@
-use codegen::{write_generated, CodeGenerator, TransportCodeGenerator, TypesCodeGenerator};
+use codegen::generators::TypesCodeGenerator;
+use codegen::{write_generated, CodeGenerator, TransportCodeGenerator};
 use rpc_api::{parse_api_json, ApiMethod, ApiResult};
 use std::{fs, process::Command};
 use tempfile::TempDir;

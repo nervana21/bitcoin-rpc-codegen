@@ -2,9 +2,10 @@
 //! by tying together discovery/parsing, schema normalization, and code generation.
 
 use anyhow::{Context, Result};
+use codegen::generators::TypesCodeGenerator;
 use codegen::{
     namespace_scaffolder::ModuleGenerator, test_node_generator::TestNodeGenerator, write_generated,
-    CodeGenerator, TransportCodeGenerator, TransportCoreGenerator, TypesCodeGenerator,
+    CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
 use parser::{DefaultHelpParser, HelpParser};
 use rpc_api::parse_api_json;
