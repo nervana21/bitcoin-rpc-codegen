@@ -8,21 +8,12 @@
 #![warn(missing_docs)]
 
 use anyhow::Result;
+use generators::doc_comment;
 use lazy_static::lazy_static;
 use rpc_api::ApiMethod;
 use std::{fs, path::Path};
 
-/// Sub-crate: **`rpc_method_macro_generator`**
-///
-/// Generates `macro_rules!` definitions for version-scoped client wrappers.
-/// Downstream crates can write:
-///
-/// ```rust,ignore
-/// impl_client_latest__getblockchaininfo!();
-/// ```
-///
-/// to obtain a fully-typed `fn getblockchaininfo(&self) -> ...` method on their `Client`.
-pub mod rpc_method_macro_generator;
+pub mod generators;
 
 /// Sub-crate: **`rpc_method_discovery`**
 ///
@@ -30,12 +21,6 @@ pub mod rpc_method_macro_generator;
 /// Queries the node for `help` output and converts it into an `ApiMethod` list.
 /// Useful for generating code against whichever node version is on your `PATH`.
 pub mod rpc_method_discovery;
-
-/// Sub-crate: **`doc_comment_generator`**
-///
-/// Produces Rust-doc comments and Markdown "Example:" blocks.
-/// Transforms each `ApiMethod` into triple-slash doc comments injected into generated files.
-pub mod doc_comment_generator;
 
 /// Sub-crate: **`namespace_scaffolder`**
 ///
@@ -52,28 +37,11 @@ pub mod doc_comment_generator;
 /// ```
 pub mod namespace_scaffolder;
 
-/// Sub-crate: **`rpc_client_generator`**
-///
-/// Generates the transport-layer client code: async RPC method wrappers
-/// that handle parameter serialization and response deserialization.
-pub mod rpc_client_generator;
-
 /// Sub-crate: **`test_node_generator`**
 ///
 /// Generates ergonomic TestNode methods that delegate to the underlying RPC client,
 /// simplifying common integration-test workflows.
 pub mod test_node_generator;
-
-/// Sub-crate: **`response_type_generator`**
-///
-/// Defines strongly-typed response structs for RPC methods:
-///
-/// - Parses each method's "Result:" section (or `api.json`).
-/// - Builds a `<method>_response.rs` file with appropriate `serde` attributes
-///   (`Option<T>`, `skip_serializing_if`).
-/// - Exported as `TypesCodeGenerator`, used by the transport generator.
-pub mod response_type_generator;
-pub use response_type_generator::TypesCodeGenerator;
 
 /// Sub-crate: **`type_registry`**
 ///
@@ -88,6 +56,11 @@ pub use type_registry::{TypeMapping, TypeRegistry};
 /// and DefaultTransport implementation.
 pub mod transport_core_generator;
 pub use transport_core_generator::TransportCoreGenerator;
+
+/// Sub-crate: **`utils`**
+///
+/// Utility functions for code generation.
+pub mod utils;
 
 /// Defines the core interface for generating Rust source files from a collection of
 /// Bitcoin Core RPC API methods. Implementors produce a set of `(filename, source)`
@@ -138,7 +111,7 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use response_type_generator::{capitalize, generate_return_type, sanitize_method_name};
+        use generators::response_type::{capitalize, generate_return_type, sanitize_method_name};
 
         methods
             .iter()
@@ -177,7 +150,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 /* ---------- docs + types ---------- */
-                let docs_md = doc_comment_generator::generate_example_docs(m, "latest")
+                let docs_md = doc_comment::generate_example_docs(m, "latest")
                     .trim_end()
                     .to_string();
                 let response_struct = generate_return_type(m).unwrap_or_default();
