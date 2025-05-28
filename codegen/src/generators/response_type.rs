@@ -1,7 +1,7 @@
 //! Build response‑type structs (`…Response`) from `ApiMethod`s
 //! and provide `TypesCodeGenerator` for the pipeline.
 
-use crate::utils::camel_to_snake_case;
+use crate::utils::{camel_to_snake_case, capitalize};
 use crate::TYPE_REGISTRY;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
@@ -164,27 +164,6 @@ fn build_struct(method: &ApiMethod, fields: &[ApiResult]) -> Option<String> {
 
     writeln!(&mut out, "}}\n").ok()?;
     Some(out)
-}
-
-/* --------------------------------------------------------------------- */
-/*  Utils                                                                 */
-/* --------------------------------------------------------------------- */
-/// Capitalizes the first character of a string and converts snake_case/kebab-case to PascalCase.
-pub fn capitalize(s: &str) -> String {
-    s.split(|c| c == '_' || c == '-')
-        .map(|word| {
-            let mut chars = word.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(f) => f.to_uppercase().collect::<String>() + chars.as_str(),
-            }
-        })
-        .collect::<String>()
-}
-
-/// Sanitizes a method name for use as a filename.
-pub fn sanitize_method_name(name: &str) -> String {
-    name.to_string()
 }
 
 /* --------------------------------------------------------------------- */

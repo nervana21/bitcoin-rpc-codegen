@@ -111,7 +111,8 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use generators::response_type::{capitalize, generate_return_type, sanitize_method_name};
+        use generators::response_type::generate_return_type;
+        use utils::{capitalize, sanitize_method_name};
 
         methods
             .iter()
