@@ -12,10 +12,31 @@ No more compatibility headaches—simply tell your application, "Connect to my B
 
 ## Features
 
-- **Version-Agnostic:** Supports Bitcoin Core RPC versions v17 to v28, adapting automatically based on your node's capabilities.
+- **Bitcoin Core v28 Support:** Currently supports Bitcoin Core v28 RPC API, with plans to expand to other versions.
 - **Strongly Typed API:** Eliminates guesswork and manual parsing, improving maintainability and security.
 - **Robust Error Handling:** Uses idiomatic Rust error handling (`anyhow`) to clearly communicate issues during RPC calls.
 - **Seamless Integration:** Generated code is easily integrated into your Rust projects, fitting naturally into your build process via Cargo's `OUT_DIR`.
+- **Test Node Support:** Includes a `BitcoinTestClient` for testing and development, with support for:
+  - Wallet creation and management
+  - Address generation (including bech32m)
+  - Block generation and mining
+  - Blockchain state queries
+
+## Project Structure
+
+The project is organized into several key components:
+
+- **codegen/**: Core code generation logic
+  - RPC method macro generation
+  - Response type generation
+  - Namespace scaffolding
+  - Test node generation
+- **config/**: Configuration management
+- **parser/**: Bitcoin Core RPC API parsing
+- **pipeline/**: High-level code generation pipeline
+- **rpc-api/**: RPC API definitions and types
+- **schema/**: Schema normalization and validation
+- **transport/**: JSON-RPC transport layer
 
 ## Quick Start
 
@@ -28,62 +49,47 @@ cargo install bitcoin-rpc-codegen
 Or clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/bitcoin-rpc-codegen.git
+git clone https://github.com/nervana21/bitcoin-rpc-codegen.git
 cd bitcoin-rpc-codegen
 cargo build --release
 ```
 
-Try out the simple example:
-
-```bash
-# Ensure you have `bitcoind` on your PATH
-# The example will automatically start bitcoind in regtest mode if not running
-cargo run --example auto_client
-```
-
-The example demonstrates:
-
-- Auto-starting bitcoind in regtest mode if not running
-- Auto-detecting the Bitcoin Core version
-- Making basic RPC calls
-- Clean shutdown of bitcoind **only if** it was spawned by the example (no effect if an instance was already running)
-
-## How It Works
-
-The generator automatically parses Bitcoin Core's RPC API definitions and creates:
-
-- **Rust macros** for each RPC method.
-- **Type-safe Rust structs** for request and response payloads.
-- **Dynamic adapters** to seamlessly match your node's version.
-
 ## Example Usage
 
-When writing regtest‑based tests (or any RPC code), you don’t need messy scripts or version‑sniffers. Just import our `Client` and call:
+Here's a practical example showing how to use the `BitcoinTestClient` for testing:
 
 ```rust
-use bitcoin_rpc_codegen::Client;
+use bitcoin_rpc_codegen::BitcoinTestClient;
 
-fn main() -> anyhow::Result<()> {
-    // No need to ask “which version am I talking to?”
-    // Client::new_auto always “just knows” your node’s RPC version.
-    let client = Client::new_auto(
-        "http://127.0.0.1:18443",
-        "rpcuser",
-        "rpcpassword",
-    )?;
+async fn test_bitcoin_node() -> anyhow::Result<()> {
+    // Initialize test node with sensible defaults
+    let client = BitcoinTestClient::new().await?;
 
-    // Now call any RPC method directly:
-    let height = client.getblockcount()?;
-    println!("Regtest block height: {}", height);
+    // Get initial blockchain state
+    let info = client.getblockchaininfo().await?;
+    println!("Initial blockchain state:\n{:#?}\n", info);
 
-    let info = client.getblockchaininfo()?;
-    println!("Chain info: {:?}", info);
+    // Create and fund a test wallet
+    let wallet_name = "test_wallet";
+    let _wallet = client
+        .createwallet(
+            wallet_name.to_string(),
+            false,          // disable_private_keys
+            false,          // blank
+            "".to_string(), // passphrase
+            false,          // avoid_reuse
+            true,           // descriptors
+            false,          // load_on_startup
+            false,          // external_signer
+        )
+        .await?;
+
+    // Generate a new bech32m address
+    let address = client.getnewaddress("".to_string(), "bech32m".to_string()).await?.0;
 
     Ok(())
 }
 ```
-
-Key benefit: in your integration tests or scripts, you never implement manual version‑detection logic—this library handles it for you every time.
 
 ## Development and Contributions
 
