@@ -17,15 +17,15 @@ impl CodeGenerator for TestNodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
         let mut params_code = String::new();
         let mut test_node_code = String::new();
+        let mut result_code = String::new();
         let mut mod_rs_code = String::new();
 
         /* ---------- params.rs ---------- */
         writeln!(params_code, "//! Parameter structs for RPC method calls").unwrap();
         writeln!(params_code, "use serde::Serialize;\n").unwrap();
 
-        // Only generate parameter structs for methods with multiple arguments
         for m in methods {
-            if m.arguments.len() <= 1 {
+            if m.arguments.is_empty() {
                 continue;
             }
             writeln!(params_code, "/// Parameters for the `{}` RPC call.", m.name).unwrap();
@@ -44,6 +44,25 @@ impl CodeGenerator for TestNodeGenerator {
             writeln!(params_code, "}}\n").unwrap();
         }
 
+        /* ---------- result.rs ---------- */
+        writeln!(result_code, "//! Result structs for RPC method returns").unwrap();
+        writeln!(result_code, "use serde::Deserialize;\n").unwrap();
+        for m in methods {
+            if m.results.len() != 1 {
+                continue;
+            }
+            let r = &m.results[0];
+            let ty = rust_type_for(&r.key_name, &r.type_);
+            writeln!(result_code, "#[derive(Debug, Deserialize)]").unwrap();
+            writeln!(
+                result_code,
+                "pub struct {}Result(pub {});\n",
+                camel(&m.name),
+                ty
+            )
+            .unwrap();
+        }
+
         /* ---------- test_node.rs ---------- */
         writeln!(test_node_code, "use anyhow::Result;").unwrap();
         writeln!(test_node_code, "use serde_json::Value;").unwrap();
@@ -52,7 +71,7 @@ impl CodeGenerator for TestNodeGenerator {
             "use crate::transport::core::{{TransportExt, DefaultTransport, TransportError}};"
         )
         .unwrap();
-        writeln!(test_node_code, "use crate::test_node::params;").unwrap();
+        writeln!(test_node_code, "use crate::test_node::result;").unwrap();
         writeln!(
             test_node_code,
             "use node::{{NodeManager, TestConfig, BitcoinNodeManager}};\n"
@@ -76,7 +95,11 @@ impl CodeGenerator for TestNodeGenerator {
 
         for m in methods {
             let method_snake = camel_to_snake_case(&m.name);
-            let ret_ty = if m.results.is_empty() { "()" } else { "Value" };
+            let ret_ty = if m.results.len() == 1 {
+                format!("result::{}Result", camel(&m.name))
+            } else {
+                "Value".to_string()
+            };
 
             writeln!(
                 test_node_code,
@@ -85,31 +108,7 @@ impl CodeGenerator for TestNodeGenerator {
             )
             .unwrap();
 
-            if m.arguments.len() == 1 {
-                let arg_name = camel_to_snake_case(&m.arguments[0].names[0]);
-                let arg_ty = rust_type_for(&m.arguments[0].names[0], &m.arguments[0].type_);
-                writeln!(
-                    test_node_code,
-                    "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{",
-                    method_snake,
-                    format!("{}: {}", arg_name, arg_ty),
-                    ret_ty
-                )
-                .unwrap();
-                // Pass the argument directly as a JSON value
-                writeln!(
-                    test_node_code,
-                    "        let params = serde_json::to_value({})?;",
-                    arg_name
-                )
-                .unwrap();
-                writeln!(
-                    test_node_code,
-                    "        Ok(self.client.call(\"{}\", &[params]).await?)",
-                    m.name
-                )
-                .unwrap();
-            } else if m.arguments.is_empty() {
+            if m.arguments.is_empty() {
                 writeln!(
                     test_node_code,
                     "    pub async fn {}(&self) -> Result<{}, TransportError> {{",
@@ -118,21 +117,52 @@ impl CodeGenerator for TestNodeGenerator {
                 .unwrap();
                 writeln!(
                     test_node_code,
-                    "        Ok(self.client.call(\"{}\", &[]).await?)",
-                    m.name
+                    "        Ok(self.client.call::<{}>(\"{}\", &[]).await?.into())",
+                    ret_ty, m.name
                 )
                 .unwrap();
             } else {
-                writeln!(test_node_code, "    pub async fn {}(&self, params: params::{}Params) -> Result<{}, TransportError> {{", method_snake, camel(&m.name), ret_ty).unwrap();
+                // Generate direct parameter list
+                let mut param_list = String::new();
+                for (i, arg) in m.arguments.iter().enumerate() {
+                    if i > 0 {
+                        param_list.push_str(", ");
+                    }
+                    let param_name = if arg.names[0] == "type" {
+                        "_type"
+                    } else {
+                        &camel_to_snake_case(&arg.names[0])
+                    };
+                    let param_ty = rust_type_for(&arg.names[0], &arg.type_);
+                    write!(param_list, "{}: {}", param_name, param_ty).unwrap();
+                }
+
                 writeln!(
                     test_node_code,
-                    "        let params = serde_json::to_value(params)?;"
+                    "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{",
+                    method_snake, param_list, ret_ty
                 )
                 .unwrap();
+
+                // Generate parameter serialization
+                writeln!(test_node_code, "        let mut vec = vec![];").unwrap();
+                for arg in &m.arguments {
+                    let name = if arg.names[0] == "type" {
+                        "_type"
+                    } else {
+                        &camel_to_snake_case(&arg.names[0])
+                    };
+                    writeln!(
+                        test_node_code,
+                        "        vec.push(serde_json::to_value({})?);",
+                        name
+                    )
+                    .unwrap();
+                }
                 writeln!(
                     test_node_code,
-                    "        Ok(self.client.call(\"{}\", &[params]).await?)",
-                    m.name
+                    "        Ok(self.client.call::<{}>(\"{}\", &vec).await?.into())",
+                    ret_ty, m.name
                 )
                 .unwrap();
             }
@@ -168,28 +198,27 @@ impl CodeGenerator for TestNodeGenerator {
         writeln!(test_node_code, "                Err(e) => {{").unwrap();
         writeln!(
             test_node_code,
-            "                    if e.to_string().contains(\"Loading block index\")"
+            "                    let err_str = e.to_string();"
         )
         .unwrap();
         writeln!(
             test_node_code,
-            "                        || e.to_string().contains(\"Verifying blocks\")"
+            "                    if err_str.contains(\"Loading\")"
         )
         .unwrap();
         writeln!(
             test_node_code,
-            "                        || e.to_string().contains(\"Starting up\") {{"
+            "                        || err_str.contains(\"Verifying\")"
+        )
+        .unwrap();
+        writeln!(
+            test_node_code,
+            "                        || err_str.contains(\"Starting\") {{"
         )
         .unwrap();
         writeln!(test_node_code, "                        retries += 1;").unwrap();
-        writeln!(
-            test_node_code,
-            "                        if retries < max_retries {{"
-        )
-        .unwrap();
-        writeln!(test_node_code, "                            tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;").unwrap();
-        writeln!(test_node_code, "                            continue;").unwrap();
-        writeln!(test_node_code, "                        }}").unwrap();
+        writeln!(test_node_code, "                        tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;").unwrap();
+        writeln!(test_node_code, "                        continue;").unwrap();
         writeln!(test_node_code, "                    }}").unwrap();
         writeln!(test_node_code, "                    return Err(e);").unwrap();
         writeln!(test_node_code, "                }}").unwrap();
@@ -197,10 +226,10 @@ impl CodeGenerator for TestNodeGenerator {
         writeln!(test_node_code, "        }}").unwrap();
         writeln!(
             test_node_code,
-            "        Err(TransportError::Rpc(\"Node failed to become ready\".to_string()))"
+            "        Err(TransportError::Rpc(\"Node failed to become ready\".into()))"
         )
         .unwrap();
-        writeln!(test_node_code, "    }}").unwrap();
+        writeln!(test_node_code, "    }}\n").unwrap();
 
         writeln!(
             test_node_code,
@@ -209,15 +238,9 @@ impl CodeGenerator for TestNodeGenerator {
         .unwrap();
         writeln!(
             test_node_code,
-            "        let client = Self::new_with_config(&TestConfig::default()).await?;"
+            "        Self::new_with_config(&TestConfig::default()).await"
         )
         .unwrap();
-        writeln!(
-            test_node_code,
-            "        client.wait_for_node_ready(10, 1000).await?;"
-        )
-        .unwrap();
-        writeln!(test_node_code, "        Ok(client)").unwrap();
         writeln!(test_node_code, "    }}\n").unwrap();
 
         writeln!(test_node_code, "    pub async fn new_with_config(config: &TestConfig) -> Result<Self, TransportError> {{").unwrap();
@@ -246,21 +269,25 @@ impl CodeGenerator for TestNodeGenerator {
         writeln!(test_node_code, "        let node = TestNode::new(client);").unwrap();
         writeln!(
             test_node_code,
-            "        let client = Self {{ manager, node }};"
+            "        let btc_client = Self {{ manager, node }};"
         )
         .unwrap();
         writeln!(
             test_node_code,
-            "        client.wait_for_node_ready(10, 1000).await?;"
+            "        btc_client.wait_for_node_ready(10, 1000).await?;"
         )
         .unwrap();
-        writeln!(test_node_code, "        Ok(client)").unwrap();
+        writeln!(test_node_code, "        Ok(btc_client)").unwrap();
         writeln!(test_node_code, "    }}\n").unwrap();
 
         // Add method delegation for all RPC methods
         for m in methods {
             let method_snake = camel_to_snake_case(&m.name);
-            let ret_ty = if m.results.is_empty() { "()" } else { "Value" };
+            let ret_ty = if m.results.len() == 1 {
+                format!("result::{}Result", camel(&m.name))
+            } else {
+                "Value".to_string()
+            };
 
             writeln!(
                 test_node_code,
@@ -269,42 +296,49 @@ impl CodeGenerator for TestNodeGenerator {
             )
             .unwrap();
 
-            if m.arguments.len() == 1 {
-                let arg_name = camel_to_snake_case(&m.arguments[0].names[0]);
-                let arg_ty = rust_type_for(&m.arguments[0].names[0], &m.arguments[0].type_);
-                writeln!(
-                    test_node_code,
-                    "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{",
-                    method_snake,
-                    format!("{}: {}", arg_name, arg_ty),
-                    ret_ty
-                )
-                .unwrap();
-                writeln!(
-                    test_node_code,
-                    "        Ok(self.node.{}({}).await?)",
-                    method_snake, arg_name
-                )
-                .unwrap();
-            } else if m.arguments.is_empty() {
+            if m.arguments.is_empty() {
                 writeln!(
                     test_node_code,
                     "    pub async fn {}(&self) -> Result<{}, TransportError> {{",
                     method_snake, ret_ty
                 )
                 .unwrap();
+                writeln!(test_node_code, "        self.node.{}().await", method_snake).unwrap();
+            } else {
+                // Generate direct parameter list
+                let mut param_list = String::new();
+                for (i, arg) in m.arguments.iter().enumerate() {
+                    if i > 0 {
+                        param_list.push_str(", ");
+                    }
+                    let param_name = if arg.names[0] == "type" {
+                        "_type"
+                    } else {
+                        &camel_to_snake_case(&arg.names[0])
+                    };
+                    let param_ty = rust_type_for(&arg.names[0], &arg.type_);
+                    write!(param_list, "{}: {}", param_name, param_ty).unwrap();
+                }
+
                 writeln!(
                     test_node_code,
-                    "        Ok(self.node.{}().await?)",
-                    method_snake
+                    "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{",
+                    method_snake, param_list, ret_ty
                 )
                 .unwrap();
-            } else {
-                writeln!(test_node_code, "    pub async fn {}(&self, params: params::{}Params) -> Result<{}, TransportError> {{", method_snake, camel(&m.name), ret_ty).unwrap();
                 writeln!(
                     test_node_code,
-                    "        Ok(self.node.{}(params).await?)",
-                    method_snake
+                    "        self.node.{}({}).await",
+                    method_snake,
+                    m.arguments
+                        .iter()
+                        .map(|arg| if arg.names[0] == "type" {
+                            "_type".to_string()
+                        } else {
+                            camel_to_snake_case(&arg.names[0])
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 )
                 .unwrap();
             }
@@ -326,6 +360,7 @@ impl CodeGenerator for TestNodeGenerator {
 
         writeln!(mod_rs_code, "//! Test node module for Bitcoin RPC testing").unwrap();
         writeln!(mod_rs_code, "pub mod params;").unwrap();
+        writeln!(mod_rs_code, "pub mod result;").unwrap();
         writeln!(mod_rs_code, "pub mod test_node;").unwrap();
         writeln!(
             mod_rs_code,
@@ -336,6 +371,7 @@ impl CodeGenerator for TestNodeGenerator {
         vec![
             ("test_node.rs".to_string(), test_node_code),
             ("params.rs".to_string(), params_code),
+            ("result.rs".to_string(), result_code),
             ("mod.rs".to_string(), mod_rs_code),
         ]
     }
