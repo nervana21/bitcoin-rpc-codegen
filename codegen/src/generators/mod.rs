@@ -1,12 +1,6 @@
 //! This crate contains the code generators for the Bitcoin RPC API.
 //!
 //! The generators are responsible for generating the code for the Bitcoin RPC API.
-//!
-//! The generators are responsible for generating the code for the Bitcoin RPC API.
-//!
-//! The generators are responsible for generating the code for the Bitcoin RPC API.
-//!
-//! The generators are responsible for generating the code for the Bitcoin RPC API.
 
 /// Sub-crate generates: **`doc_comment`**
 ///
