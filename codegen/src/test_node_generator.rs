@@ -364,7 +364,6 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          \n\
          let max_retries = 60; // Increased from 30 to 60 for slower systems\n\
          let mut retries = 0;\n\
-         let mut last_error = String::new();\n\
          \n\
          loop {{\n\
              match node_client.getblockchaininfo().await {{\n\
@@ -373,7 +372,6 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
                      // Check if the error matches any known initialization state\n\
                      let is_init_state = init_states.iter().any(|state| e.contains(state));\n\
                      if is_init_state && retries < max_retries {{\n\
-                         last_error = e.clone();\n\
                          println!(\"[DEBUG] Waiting for initialization: {{}} (attempt {{}}/{{}})\", e, retries + 1, max_retries);\n\
                          tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\
                          retries += 1;\n\
