@@ -29,21 +29,34 @@ pub fn format_doc_comment(description: &str) -> String {
             continue;
         }
 
-        if line.is_empty() {
+        // Process the line
+        let processed_line = if !in_code_block {
+            // Replace backticks with double backticks
+            let line = line.replace('`', "``");
+            // Replace single quotes with double quotes when they look like string literals
+            let line = line.replace("'", "\"");
+            // Add space before possessive apostrophes
+            let line = line.replace("'s ", " 's ");
+            line
+        } else {
+            line.to_string()
+        };
+
+        if processed_line.is_empty() {
             if !current_section.is_empty() {
                 process_section(&mut doc, &current_section, in_section, &mut first_section);
                 current_section.clear();
             }
             in_section = false;
         } else {
-            if line.starts_with("Arguments:")
-                || line.starts_with("Result:")
-                || line.starts_with("Examples:")
+            if processed_line.starts_with("Arguments:")
+                || processed_line.starts_with("Result:")
+                || processed_line.starts_with("Examples:")
             {
                 in_section = true;
                 current_section.clear();
             }
-            current_section.push_str(line);
+            current_section.push_str(&processed_line);
             current_section.push('\n');
         }
     }
