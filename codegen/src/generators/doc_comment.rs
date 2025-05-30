@@ -196,7 +196,7 @@ Examples:
 ///
 /// # Examples
 /// > bitcoin-cli command arg1 arg2
-/// > curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}' -H 'content-type: application/json' http://127.0.0.1:8332/"#;
+/// > curl --user myusername --data-binary "{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}" -H "content-type: application/json" http://127.0.0.1:8332/"#;
 
         assert_eq!(format_doc_comment(input), expected);
     }
