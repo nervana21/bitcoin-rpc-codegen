@@ -218,15 +218,19 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     // 6) Root `lib.rs`
     let lib_rs = out_dir.join("lib.rs");
     println!("[diagnostic] writing root lib.rs at {:?}", lib_rs);
-    let lib_content = "//! `midas` — generated Bitcoin RPC test-node toolkit\n\n".to_string()
-        + "pub mod transport;\n"
-        + "pub mod types;\n"
-        + "pub mod test_node;\n\n"
-        + "pub use node::{NodeManager, TestConfig, BitcoinNodeManager};\n\n"
-        + "pub use transport::{Transport, DefaultTransport, TransportError};\n"
-        + "pub use test_node::test_node::{TestNode, BitcoinTestClient};\n"
-        + "pub use types::*;\n";
-    fs::write(&lib_rs, lib_content)
+    let lib_rs_content = format!(
+        r#"//! Generated Bitcoin RPC client library.
+//!
+//! This library provides a strongly-typed interface to the Bitcoin RPC API.
+//! It is generated from the Bitcoin Core RPC API documentation.
+
+pub mod test_node;
+pub mod transport;
+
+pub use test_node::test_node::BitcoinTestClient;
+"#
+    );
+    fs::write(&lib_rs, lib_rs_content)
         .with_context(|| format!("Failed to write lib.rs at {:?}", lib_rs))?;
 
     ModuleGenerator::new(vec!["latest".into()], out_dir.to_path_buf())
