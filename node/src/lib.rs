@@ -120,6 +120,7 @@ impl NodeManager for BitcoinNodeManager {
             "-rpcallowip=127.0.0.1",
             "-fallbackfee=0.0002",
             "-server=1",
+            "-prune=1",
             &format!("-rpcuser={}", self.rpc_username),
             &format!("-rpcpassword={}", self.rpc_password),
         ]);
@@ -136,7 +137,17 @@ impl NodeManager for BitcoinNodeManager {
         tokio::spawn(async move {
             let mut lines = stderr_reader.lines();
             while let Ok(Some(line)) = lines.next_line().await {
-                error!("bitcoind stderr: {}", line);
+                error!("[DEBUG] bitcoind stderr: {}", line);
+            }
+        });
+
+        // Read stdout in a separate task
+        let stdout = child.stdout.take().unwrap();
+        let stdout_reader = tokio::io::BufReader::new(stdout);
+        tokio::spawn(async move {
+            let mut lines = stdout_reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                info!("[DEBUG] bitcoind stdout: {}", line);
             }
         });
 
@@ -157,6 +168,11 @@ impl NodeManager for BitcoinNodeManager {
             }
 
             // Try to connect to RPC
+            info!(
+                "[DEBUG] Attempt {}: Trying to connect to RPC at port {}",
+                attempts + 1,
+                self.rpc_port
+            );
             let client = reqwest::Client::new();
             match client
                 .post(format!("http://127.0.0.1:{}/", self.rpc_port))
