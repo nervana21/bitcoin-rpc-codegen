@@ -16,6 +16,16 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "use serde;").unwrap();
         writeln!(code, "\n").unwrap();
 
+        // Add the wallet methods module
+        writeln!(code, "/// List of Bitcoin Core wallet RPC methods").unwrap();
+        writeln!(code, "pub mod wallet_methods {{").unwrap();
+        writeln!(code, "    pub const WALLET_METHODS: &[&str] = &[").unwrap();
+        for method in crate::wallet_methods::WALLET_METHODS {
+            writeln!(code, "        \"{}\",", method).unwrap();
+        }
+        writeln!(code, "    ];").unwrap();
+        writeln!(code, "}}\n").unwrap();
+
         // TransportError enum
         writeln!(
             code,
@@ -96,6 +106,7 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "    client: reqwest::Client,").unwrap();
         writeln!(code, "    url: String,").unwrap();
         writeln!(code, "    auth: Option<(String, String)>,").unwrap();
+        writeln!(code, "    wallet_name: Option<String>,").unwrap();
         writeln!(code, "}}\n").unwrap();
 
         writeln!(code, "impl DefaultTransport {{").unwrap();
@@ -108,8 +119,19 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "            client: reqwest::Client::new(),").unwrap();
         writeln!(code, "            url: url.into(),").unwrap();
         writeln!(code, "            auth,").unwrap();
+        writeln!(code, "            wallet_name: None,").unwrap();
         writeln!(code, "        }}").unwrap();
-        writeln!(code, "    }}").unwrap();
+        writeln!(code, "    }}\n").unwrap();
+
+        writeln!(
+            code,
+            "    pub fn with_wallet(mut self, wallet_name: impl Into<String>) -> Self {{"
+        )
+        .unwrap();
+        writeln!(code, "        self.wallet_name = Some(wallet_name.into());").unwrap();
+        writeln!(code, "        self").unwrap();
+        writeln!(code, "    }}\n").unwrap();
+
         writeln!(code, "}}\n").unwrap();
 
         writeln!(code, "impl Transport for DefaultTransport {{").unwrap();
@@ -117,6 +139,7 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "        let client = self.client.clone();").unwrap();
         writeln!(code, "        let url = self.url.clone();").unwrap();
         writeln!(code, "        let auth = self.auth.clone();").unwrap();
+        writeln!(code, "        let wallet_name = self.wallet_name.clone();").unwrap();
         writeln!(code, "        Box::pin(async move {{").unwrap();
         writeln!(code, "            let request = serde_json::json!({{").unwrap();
         writeln!(code, "                \"jsonrpc\": \"2.0\",").unwrap();
@@ -124,10 +147,37 @@ impl CodeGenerator for TransportCoreGenerator {
         writeln!(code, "                \"method\": method,").unwrap();
         writeln!(code, "                \"params\": params,").unwrap();
         writeln!(code, "            }});").unwrap();
-        writeln!(code, "\n").unwrap();
+        writeln!(
+            code,
+            "            eprintln!(\"[debug] Sending request to {{}}: {{}}\", url, request);"
+        )
+        .unwrap();
+
+        // Check if this is a wallet method and we have a wallet name
+        writeln!(
+            code,
+            "            let url = if let Some(wallet) = &wallet_name {{"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                if wallet_methods::WALLET_METHODS.contains(&method) {{"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                    format!(\"{{}}/wallet/{{}}\", url.trim_end_matches('/'), wallet)"
+        )
+        .unwrap();
+        writeln!(code, "                }} else {{").unwrap();
+        writeln!(code, "                    url").unwrap();
+        writeln!(code, "                }}").unwrap();
+        writeln!(code, "            }} else {{").unwrap();
+        writeln!(code, "                url").unwrap();
+        writeln!(code, "            }};").unwrap();
+
         writeln!(code, "            let mut req = client.post(&url)").unwrap();
         writeln!(code, "                .json(&request);").unwrap();
-        writeln!(code, "\n").unwrap();
         writeln!(
             code,
             "            if let Some((username, password)) = &auth {{"
@@ -139,17 +189,81 @@ impl CodeGenerator for TransportCoreGenerator {
         )
         .unwrap();
         writeln!(code, "            }}").unwrap();
-        writeln!(code, "\n").unwrap();
-        writeln!(code, "            let response = req.send().await?;").unwrap();
+        writeln!(code, "            let response = match req.send().await {{").unwrap();
+        writeln!(code, "                Ok(resp) => {{").unwrap();
         writeln!(
             code,
-            "            let json: Value = response.json().await?;"
+            "                    eprintln!(\"[debug] Response status: {{}}\", resp.status());"
         )
         .unwrap();
-        writeln!(code, "\n").unwrap();
+        writeln!(code, "                    resp").unwrap();
+        writeln!(code, "                }},").unwrap();
+        writeln!(code, "                Err(e) => {{").unwrap();
+        writeln!(
+            code,
+            "                    eprintln!(\"[debug] Request failed: {{}}\", e);"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                    return Err(TransportError::Http(e.to_string()));"
+        )
+        .unwrap();
+        writeln!(code, "                }}").unwrap();
+        writeln!(code, "            }};").unwrap();
+        writeln!(
+            code,
+            "            let text = match response.text().await {{"
+        )
+        .unwrap();
+        writeln!(code, "                Ok(t) => {{").unwrap();
+        writeln!(
+            code,
+            "                    eprintln!(\"[debug] Response body: {{}}\", t);"
+        )
+        .unwrap();
+        writeln!(code, "                    t").unwrap();
+        writeln!(code, "                }},").unwrap();
+        writeln!(code, "                Err(e) => {{").unwrap();
+        writeln!(
+            code,
+            "                    eprintln!(\"[debug] Failed to get response text: {{}}\", e);"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                    return Err(TransportError::Http(e.to_string()));"
+        )
+        .unwrap();
+        writeln!(code, "                }}").unwrap();
+        writeln!(code, "            }};").unwrap();
+        writeln!(
+            code,
+            "            let json: Value = match serde_json::from_str(&text) {{"
+        )
+        .unwrap();
+        writeln!(code, "                Ok(j) => j,").unwrap();
+        writeln!(code, "                Err(e) => {{").unwrap();
+        writeln!(
+            code,
+            "                    eprintln!(\"[debug] Failed to parse JSON: {{}}\", e);"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                    return Err(TransportError::Json(e.to_string()));"
+        )
+        .unwrap();
+        writeln!(code, "                }}").unwrap();
+        writeln!(code, "            }};").unwrap();
         writeln!(
             code,
             "            if let Some(error) = json.get(\"error\") {{"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "                eprintln!(\"[debug] RPC error: {{}}\", error);"
         )
         .unwrap();
         writeln!(
@@ -158,14 +272,8 @@ impl CodeGenerator for TransportCoreGenerator {
         )
         .unwrap();
         writeln!(code, "            }}").unwrap();
-        writeln!(code, "\n").unwrap();
         writeln!(code, "            let result = json.get(\"result\")").unwrap();
-        writeln!(
-            code,
-            "                .ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))?;"
-        )
-        .unwrap();
-        writeln!(code, "\n").unwrap();
+        writeln!(code, "                .ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))?;").unwrap();
         writeln!(code, "            Ok(result.clone())").unwrap();
         writeln!(code, "        }})").unwrap();
         writeln!(code, "    }}").unwrap();
