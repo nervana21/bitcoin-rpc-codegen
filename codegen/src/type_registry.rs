@@ -120,6 +120,11 @@ impl TypeRegistry {
 
     /// Map a Bitcoin RPC type to a Rust type
     pub fn map_type(&self, type_str: &str, field_name: &str) -> (&'static str, bool) {
+        // Special case for fee_rate to always be Option<Amount>
+        if field_name == "fee_rate" {
+            return ("bitcoin::Amount", true);
+        }
+
         if let Some(mappings) = self.type_mappings.get(type_str) {
             // First try exact matches
             for mapping in mappings {
