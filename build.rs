@@ -7,7 +7,7 @@ fn main() -> Result<()> {
     // Tell Cargo to rerun this build script if the input files change
     println!("cargo:rerun-if-changed=api.json");
     println!("cargo:rerun-if-changed=help.txt");
-    println!("cargo:rerun-if-changed=midas");
+    println!("cargo:rerun-if-changed=bitcoin-rpc-midas");
 
     // Get workspace root and input path
     let workspace_root = env::current_dir().context("Failed to get current working directory")?;

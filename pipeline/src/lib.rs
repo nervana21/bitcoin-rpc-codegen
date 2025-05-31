@@ -1,4 +1,4 @@
-//! High-level pipeline that generates a self-contained `midas` crate
+//! High-level pipeline that generates a self-contained `bitcoin-rpc-midas` crate
 //! by tying together discovery/parsing, schema normalization, and code generation.
 
 use anyhow::{Context, Result};
@@ -15,10 +15,10 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 /* --------------------------------------------------------------------- */
-/*  Public entry: run() – build `midas` crate                            */
+/*  Public entry: run() – build `bitcoin-rpc-midas` crate                            */
 /* --------------------------------------------------------------------- */
-/// Generates a fully self-contained `midas` crate under the workspace root.
-/// Always emits into `<workspace-root>/midas` and prints verbose diagnostics.
+/// Generates a fully self-contained `bitcoin-rpc-midas` crate under the workspace root.
+/// Always emits into `<workspace-root>/bitcoin-rpc-midas` and prints verbose diagnostics.
 pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     // Find project root by looking for Cargo.toml
     let project_root = find_project_root()?;
@@ -47,15 +47,15 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         ));
     }
 
-    let crate_root = project_root.join("midas");
+    let crate_root = project_root.join("bitcoin-rpc-midas");
     println!("[diagnostic] target crate path: {:?}", crate_root);
 
-    // Remove existing midas directory if it exists
+    // Remove existing bitcoin-rpc-midas directory if it exists
     if crate_root.exists() {
-        println!("[diagnostic] removing existing midas directory");
+        println!("[diagnostic] removing existing bitcoin-rpc-midas directory");
         fs::remove_dir_all(&crate_root).with_context(|| {
             format!(
-                "Failed to remove existing midas directory: {:?}",
+                "Failed to remove existing bitcoin-rpc-midas directory: {:?}",
                 crate_root
             )
         })?;
@@ -76,16 +76,19 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         .with_context(|| format!("generate_into failed for src_dir {:?}", src_dir))?;
 
     // List resulting crate contents for verification
-    println!("[diagnostic] contents of midas/src:");
-    for entry in fs::read_dir(&src_dir)
-        .with_context(|| format!("Failed to read midas/src directory: {:?}", src_dir))?
-    {
+    println!("[diagnostic] contents of bitcoin-rpc-midas/src:");
+    for entry in fs::read_dir(&src_dir).with_context(|| {
+        format!(
+            "Failed to read bitcoin-rpc-midas/src directory: {:?}",
+            src_dir
+        )
+    })? {
         let entry = entry?;
         println!("  - {:?}", entry.path());
     }
 
     println!(
-        "✅ Completed generation of `midas` crate at {:?}",
+        "✅ Completed generation of `bitcoin-rpc-midas` crate at {:?}",
         crate_root
     );
     Ok(())
@@ -242,7 +245,7 @@ pub use test_node::test_node::BitcoinTestClient;
 }
 
 /* --------------------------------------------------------------------- */
-/*  Utility: write minimal Cargo.toml for `midas`                      */
+/*  Utility: write minimal Cargo.toml for `bitcoin-rpc-midas`                      */
 /* --------------------------------------------------------------------- */
 fn write_cargo_toml(root: &Path) -> Result<()> {
     println!(
@@ -250,7 +253,7 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
         root.join("Cargo.toml")
     );
     let toml = r#"[package]
-name = "midas"
+name = "bitcoin-rpc-midas"
 version = "0.1.0"
 edition = "2021"
 
@@ -266,7 +269,7 @@ tokio = { version = "1.0", features = ["time"] }
 transport = { path = "../transport" }
 "#;
     fs::write(root.join("Cargo.toml"), toml)
-        .with_context(|| format!("Failed to write midas Cargo.toml at {:?}", root))?;
+        .with_context(|| format!("Failed to write bitcoin-rpc-midas Cargo.toml at {:?}", root))?;
     Ok(())
 }
 

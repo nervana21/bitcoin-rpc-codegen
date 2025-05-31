@@ -346,7 +346,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          /// This allows for custom node configuration and lifecycle management.\n\
          /// # Example\n\
          /// ```no_run\n\
-         /// use midas::test_node::test_node::{{BitcoinTestClient, NodeManager}};\n\
+         /// use bitcoin_rpc_midas::test_node::test_node::{{BitcoinTestClient, NodeManager}};\n\
          /// #[tokio::main]\n\
          /// async fn main() -> anyhow::Result<()> {{\n\
          ///     let node_manager = Box::new(YourNodeManager::new()?);\n\
@@ -585,7 +585,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          /// 3. Reconsiders the genesis block to maintain a valid chain\n\
          /// # Example\n\
          /// ```no_run\n\
-         /// use midas::test_node::test_node::BitcoinTestClient;\n\
+         /// use bitcoin_rpc_midas::test_node::test_node::BitcoinTestClient;\n\
          /// #[tokio::main]\n\
          /// async fn main() -> anyhow::Result<()> {{\n\
          ///     let mut client = BitcoinTestClient::new().await?;\n\
@@ -773,7 +773,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          /// This will start a new Bitcoin node in regtest mode.\n\
          /// # Example\n\
          /// ```no_run\n\
-         /// use midas::test_node::test_node::BitcoinTestClient;\n\
+         /// use bitcoin_rpc_midas::test_node::test_node::BitcoinTestClient;\n\
          /// #[tokio::main]\n\
          /// async fn main() -> anyhow::Result<()> {{\n\
          ///     let mut client = BitcoinTestClient::new().await?;\n\
@@ -803,7 +803,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          /// This is a more ergonomic wrapper around sendtoaddress that prevents specifying both conf_target and fee_rate.\n\
          /// # Example\n\
          /// ```no_run\n\
-         /// use midas::test_node::test_node::BitcoinTestClient;\n\
+         /// use bitcoin_rpc_midas::test_node::test_node::BitcoinTestClient;\n\
          /// use bitcoin::Amount;\n\
          /// #[tokio::main]\n\
          /// async fn main() -> anyhow::Result<()> {{\n\
