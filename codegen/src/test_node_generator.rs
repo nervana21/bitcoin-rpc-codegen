@@ -108,9 +108,13 @@ impl CodeGenerator for TestNodeGenerator {
     }
 }
 
-fn rust_type_for(param_name: &str, api_ty: &str) -> &'static str {
-    let (ty, _) = TYPE_REGISTRY.map_type(api_ty, param_name);
-    ty
+fn rust_type_for(param_name: &str, api_ty: &str) -> String {
+    let (base_ty, is_option) = TYPE_REGISTRY.map_type(api_ty, param_name);
+    if is_option {
+        format!("Option<{}>", base_ty)
+    } else {
+        base_ty.to_string()
+    }
 }
 
 fn camel(s: &str) -> String {
@@ -139,6 +143,8 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
         "use crate::transport::core::{{TransportExt, DefaultTransport, TransportError}};\n"
     )
     .unwrap();
+    writeln!(code, "use bitcoin::Amount;").unwrap();
+    writeln!(code, "use std::option::Option;\n").unwrap();
 
     writeln!(code, "#[derive(Debug, Clone)]").unwrap();
     writeln!(code, "pub struct {} {{", client_name).unwrap();
@@ -200,7 +206,12 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
                 } else {
                     &camel_to_snake_case(&arg.names[0])
                 };
-                let param_ty = rust_type_for(&arg.names[0], &arg.type_);
+                // Special case for fee_rate to always be Option<Amount>
+                let param_ty = if arg.names[0] == "fee_rate" {
+                    "Option<Amount>".to_string()
+                } else {
+                    rust_type_for(&arg.names[0], &arg.type_)
+                };
                 write!(param_list, "{}: {}", param_name, param_ty).unwrap();
             }
 
@@ -218,7 +229,15 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
                 } else {
                     &camel_to_snake_case(&arg.names[0])
                 };
-                writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
+                if arg.names[0] == "fee_rate" {
+                    writeln!(
+                        code,
+                        "        vec.push(match {} {{ Some(v) => serde_json::to_value(v.to_btc())?, None => serde_json::Value::Null }});",
+                        name
+                    ).unwrap();
+                } else {
+                    writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
+                }
             }
             writeln!(
                 code,
@@ -248,6 +267,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     writeln!(code, "use super::node::BitcoinNodeClient;").unwrap();
     writeln!(code, "use super::wallet::BitcoinWalletClient;\n").unwrap();
     writeln!(code, "use std::str::FromStr;").unwrap();
+    writeln!(code, "use bitcoin::Amount;\n").unwrap();
 
     // Add a trait for node management
     writeln!(
@@ -775,6 +795,86 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     .unwrap();
     writeln!(code, "        Self::new_with_manager(node_manager).await").unwrap();
     writeln!(code, "    }}\n").unwrap();
+
+    // Update the helper methods for sendtoaddress
+    writeln!(
+        code,
+        "    /// Helper method to send bitcoin to an address with either a confirmation target or fee rate.\n\
+         /// This is a more ergonomic wrapper around sendtoaddress that prevents specifying both conf_target and fee_rate.\n\
+         /// # Example\n\
+         /// ```no_run\n\
+         /// use midas::test_node::test_node::BitcoinTestClient;\n\
+         /// use bitcoin::Amount;\n\
+         /// #[tokio::main]\n\
+         /// async fn main() -> anyhow::Result<()> {{\n\
+         ///     let mut client = BitcoinTestClient::new().await?;\n\
+         ///     // Send with confirmation target\n\
+         ///     client.send_to_address_with_conf_target(\n\
+         ///         \"bc1q...\",\n\
+         ///         Amount::from_btc(0.1).unwrap(),\n\
+         ///         6u64,\n\
+         ///         \"economical\".to_string(),\n\
+         ///     ).await?;\n\
+         ///     // Or send with fee rate\n\
+         ///     client.send_to_address_with_fee_rate(\n\
+         ///         \"bc1q...\",\n\
+         ///         Amount::from_btc(0.1).unwrap(),\n\
+         ///         Amount::from_sat(1.1),\n\
+         ///     ).await?;\n\
+         ///     Ok(())\n\
+         /// }}\n\
+         /// ```"
+    )
+    .unwrap();
+    writeln!(
+        code,
+        "    pub async fn send_to_address_with_conf_target(\n\
+         &self,\n\
+         address: String,\n\
+         amount: Amount,\n\
+         conf_target: u64,\n\
+         estimate_mode: String,\n\
+     ) -> Result<Value, TransportError> {{\n\
+         self.wallet_client.sendtoaddress(\n\
+             address,\n\
+             amount,\n\
+             \"\".to_string(),\n\
+             \"\".to_string(),\n\
+             false,\n\
+             true,\n\
+             conf_target,\n\
+             estimate_mode,\n\
+             false,\n\
+             None, // Changed from Amount::ZERO to None\n\
+             false,\n\
+         ).await\n\
+     }}\n"
+    )
+    .unwrap();
+    writeln!(
+        code,
+        "    pub async fn send_to_address_with_fee_rate(\n\
+         &self,\n\
+         address: String,\n\
+         amount: Amount,\n\
+         fee_rate: Amount,\n\
+     ) -> Result<Value, TransportError> {{\n\
+         self.wallet_client.sendtoaddress(\n\
+             address,\n\
+             amount,\n\
+             \"\".to_string(),\n\
+             \"\".to_string(),\n\
+             false,\n\
+             true,\n\
+             0u64,\n\
+             \"unset\".to_string(),\n\
+             false,\n\
+             Some(fee_rate), // Changed to wrap fee_rate in Some()\n\
+             false,\n\
+         ).await\n\
+     }}\n"
+    )
+    .unwrap();
 
     // Close the impl block
     writeln!(code, "}}\n").unwrap();
