@@ -253,7 +253,9 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
     );
-    let toml = r#"[package]
+    let toml = r#"[workspace]
+
+[package]
 name = "bitcoin-rpc-midas"
 version = "0.1.0"
 edition = "2021"
