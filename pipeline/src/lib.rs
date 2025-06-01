@@ -230,7 +230,8 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
 pub mod test_node;
 pub mod transport;
 
-pub use test_node::test_node::BitcoinTestClient;
+/// Primary high-level client for testing Bitcoin Core RPC API.
+pub use crate::test_node::test_node::BitcoinTestClient;
 "#
     );
     fs::write(&lib_rs, lib_rs_content)

@@ -92,10 +92,13 @@ impl CodeGenerator for TestNodeGenerator {
         writeln!(mod_rs_code, "pub mod result;").unwrap();
         writeln!(mod_rs_code, "pub mod wallet;").unwrap();
         writeln!(mod_rs_code, "pub mod node;").unwrap();
-        writeln!(mod_rs_code, "pub mod test_node;").unwrap();
+        writeln!(
+            mod_rs_code,
+            "pub use test_node::test_node::BitcoinTestClient;"
+        )
+        .unwrap();
         writeln!(mod_rs_code, "pub use wallet::BitcoinWalletClient;").unwrap();
         writeln!(mod_rs_code, "pub use node::BitcoinNodeClient;").unwrap();
-        writeln!(mod_rs_code, "pub use test_node::BitcoinTestClient;").unwrap();
 
         vec![
             ("wallet.rs".to_string(), wallet_code),
