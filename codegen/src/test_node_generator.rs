@@ -146,8 +146,6 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
         "use crate::transport::core::{{TransportExt, DefaultTransport, TransportError}};\n"
     )
     .unwrap();
-    writeln!(code, "use bitcoin::Amount;").unwrap();
-    writeln!(code, "use std::option::Option;\n").unwrap();
 
     writeln!(code, "#[derive(Debug, Clone)]").unwrap();
     writeln!(code, "pub struct {} {{", client_name).unwrap();
@@ -211,7 +209,7 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
                 };
                 // Special case for fee_rate to always be Option<Amount>
                 let param_ty = if arg.names[0] == "fee_rate" {
-                    "Option<Amount>".to_string()
+                    "Option<bitcoin::Amount>".to_string()
                 } else {
                     rust_type_for(&arg.names[0], &arg.type_)
                 };
@@ -345,18 +343,9 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     // Add new_with_manager constructor
     writeln!(
         code,
-        "    /// Creates a new Bitcoin test client with a specific node manager.\n\
+        "/// Creates a new Bitcoin test client with a specific node manager.\n\
          /// This allows for custom node configuration and lifecycle management.\n\
-         /// # Example\n\
-         /// ```no_run\n\
-         /// use bitcoin_rpc_midas::test_node::test_node::{{BitcoinTestClient, NodeManager}};\n\
-         /// #[tokio::main]\n\
-         /// async fn main() -> anyhow::Result<()> {{\n\
-         ///     let node_manager = Box::new(YourNodeManager::new()?);\n\
-         ///     let mut client = BitcoinTestClient::new_with_manager(node_manager).await?;\n\
-         ///     // Use the client...\n\
-         ///     Ok(())\n\
-         /// }}\n\
+         /// The node manager must implement the `NodeManager` trait.\n\
          /// ```\n"
     )
     .unwrap();
@@ -802,31 +791,15 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     // Update the helper methods for sendtoaddress
     writeln!(
         code,
-        "    /// Helper method to send bitcoin to an address with either a confirmation target or fee rate.\n\
+        "/// Helper method to send bitcoin to an address with either a confirmation target or fee rate.\n\
          /// This is a more ergonomic wrapper around sendtoaddress that prevents specifying both conf_target and fee_rate.\n\
-         /// # Example\n\
-         /// ```no_run\n\
-         /// use bitcoin_rpc_midas::test_node::test_node::BitcoinTestClient;\n\
-         /// use bitcoin::Amount;\n\
-         /// #[tokio::main]\n\
-         /// async fn main() -> anyhow::Result<()> {{\n\
-         ///     let mut client = BitcoinTestClient::new().await?;\n\
-         ///     // Send with confirmation target\n\
-         ///     client.send_to_address_with_conf_target(\n\
-         ///         \"bc1q...\",\n\
-         ///         Amount::from_btc(0.1).unwrap(),\n\
-         ///         6u64,\n\
-         ///         \"economical\".to_string(),\n\
-         ///     ).await?;\n\
-         ///     // Or send with fee rate\n\
-         ///     client.send_to_address_with_fee_rate(\n\
-         ///         \"bc1q...\",\n\
-         ///         Amount::from_btc(0.1).unwrap(),\n\
-         ///         Amount::from_sat(1.1),\n\
-         ///     ).await?;\n\
-         ///     Ok(())\n\
-         /// }}\n\
-         /// ```"
+         /// \n\
+         /// Parameters:\n\
+         /// - address: The destination address\n\
+         /// - amount: The amount to send\n\
+         /// - conf_target: The confirmation target in blocks\n\
+         /// - estimate_mode: The fee estimate mode (\"economical\" or \"conservative\")\n\
+         /// ```\n"
     )
     .unwrap();
     writeln!(
