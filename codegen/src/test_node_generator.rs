@@ -141,21 +141,23 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
 
     writeln!(code, "use anyhow::Result;").unwrap();
     writeln!(code, "use serde_json::Value;").unwrap();
+    writeln!(code, "use std::sync::Arc;").unwrap();
+    writeln!(code, "use crate::transport::core::TransportExt;").unwrap();
     writeln!(
         code,
-        "use crate::transport::core::{{TransportExt, DefaultTransport, TransportError}};\n"
+        "use crate::transport::{{DefaultTransport, TransportError}};\n"
     )
     .unwrap();
 
     writeln!(code, "#[derive(Debug, Clone)]").unwrap();
     writeln!(code, "pub struct {} {{", client_name).unwrap();
-    writeln!(code, "    client: Box<DefaultTransport>,").unwrap();
+    writeln!(code, "    client: Arc<DefaultTransport>,").unwrap();
     writeln!(code, "}}\n").unwrap();
 
     writeln!(code, "impl {} {{", client_name).unwrap();
     writeln!(
         code,
-        "    pub fn new(client: Box<DefaultTransport>) -> Self {{"
+        "    pub fn new(client: Arc<DefaultTransport>) -> Self {{"
     )
     .unwrap();
     writeln!(code, "        Self {{ client }}").unwrap();
@@ -164,7 +166,7 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
     // Add a method to update the transport
     writeln!(
         code,
-        "    pub fn with_transport(&mut self, client: Box<DefaultTransport>) {{"
+        "    pub fn with_transport(&mut self, client: Arc<DefaultTransport>) {{"
     )
     .unwrap();
     writeln!(code, "        self.client = client;").unwrap();
@@ -260,9 +262,16 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
 
     writeln!(code, "use anyhow::Result;").unwrap();
     writeln!(code, "use serde_json::Value;").unwrap();
+    writeln!(code, "use std::sync::Arc;").unwrap();
+    writeln!(code, "use crate::transport::core::TransportExt;").unwrap();
     writeln!(
         code,
-        "use crate::transport::core::{{DefaultTransport, TransportError}};\n"
+        "use crate::transport::{{DefaultTransport, TransportError}};\n"
+    )
+    .unwrap();
+    writeln!(
+        code,
+        "use crate::node::{{BitcoinNodeManager, TestConfig}};\n"
     )
     .unwrap();
     writeln!(code, "use super::node::BitcoinNodeClient;").unwrap();
@@ -283,11 +292,8 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
              fn rpc_port(&self) -> u16;\n\
              /// Convert to Any for downcasting\n\
              fn as_any(&self) -> &dyn std::any::Any;\n\
-             /// Synchronous cleanup - called during drop\n\
-             fn sync_cleanup(&mut self);\n\
          }}\n"
-    )
-    .unwrap();
+    ).unwrap();
 
     writeln!(code, "#[derive(Debug)]").unwrap();
     writeln!(code, "pub struct {} {{", client_name).unwrap();
@@ -299,12 +305,12 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     // Update the NodeManager implementation for BitcoinNodeManager
     writeln!(
         code,
-        "impl NodeManager for node::BitcoinNodeManager {{\n\
+        "impl NodeManager for BitcoinNodeManager {{\n\
              fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>> {{\n\
                  println!(\"[DEBUG] NodeManager::start called on BitcoinNodeManager\");\n\
                  Box::pin(async move {{\n\
                      println!(\"[DEBUG] Inside NodeManager::start async block\");\n\
-                     let result = <node::BitcoinNodeManager as node::NodeManager>::start(self).await;\n\
+                     let result = self.start_internal().await;\n\
                      println!(\"[DEBUG] NodeManager::start result: {{:?}}\", result);\n\
                      result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
                  }})\n\
@@ -314,7 +320,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
                  println!(\"[DEBUG] NodeManager::stop called on BitcoinNodeManager\");\n\
                  Box::pin(async move {{\n\
                      println!(\"[DEBUG] Inside NodeManager::stop async block\");\n\
-                     let result = node::BitcoinNodeManager::stop(self).await;\n\
+                     let result = self.stop_internal().await;\n\
                      println!(\"[DEBUG] NodeManager::stop result: {{:?}}\", result);\n\
                      result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
                  }})\n\
@@ -322,23 +328,29 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
              \n\
              fn rpc_port(&self) -> u16 {{\n\
                  println!(\"[DEBUG] NodeManager::rpc_port called on BitcoinNodeManager\");\n\
-                 self.rpc_port()\n\
+                 self.rpc_port\n\
              }}\n\
              \n\
              fn as_any(&self) -> &dyn std::any::Any {{\n\
                  println!(\"[DEBUG] NodeManager::as_any called on BitcoinNodeManager\");\n\
                  self\n\
              }}\n\
-             \n\
-             fn sync_cleanup(&mut self) {{\n\
-                 println!(\"[DEBUG] NodeManager::sync_cleanup called on BitcoinNodeManager\");\n\
-                 // This is a no-op since BitcoinNodeManager handles cleanup in its own Drop impl\n\
-             }}\n\
          }}\n"
-    )
-    .unwrap();
+    ).unwrap();
 
     writeln!(code, "impl {} {{", client_name).unwrap();
+
+    // Add new() constructor
+    writeln!(
+        code,
+        "    pub async fn new() -> Result<Self, TransportError> {{\n\
+         println!(\"[DEBUG] BitcoinTestClient::new called\");\n\
+         let config = TestConfig::default();\n\
+         let node_manager = BitcoinNodeManager::new_with_config(&config)?;\n\
+         Self::new_with_manager(node_manager).await\n\
+     }}\n"
+    )
+    .unwrap();
 
     // Add new_with_manager constructor
     writeln!(
@@ -360,7 +372,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
          \n\
          // Wait for node to be ready for RPC\n\
          println!(\"[DEBUG] Creating transport with port {{}}\", node_manager.rpc_port());\n\
-         let client = Box::new(DefaultTransport::new(\n\
+         let client = Arc::new(DefaultTransport::new(\n\
              &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),\n\
              Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),\n\
          ));\n\
@@ -487,7 +499,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     .unwrap();
     writeln!(
         code,
-        "                let new_transport = Box::new(DefaultTransport::new("
+        "                let new_transport = Arc::new(DefaultTransport::new("
     )
     .unwrap();
     writeln!(
@@ -759,35 +771,6 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
         writeln!(code, "    }}\n").unwrap();
     }
 
-    writeln!(
-        code,
-        "    /// Creates a new Bitcoin test client with default settings.\n\
-         /// This will start a new Bitcoin node in regtest mode.\n\
-         /// # Example\n\
-         /// ```no_run\n\
-         /// use bitcoin_rpc_midas::test_node::test_node::BitcoinTestClient;\n\
-         /// #[tokio::main]\n\
-         /// async fn main() -> anyhow::Result<()> {{\n\
-         ///     let mut client = BitcoinTestClient::new().await?;\n\
-         ///     // Use the client...\n\
-         ///     Ok(())\n\
-         /// }}\n\
-         /// ```\n"
-    )
-    .unwrap();
-    writeln!(
-        code,
-        "    pub async fn new() -> Result<Self, TransportError> {{"
-    )
-    .unwrap();
-    writeln!(
-        code,
-        "        let node_manager = node::BitcoinNodeManager::new()?;"
-    )
-    .unwrap();
-    writeln!(code, "        Self::new_with_manager(node_manager).await").unwrap();
-    writeln!(code, "    }}\n").unwrap();
-
     // Update the helper methods for sendtoaddress
     writeln!(
         code,
@@ -858,13 +841,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     // Add Drop implementation
     writeln!(code, "impl Drop for {} {{", client_name).unwrap();
     writeln!(code, "    fn drop(&mut self) {{").unwrap();
-    writeln!(
-        code,
-        "        if let Some(mut manager) = self.node_manager.take() {{"
-    )
-    .unwrap();
-    writeln!(code, "            manager.sync_cleanup();").unwrap();
-    writeln!(code, "        }}").unwrap();
+    writeln!(code, "        let _ = self.node_manager.take();").unwrap();
     writeln!(code, "    }}").unwrap();
     writeln!(code, "}}\n").unwrap();
 

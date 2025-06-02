@@ -58,7 +58,7 @@ pub trait NodeManager: Send + Sync + std::any::Any + std::fmt::Debug {
 pub struct BitcoinNodeManager {
     state: Arc<RwLock<NodeState>>,
     child: Arc<Mutex<Option<Child>>>,
-    rpc_port: u16,
+    pub rpc_port: u16,
     rpc_username: String,
     rpc_password: String,
     _datadir: Option<TempDir>,

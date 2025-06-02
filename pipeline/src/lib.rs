@@ -11,6 +11,8 @@ use parser::{DefaultHelpParser, HelpParser};
 use rpc_api::parse_api_json;
 use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
 use std::fmt::Write as _;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
@@ -66,6 +68,11 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     println!("[diagnostic] creating directory: {:?}", src_dir);
     fs::create_dir_all(&src_dir)
         .with_context(|| format!("Failed to create src directory: {:?}", src_dir))?;
+
+    // Copy template files to src directory
+    println!("[diagnostic] copying template files to src directory");
+    copy_templates_to(&src_dir)
+        .with_context(|| format!("Failed to copy template files to {:?}", src_dir))?;
 
     // Write Cargo.toml
     write_cargo_toml(&crate_root)
@@ -124,20 +131,398 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     );
 
     // 1) Prepare module directories
-    let subdirs = ["transport", "types"];
+    let subdirs = ["transport", "types", "node"];
     for sub in &subdirs {
         let module_dir = out_dir.join(sub);
         println!("[diagnostic] creating module directory: {:?}", module_dir);
         fs::create_dir_all(&module_dir)
             .with_context(|| format!("Failed to create module directory: {:?}", module_dir))?;
 
-        let mod_rs = module_dir.join("mod.rs");
-        if !mod_rs.exists() {
-            println!("[diagnostic] writing mod.rs for module: {}", sub);
-            fs::write(&mod_rs, format!("// Auto-generated `{}` module\n", sub))
-                .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
+        // Skip creating mod.rs for node directory since we'll handle it separately
+        if *sub != "node" {
+            let mod_rs = module_dir.join("mod.rs");
+            if !mod_rs.exists() {
+                println!("[diagnostic] writing mod.rs for module: {}", sub);
+                fs::write(&mod_rs, format!("// Auto-generated `{}` module\n", sub))
+                    .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
+            }
         }
     }
+
+    // Copy template files
+    println!("[diagnostic] copying template files");
+    copy_templates_to(out_dir).with_context(|| "Failed to copy template files")?;
+
+    // After copying template files, ensure node/mod.rs exists
+    let node_dir = out_dir.join("node");
+    let node_mod_rs = node_dir.join("mod.rs");
+
+    if !node_mod_rs.exists() {
+        println!("[diagnostic] writing node/mod.rs manually");
+        fs::write(
+            &node_mod_rs,
+            r#"
+// Auto-generated `node` module
+pub mod bitcoin_node_manager;
+pub mod test_config;
+
+pub use bitcoin_node_manager::BitcoinNodeManager;
+pub use test_config::TestConfig;
+"#,
+        )
+        .with_context(|| format!("Failed to write node/mod.rs at {:?}", node_mod_rs))?;
+    }
+
+    // Create node implementation files
+    println!("[diagnostic] creating node implementation files");
+
+    // Create bitcoin_node_manager.rs
+    let bitcoin_node_manager_rs = node_dir.join("bitcoin_node_manager.rs");
+    println!("[diagnostic] writing bitcoin_node_manager.rs");
+    fs::write(
+        &bitcoin_node_manager_rs,
+        r#"use anyhow::Result;
+use async_trait::async_trait;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tempfile::TempDir;
+use tokio::io::AsyncBufReadExt;
+use tokio::process::{Child, Command};
+use tokio::sync::{Mutex, RwLock};
+use tracing::{debug, error, info, warn};
+use std::process::Stdio;
+
+use super::test_config::TestConfig;
+
+/// Represents the state of a Bitcoin node
+#[derive(Debug, Clone)]
+pub struct NodeState {
+    pub is_running: bool,
+    pub version: String,
+}
+
+impl Default for NodeState {
+    fn default() -> Self {
+        Self {
+            is_running: false,
+            version: env!("CARGO_PKG_VERSION").to_string(),
+        }
+    }
+}
+
+/// Trait defining the interface for a Bitcoin node manager
+#[async_trait]
+pub trait NodeManager: Send + Sync + std::any::Any + std::fmt::Debug {
+    async fn start(&self) -> Result<()>;
+    async fn stop(&mut self) -> Result<()>;
+    async fn get_state(&self) -> Result<NodeState>;
+    /// Return the RPC port this manager was configured with
+    fn rpc_port(&self) -> u16;
+}
+
+/// Implementation of the Bitcoin node manager
+#[derive(Debug)]
+pub struct BitcoinNodeManager {
+    state: Arc<RwLock<NodeState>>,
+    child: Arc<Mutex<Option<Child>>>,
+    pub(crate) rpc_port: u16,
+    rpc_username: String,
+    rpc_password: String,
+    _datadir: Option<TempDir>,
+}
+
+impl BitcoinNodeManager {
+    pub fn new() -> Result<Self> {
+        Self::new_with_config(&TestConfig::default())
+    }
+
+    pub fn new_with_config(config: &TestConfig) -> Result<Self> {
+        let datadir = TempDir::new()?;
+
+        // Handle automatic port selection:
+        // When rpc_port is 0, we need to find an available port dynamically.
+        let rpc_port = if config.rpc_port == 0 {
+            // Bind to port 0 to let the OS assign an available port
+            let listener = std::net::TcpListener::bind(("127.0.0.1", 0))?;
+            listener.local_addr()?.port()
+        } else {
+            config.rpc_port
+        };
+
+        Ok(Self {
+            state: Arc::new(RwLock::new(NodeState::default())),
+            child: Arc::new(Mutex::new(None)),
+            rpc_port,
+            rpc_username: config.rpc_username.clone(),
+            rpc_password: config.rpc_password.clone(),
+            _datadir: Some(datadir),
+        })
+    }
+
+    pub(crate) async fn start_internal(&self) -> Result<()> {
+        let mut state = self.state.write().await;
+        if state.is_running {
+            info!("[DEBUG] Node is already running, skipping start");
+            return Ok(());
+        }
+
+        info!(
+            "[DEBUG] Starting Bitcoin node with datadir: {:?}",
+            self._datadir.as_ref().unwrap().path()
+        );
+        let datadir = self._datadir.as_ref().unwrap().path();
+        let mut cmd = Command::new("bitcoind");
+        cmd.args([
+            "-regtest",
+            "-listen=0",
+            &format!("-datadir={}", datadir.display()),
+            &format!("-rpcport={}", self.rpc_port),
+            &format!("-rpcbind=127.0.0.1:{}", self.rpc_port),
+            "-rpcallowip=127.0.0.1",
+            "-fallbackfee=0.0002",
+            "-server=1",
+            "-prune=1",
+            &format!("-rpcuser={}", self.rpc_username),
+            &format!("-rpcpassword={}", self.rpc_password),
+        ]);
+
+        // Capture both stdout and stderr for better error reporting
+        cmd.stderr(Stdio::piped());
+        cmd.stdout(Stdio::piped());
+
+        info!("[DEBUG] Spawning bitcoind process");
+        let mut child = cmd.spawn()?;
+        info!("[DEBUG] bitcoind process spawned successfully");
+
+        // Read stderr in a separate task
+        let stderr = child.stderr.take().unwrap();
+        let stderr_reader = tokio::io::BufReader::new(stderr);
+        tokio::spawn(async move {
+            let mut lines = stderr_reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                error!("[DEBUG] bitcoind stderr: {}", line);
+            }
+        });
+
+        // Read stdout in a separate task
+        let stdout = child.stdout.take().unwrap();
+        let stdout_reader = tokio::io::BufReader::new(stdout);
+        tokio::spawn(async move {
+            let mut lines = stdout_reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                info!("[DEBUG] bitcoind stdout: {}", line);
+            }
+        });
+
+        // Store the child process
+        info!("[DEBUG] Storing child process");
+        let mut child_guard = self.child.lock().await;
+        *child_guard = Some(child);
+        info!("[DEBUG] Child process stored successfully");
+
+        // Wait for node to be ready
+        info!("[DEBUG] Waiting for node to be ready");
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut attempts = 0;
+        while Instant::now() < deadline {
+            if let Some(child) = child_guard.as_mut() {
+                if let Ok(Some(status)) = child.try_wait() {
+                    let error = format!("Bitcoin node exited early with status: {}", status);
+                    error!("[DEBUG] {}", error);
+                    anyhow::bail!(error);
+                }
+            }
+
+            // Try to connect to RPC
+            info!(
+                "[DEBUG] Attempt {}: Trying to connect to RPC at port {}",
+                attempts + 1,
+                self.rpc_port
+            );
+            let client = reqwest::Client::new();
+            match client
+                .post(format!("http://127.0.0.1:{}/", self.rpc_port))
+                .basic_auth(&self.rpc_username, Some(&self.rpc_password))
+                .json(&serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "method": "getnetworkinfo",
+                    "params": [],
+                    "id": 1
+                }))
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    info!("[DEBUG] RPC response status: {}", response.status());
+                    if response.status().is_success() {
+                        state.is_running = true;
+                        info!(
+                            "[DEBUG] Bitcoin node started successfully on port {}",
+                            self.rpc_port
+                        );
+                        return Ok(());
+                    } else {
+                        warn!(
+                            "[DEBUG] RPC request failed with status {} (attempt {})",
+                            response.status(),
+                            attempts
+                        );
+                    }
+                }
+                Err(e) => {
+                    debug!(
+                        "[DEBUG] Failed to connect to RPC (attempt {}): {}",
+                        attempts, e
+                    );
+                }
+            }
+
+            attempts += 1;
+            info!("[DEBUG] Waiting 200ms before next attempt");
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+
+        let error = format!(
+            "[DEBUG] Timed out waiting for Bitcoin node to start on port {} after {} attempts",
+            self.rpc_port, attempts
+        );
+        error!("{}", error);
+        anyhow::bail!(error);
+    }
+
+    pub(crate) async fn stop_internal(&mut self) -> Result<()> {
+        let mut state = self.state.write().await;
+        if !state.is_running {
+            return Ok(());
+        }
+
+        let child = self.child.lock().await.take();
+        if let Some(mut child) = child {
+            std::mem::drop(child.kill());
+            std::mem::drop(child.wait());
+        }
+
+        state.is_running = false;
+        Ok(())
+    }
+
+    async fn get_state(&self) -> Result<NodeState> {
+        Ok(self.state.read().await.clone())
+    }
+
+    fn rpc_port(&self) -> u16 {
+        self.rpc_port
+    }
+}
+
+#[async_trait]
+impl NodeManager for BitcoinNodeManager {
+    async fn start(&self) -> Result<()> {
+        self.start_internal().await
+    }
+
+    async fn stop(&mut self) -> Result<()> {
+        self.stop_internal().await
+    }
+
+    async fn get_state(&self) -> Result<NodeState> {
+        self.get_state().await
+    }
+
+    fn rpc_port(&self) -> u16 {
+        self.rpc_port()
+    }
+}
+
+impl Drop for BitcoinNodeManager {
+    fn drop(&mut self) {
+        if let Some(mut child) = self
+            .child
+            .try_lock()
+            .ok()
+            .and_then(|mut guard| guard.take())
+        {
+            std::mem::drop(child.kill());
+            std::mem::drop(child.wait());
+        }
+    }
+}
+
+impl Default for BitcoinNodeManager {
+    fn default() -> Self {
+        Self::new_with_config(&TestConfig::default())
+            .expect("Failed to create default BitcoinNodeManager")
+    }
+}"#,
+    )
+    .with_context(|| {
+        format!(
+            "Failed to write bitcoin_node_manager.rs at {:?}",
+            bitcoin_node_manager_rs
+        )
+    })?;
+
+    // Create test_config.rs
+    let test_config_rs = node_dir.join("test_config.rs");
+    println!("[diagnostic] writing test_config.rs");
+    fs::write(
+        &test_config_rs,
+        r#"use std::env;
+
+/// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
+/// This struct is the single source of truth for test‑node settings: RPC port, username, and password.
+/// Defaults are:
+/// - `rpc_port = 0` (auto‑select a free port)
+/// - `rpc_username = "rpcuser"`
+/// - `rpc_password = "rpcpassword"`
+#[derive(Debug, Clone)]
+pub struct TestConfig {
+    /// The port number for RPC communication with the Bitcoin node.
+    /// A value of 0 indicates that an available port should be automatically selected.
+    pub rpc_port: u16,
+    /// The username for RPC authentication.
+    /// Can be customized to match your `bitcoin.conf` `rpcuser` setting.
+    pub rpc_username: String,
+    /// The password for RPC authentication.
+    /// Can be customized to match your `bitcoin.conf` `rpcpassword` setting.
+    pub rpc_password: String,
+}
+
+impl Default for TestConfig {
+    fn default() -> Self {
+        Self {
+            rpc_port: 0,
+            rpc_username: "rpcuser".to_string(),
+            rpc_password: "rpcpassword".to_string(),
+        }
+    }
+}
+
+impl TestConfig {
+    /// Create a `TestConfig`, overriding defaults with environment variables:
+    /// - `RPC_PORT`: overrides `rpc_port`
+    /// - `RPC_USER`: overrides `rpc_username`
+    /// - `RPC_PASS`: overrides `rpc_password`
+    pub fn from_env() -> Self {
+        let mut cfg = Self::default();
+        if let Ok(port_str) = env::var("RPC_PORT") {
+            if let Ok(port) = port_str.parse() {
+                cfg.rpc_port = port;
+            }
+        }
+        if let Ok(user) = env::var("RPC_USER") {
+            cfg.rpc_username = user;
+        }
+        if let Ok(pass) = env::var("RPC_PASS") {
+            cfg.rpc_password = pass;
+        }
+        cfg
+    }
+}"#,
+    )
+    .with_context(|| format!("Failed to write test_config.rs at {:?}", test_config_rs))?;
 
     // Create test_node directory without writing mod.rs
     let test_node_dir = out_dir.join("test_node");
@@ -221,21 +606,36 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     // 6) Root `lib.rs`
     let lib_rs = out_dir.join("lib.rs");
     println!("[diagnostic] writing root lib.rs at {:?}", lib_rs);
-    let lib_rs_content = format!(
-        r#"//! Generated Bitcoin RPC client library.
-//!
-//! This library provides a strongly-typed interface to the Bitcoin RPC API.
-//! It is generated from the Bitcoin Core RPC API documentation.
+    let mut file = File::create(&lib_rs)
+        .with_context(|| format!("Failed to create lib.rs at {:?}", lib_rs))?;
 
-pub mod test_node;
-pub mod transport;
+    writeln!(file, "//! Generated Bitcoin RPC client library.")?;
+    writeln!(file, "//!")?;
+    writeln!(
+        file,
+        "//! This library provides a strongly-typed interface to the Bitcoin RPC API."
+    )?;
+    writeln!(
+        file,
+        "//! It is generated from the Bitcoin Core RPC API documentation.\n"
+    )?;
 
-/// Primary high-level client for testing Bitcoin Core RPC API.
-pub use crate::test_node::test_node::BitcoinTestClient;
-"#
-    );
-    fs::write(&lib_rs, lib_rs_content)
-        .with_context(|| format!("Failed to write lib.rs at {:?}", lib_rs))?;
+    writeln!(file, "pub mod config;")?;
+    writeln!(file, "pub mod node;")?;
+    writeln!(file, "pub mod transport;")?;
+    writeln!(file, "pub mod types;")?;
+    writeln!(file, "pub mod test_node;\n")?;
+
+    writeln!(file, "pub use config::Config;")?;
+    writeln!(file, "pub use node::BitcoinNodeManager;")?;
+    writeln!(
+        file,
+        "pub use transport::{{DefaultTransport, TransportError}};"
+    )?;
+    writeln!(
+        file,
+        "pub use crate::test_node::test_node::BitcoinTestClient;"
+    )?;
 
     ModuleGenerator::new(vec!["latest".into()], out_dir.to_path_buf())
         .generate_all()
@@ -253,23 +653,24 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
     );
-    let toml = r#"[workspace]
-
-[package]
+    let toml = r#"[package]
 name = "bitcoin-rpc-midas"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+async-trait = "0.1"
 bitcoin = { version = "0.32.6", features = ["rand", "serde"] }
-node = { path = "../node" }
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tempfile = "3.10"
 thiserror = "2.0.12"
-tokio = { version = "1.0", features = ["time"] }
-transport = { path = "../transport" }
+tokio = { version = "1.0", features = ["time", "process", "io-util"] }
+tracing = "0.1"
+
+[workspace]
 "#;
     fs::write(root.join("Cargo.toml"), toml)
         .with_context(|| format!("Failed to write bitcoin-rpc-midas Cargo.toml at {:?}", root))?;
@@ -289,16 +690,25 @@ fn ensure_rpc_client(transport_dir: &Path) -> Result<()> {
     let stub = r#"use anyhow::Result;
 use serde_json::Value;
 
+
 #[derive(Debug, Clone)]
 /// RPC client stub
-pub struct RpcClient { transport: crate::transport::Transport }
+pub struct RpcClient { 
+    transport: Box<dyn Transport> 
+}
 
 impl RpcClient {
     pub fn new_with_auth(url: impl Into<String>, user: &str, pass: &str) -> Self {
-        Self { transport: crate::transport::Transport::new_with_auth(url, user, pass) }
+        Self { 
+            transport: Box::new(crate::transport::DefaultTransport::new(
+                url,
+                Some((user.to_string(), pass.to_string()))
+            ))
+        }
     }
-    pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value> {
-        Ok(self.transport.send_request(method, params).await?)
+    
+    pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value, TransportError> {
+        self.transport.send_request(method, params).await
     }
 }
 "#;
@@ -316,7 +726,7 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
         writeln!(content, "pub mod core;").unwrap();
         writeln!(
             content,
-            "pub use core::{{Transport, TransportError, DefaultTransport}};\n"
+            "pub use core::{{Transport, TransportError, DefaultTransport, TransportExt}};\n"
         )
         .unwrap();
     }
@@ -334,5 +744,27 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
 
     fs::write(&mod_rs, content.as_bytes())
         .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
+    Ok(())
+}
+
+/* --------------------------------------------------------------------- */
+/*  Template file copying                                                */
+/* --------------------------------------------------------------------- */
+const TEMPLATE_FILES: &[&str] = &["config.rs"];
+
+fn copy_templates_to(dst_dir: &Path) -> Result<()> {
+    let src_dir = PathBuf::from("templates");
+
+    for filename in TEMPLATE_FILES {
+        let src_path = src_dir.join(filename);
+        let dst_path = dst_dir.join(filename);
+        println!(
+            "[diagnostic] copying template: {:?} -> {:?}",
+            src_path, dst_path
+        );
+        fs::copy(&src_path, &dst_path)
+            .with_context(|| format!("Failed to copy template file: {:?}", filename))?;
+    }
+
     Ok(())
 }
