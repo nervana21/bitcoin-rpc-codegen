@@ -9,65 +9,22 @@ use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
 use rpc_api::ApiMethod;
 use std::fmt::Write as _;
 
-/// Generates a `test_node.rs` module containing:
-/// * `params::{Method}Params` structs for each RPC that accepts arguments
-/// * A `TestNode` wrapper with one async method per RPC
-/// * A `BitcoinTestClient` high-level abstraction that combines node management and RPC functionality
+/// Generates typed Rust clients for interacting with a Bitcoin Core node in test environments.
+///
+/// `TestNodeGenerator` produces thin wrappers around RPC methods exposed by Bitcoin Core,
+/// generating type-safe parameter structs (`params.rs`), result wrappers (`result.rs`),
+/// and high-level clients (`BitcoinTestClient`, `BitcoinNodeClient`, and `BitcoinWalletClient`)
+/// for use in integration tests or test harnesses.
+///
+/// This generator assumes an API schema input and emits idiomatic Rust code, enabling
+/// easy and ergonomic testing of RPC interfaces without hand-rolled serialization logic.
 pub struct TestNodeGenerator;
 
 impl CodeGenerator for TestNodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        let mut params_code = String::new();
-        let mut result_code = String::new();
-        let mut mod_rs_code = String::new();
+        let params_code = generate_params_code(methods);
+        let result_code = generate_result_code(methods);
 
-        /* ---------- params.rs ---------- */
-        writeln!(params_code, "//! Parameter structs for RPC method calls").unwrap();
-        writeln!(params_code, "use serde::Serialize;\n").unwrap();
-
-        for m in methods {
-            if m.arguments.is_empty() {
-                continue;
-            }
-            let doc_comment = doc_comment::format_doc_comment(&m.description);
-            for line in doc_comment.lines() {
-                writeln!(params_code, "/// {}", line).unwrap();
-            }
-            writeln!(params_code, "#[derive(Debug, Serialize)]").unwrap();
-            writeln!(params_code, "pub struct {}Params {{", camel(&m.name)).unwrap();
-
-            for p in &m.arguments {
-                let field = if p.names[0] == "type" {
-                    "_type".to_string()
-                } else {
-                    camel_to_snake_case(&p.names[0]).replace('-', "_")
-                };
-                let ty = rust_type_for(&p.names[0], &p.type_);
-                writeln!(params_code, "    pub {}: {},", field, ty).unwrap();
-            }
-            writeln!(params_code, "}}\n").unwrap();
-        }
-
-        /* ---------- result.rs ---------- */
-        writeln!(result_code, "//! Result structs for RPC method returns").unwrap();
-        writeln!(result_code, "use serde::Deserialize;\n").unwrap();
-        for m in methods {
-            if m.results.len() != 1 {
-                continue;
-            }
-            let r = &m.results[0];
-            let ty = rust_type_for(&r.key_name, &r.type_);
-            writeln!(result_code, "#[derive(Debug, Deserialize)]").unwrap();
-            writeln!(
-                result_code,
-                "pub struct {}Result(pub {});\n",
-                camel(&m.name),
-                ty
-            )
-            .unwrap();
-        }
-
-        // Split methods into wallet and node methods
         let wallet_methods: Vec<_> = methods
             .iter()
             .filter(|m| WALLET_METHODS.contains(&m.name.as_str()))
@@ -79,26 +36,11 @@ impl CodeGenerator for TestNodeGenerator {
             .cloned()
             .collect();
 
-        // Generate wallet and node client code
         let wallet_code = generate_subclient("BitcoinWalletClient", &wallet_methods).unwrap();
         let node_code = generate_subclient("BitcoinNodeClient", &node_methods).unwrap();
-
-        // Generate combined client code
         let combined_code = generate_combined_client("BitcoinTestClient", methods).unwrap();
 
-        // Update mod.rs to export all clients
-        writeln!(mod_rs_code, "//! Test node module for Bitcoin RPC testing").unwrap();
-        writeln!(mod_rs_code, "pub mod params;").unwrap();
-        writeln!(mod_rs_code, "pub mod result;").unwrap();
-        writeln!(mod_rs_code, "pub mod wallet;").unwrap();
-        writeln!(mod_rs_code, "pub mod node;").unwrap();
-        writeln!(
-            mod_rs_code,
-            "pub use test_node::test_node::BitcoinTestClient;"
-        )
-        .unwrap();
-        writeln!(mod_rs_code, "pub use wallet::BitcoinWalletClient;").unwrap();
-        writeln!(mod_rs_code, "pub use node::BitcoinNodeClient;").unwrap();
+        let mod_rs_code = generate_mod_rs();
 
         vec![
             ("wallet.rs".to_string(), wallet_code),
@@ -109,6 +51,70 @@ impl CodeGenerator for TestNodeGenerator {
             ("mod.rs".to_string(), mod_rs_code),
         ]
     }
+}
+
+fn generate_params_code(methods: &[ApiMethod]) -> String {
+    let mut code =
+        String::from("//! Parameter structs for RPC method calls\nuse serde::Serialize;\n\n");
+    for m in methods {
+        if m.arguments.is_empty() {
+            continue;
+        }
+        let doc_comment = doc_comment::format_doc_comment(&m.description);
+        for line in doc_comment.lines() {
+            writeln!(code, "/// {}", line).unwrap();
+        }
+        writeln!(
+            code,
+            "#[derive(Debug, Serialize)]\npub struct {}Params {{",
+            camel(&m.name)
+        )
+        .unwrap();
+        for p in &m.arguments {
+            let field = if p.names[0] == "type" {
+                "_type"
+            } else {
+                &camel_to_snake_case(&p.names[0])
+            };
+            let ty = rust_type_for(&p.names[0], &p.type_);
+            writeln!(code, "    pub {}: {},", field, ty).unwrap();
+        }
+        writeln!(code, "}}\n").unwrap();
+    }
+    code
+}
+
+fn generate_result_code(methods: &[ApiMethod]) -> String {
+    let mut code =
+        String::from("//! Result structs for RPC method returns\nuse serde::Deserialize;\n\n");
+    for m in methods {
+        if m.results.len() != 1 {
+            continue;
+        }
+        let r = &m.results[0];
+        let ty = rust_type_for(&r.key_name, &r.type_);
+        writeln!(
+            code,
+            "#[derive(Debug, Deserialize)]\npub struct {}Result(pub {});\n",
+            camel(&m.name),
+            ty
+        )
+        .unwrap();
+    }
+    code
+}
+
+fn generate_mod_rs() -> String {
+    let mut code = String::new();
+    writeln!(code, "//! Test node module for Bitcoin RPC testing").unwrap();
+    writeln!(code, "pub mod params;").unwrap();
+    writeln!(code, "pub mod result;").unwrap();
+    writeln!(code, "pub mod wallet;").unwrap();
+    writeln!(code, "pub mod node;").unwrap();
+    writeln!(code, "pub use test_node::test_node::BitcoinTestClient;").unwrap();
+    writeln!(code, "pub use wallet::BitcoinWalletClient;").unwrap();
+    writeln!(code, "pub use node::BitcoinNodeClient;").unwrap();
+    code
 }
 
 fn rust_type_for(param_name: &str, api_ty: &str) -> String {
@@ -138,10 +144,11 @@ fn camel(s: &str) -> String {
 
 fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
     let mut code = String::new();
-
-    writeln!(code, "use anyhow::Result;").unwrap();
-    writeln!(code, "use serde_json::Value;").unwrap();
-    writeln!(code, "use std::sync::Arc;").unwrap();
+    writeln!(
+        code,
+        "use anyhow::Result;\nuse serde_json::Value;\nuse std::sync::Arc;"
+    )
+    .unwrap();
     writeln!(code, "use crate::transport::core::TransportExt;").unwrap();
     writeln!(
         code,
@@ -149,74 +156,46 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
     )
     .unwrap();
 
-    writeln!(code, "#[derive(Debug, Clone)]").unwrap();
-    writeln!(code, "pub struct {} {{", client_name).unwrap();
-    writeln!(code, "    client: Arc<DefaultTransport>,").unwrap();
-    writeln!(code, "}}\n").unwrap();
-
-    writeln!(code, "impl {} {{", client_name).unwrap();
     writeln!(
         code,
-        "    pub fn new(client: Arc<DefaultTransport>) -> Self {{"
+        "#[derive(Debug, Clone)]\npub struct {} {{\n    client: Arc<DefaultTransport>,\n}}\n",
+        client_name
     )
     .unwrap();
-    writeln!(code, "        Self {{ client }}").unwrap();
-    writeln!(code, "    }}\n").unwrap();
 
-    // Add a method to update the transport
-    writeln!(
-        code,
-        "    pub fn with_transport(&mut self, client: Arc<DefaultTransport>) {{"
-    )
-    .unwrap();
-    writeln!(code, "        self.client = client;").unwrap();
-    writeln!(code, "    }}\n").unwrap();
+    writeln!(code, "impl {} {{\n    pub fn new(client: Arc<DefaultTransport>) -> Self {{\n        Self {{ client }}\n    }}\n", client_name).unwrap();
+
+    writeln!(code, "    pub fn with_transport(&mut self, client: Arc<DefaultTransport>) {{\n        self.client = client;\n    }}\n").unwrap();
 
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
-        let ret_ty = if m.results.len() == 1 {
-            format!("Value")
-        } else {
-            "Value".to_string()
-        };
-
+        let ret_ty = "Value";
         let doc_comment = doc_comment::format_doc_comment(&m.description);
         for line in doc_comment.lines() {
             writeln!(code, "    {}", line).unwrap();
         }
 
         if m.arguments.is_empty() {
-            writeln!(
-                code,
-                "    pub async fn {}(&self) -> Result<{}, TransportError> {{",
-                method_snake, ret_ty
-            )
-            .unwrap();
-            writeln!(
-                code,
-                "        Ok(self.client.call::<{}>(\"{}\", &[]).await?.into())",
-                ret_ty, m.name
-            )
-            .unwrap();
+            writeln!(code, "    pub async fn {}(&self) -> Result<{}, TransportError> {{\n        Ok(self.client.call::<{}>(\"{}\", &[]).await?.into())\n    }}\n", method_snake, ret_ty, ret_ty, m.name).unwrap();
         } else {
-            let mut param_list = String::new();
-            for (i, arg) in m.arguments.iter().enumerate() {
-                if i > 0 {
-                    param_list.push_str(", ");
-                }
-                let param_name = if arg.names[0] == "type" {
-                    "_type"
-                } else {
-                    &camel_to_snake_case(&arg.names[0])
-                };
-                // Special case for fee_rate to always be Option<Amount>
-                let param_ty = if arg.names[0] == "fee_rate" {
-                    "Option<bitcoin::Amount>".to_string()
-                } else {
-                    rust_type_for(&arg.names[0], &arg.type_)
-                };
-                write!(param_list, "{}: {}", param_name, param_ty).unwrap();
-            }
+            let param_list = m
+                .arguments
+                .iter()
+                .map(|arg| {
+                    let name = if arg.names[0] == "type" {
+                        "_type".to_string()
+                    } else {
+                        camel_to_snake_case(&arg.names[0])
+                    };
+                    let ty = if arg.names[0] == "fee_rate" {
+                        "Option<bitcoin::Amount>".to_string()
+                    } else {
+                        rust_type_for(&arg.names[0], &arg.type_)
+                    };
+                    format!("{}: {}", name, ty)
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
 
             writeln!(
                 code,
@@ -224,8 +203,8 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
                 method_snake, param_list, ret_ty
             )
             .unwrap();
-
             writeln!(code, "        let mut vec = vec![];").unwrap();
+
             for arg in &m.arguments {
                 let name = if arg.names[0] == "type" {
                     "_type"
@@ -233,30 +212,22 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
                     &camel_to_snake_case(&arg.names[0])
                 };
                 if arg.names[0] == "fee_rate" {
-                    writeln!(
-                        code,
-                        "        vec.push(match {} {{ Some(v) => serde_json::to_value(v.to_btc())?, None => serde_json::Value::Null }});",
-                        name
-                    ).unwrap();
+                    writeln!(code, "        vec.push(match {} {{ Some(v) => serde_json::to_value(v.to_btc())?, None => serde_json::Value::Null }});", name).unwrap();
                 } else {
                     writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
                 }
             }
             writeln!(
                 code,
-                "        Ok(self.client.call::<{}>(\"{}\", &vec).await?.into())",
+                "        Ok(self.client.call::<{}>(\"{}\", &vec).await?.into())\n    }}\n",
                 ret_ty, m.name
             )
             .unwrap();
         }
-
-        writeln!(code, "    }}\n").unwrap();
     }
-
     writeln!(code, "}}\n").unwrap();
     Ok(code)
 }
-
 fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
     let mut code = String::new();
 
