@@ -59,7 +59,6 @@ pub enum Error {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    // TODO: add more cases as needed
 }
 
 /// Convert a string tag into our `Version` enum
