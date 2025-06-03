@@ -2,6 +2,24 @@
 //!
 //! Until we have a TypesCodeGenerator that emits concrete `*Response` structs
 //! every RPC simply returns `serde_json::Value`.
+/*!
+TODO: Modularize this generator.
+
+This file will eventually become thousands of lines long.
+Split into dedicated modules under `codegen/src/test_node/`:
+
+  - `emit_params.rs`: Generate `Params` structs
+  - `emit_results.rs`: Generate `Result` structs
+  - `emit_subclient.rs`: Generate node/wallet subclients
+  - `emit_combined_client.rs`: Generate `BitcoinTestClient`, constructors, and lifecycle helpers
+      → ✅ Add all ergonomic helpers here (e.g., `reset_chain()`, `mine_blocks()`, etc.)
+  - `utils.rs`: Utility functions (e.g. `camel()`, `rust_type_for()`)
+
+Benefits:
+- Better maintainability
+- Easier to test and extend
+- Faster onboarding for contributors
+*/
 
 use crate::utils::camel_to_snake_case;
 use crate::wallet_methods::WALLET_METHODS;
@@ -228,9 +246,29 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
     writeln!(code, "}}\n").unwrap();
     Ok(code)
 }
+
 fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
     let mut code = String::new();
 
+    emit_imports(&mut code).unwrap();
+    emit_node_manager_trait(&mut code).unwrap();
+    emit_struct_definition(&mut code, client_name).unwrap();
+    emit_node_manager_impl(&mut code).unwrap();
+    emit_impl_block_start(&mut code, client_name).unwrap();
+    emit_constructors(&mut code).unwrap();
+    emit_wallet_methods(&mut code).unwrap();
+    emit_block_mining_helpers(&mut code).unwrap();
+    emit_reset_chain(&mut code).unwrap();
+    emit_stop_node(&mut code).unwrap();
+    emit_node_manager_accessor(&mut code).unwrap();
+    emit_delegated_rpc_methods(&mut code, methods).unwrap();
+    emit_send_to_address_helpers(&mut code).unwrap();
+    emit_impl_block_end(&mut code).unwrap();
+    emit_drop_impl(&mut code, client_name).unwrap();
+    Ok(code)
+}
+
+fn emit_imports(code: &mut String) -> std::io::Result<()> {
     writeln!(code, "use anyhow::Result;").unwrap();
     writeln!(code, "use serde_json::Value;").unwrap();
     writeln!(code, "use std::sync::Arc;").unwrap();
@@ -249,31 +287,35 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     writeln!(code, "use super::wallet::BitcoinWalletClient;\n").unwrap();
     writeln!(code, "use std::str::FromStr;").unwrap();
     writeln!(code, "use bitcoin::Amount;\n").unwrap();
+    Ok(())
+}
 
-    // Add a trait for node management
+fn emit_node_manager_trait(code: &mut String) -> std::io::Result<()> {
+    writeln!(code, "/// Trait for managing a Bitcoin node's lifecycle").unwrap();
     writeln!(
         code,
-        "/// Trait for managing a Bitcoin node's lifecycle\n\
-         pub trait NodeManager: Send + Sync + std::fmt::Debug + std::any::Any {{\n\
-             /// Start the node\n\
-             fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;\n\
-             /// Stop the node\n\
-             fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;\n\
-             /// Get the RPC port\n\
-             fn rpc_port(&self) -> u16;\n\
-             /// Convert to Any for downcasting\n\
-             fn as_any(&self) -> &dyn std::any::Any;\n\
-         }}\n"
-    ).unwrap();
+        "pub trait NodeManager: Send + Sync + std::fmt::Debug + std::any::Any {{"
+    )
+    .unwrap();
+    writeln!(code, "    fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;").unwrap();
+    writeln!(code, "    fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;").unwrap();
+    writeln!(code, "    fn rpc_port(&self) -> u16;").unwrap();
+    writeln!(code, "    fn as_any(&self) -> &dyn std::any::Any;").unwrap();
+    writeln!(code, "}}\n").unwrap();
+    Ok(())
+}
 
+fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::Result<()> {
     writeln!(code, "#[derive(Debug)]").unwrap();
     writeln!(code, "pub struct {} {{", client_name).unwrap();
     writeln!(code, "    node_client: BitcoinNodeClient,").unwrap();
     writeln!(code, "    wallet_client: BitcoinWalletClient,").unwrap();
     writeln!(code, "    node_manager: Option<Box<dyn NodeManager>>,").unwrap();
     writeln!(code, "}}\n").unwrap();
+    Ok(())
+}
 
-    // Update the NodeManager implementation for BitcoinNodeManager
+fn emit_node_manager_impl(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "impl NodeManager for BitcoinNodeManager {{\n\
@@ -308,10 +350,15 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
              }}\n\
          }}\n"
     ).unwrap();
+    Ok(())
+}
 
+fn emit_impl_block_start(code: &mut String, client_name: &str) -> std::io::Result<()> {
     writeln!(code, "impl {} {{", client_name).unwrap();
+    Ok(())
+}
 
-    // Add new() constructor
+fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    pub async fn new() -> Result<Self, TransportError> {{\n\
@@ -390,8 +437,10 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
      }}\n"
     )
     .unwrap();
+    Ok(())
+}
 
-    // Update the ensure_wallet method
+fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    /// Ensures a wallet exists with the given name and parameters.\n\
@@ -499,8 +548,10 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     writeln!(code, "            Err(e) => Err(e),").unwrap();
     writeln!(code, "        }}").unwrap();
     writeln!(code, "    }}\n").unwrap();
+    Ok(())
+}
 
-    // Update the mine_blocks method to use ensure_wallet
+fn emit_block_mining_helpers(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    /// Helper method to mine blocks to a new address"
@@ -549,8 +600,10 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     .unwrap();
     writeln!(code, "        Ok((address, blocks))").unwrap();
     writeln!(code, "    }}\n").unwrap();
+    Ok(())
+}
 
-    // Add this after the mine_blocks method in generate_combined_client
+fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    /// Resets the blockchain to a clean state.\n\
@@ -622,8 +675,10 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     writeln!(code, "        }}").unwrap();
     writeln!(code, "        Ok(())").unwrap();
     writeln!(code, "    }}\n").unwrap();
+    Ok(())
+}
 
-    // Add stop() method
+fn emit_stop_node(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    /// Stops the Bitcoin node if one is running.\n\
@@ -644,8 +699,10 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     writeln!(code, "        }}").unwrap();
     writeln!(code, "        Ok(())").unwrap();
     writeln!(code, "    }}\n").unwrap();
+    Ok(())
+}
 
-    // Add node_manager() method
+fn emit_node_manager_accessor(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "    /// Returns a reference to the node manager if one exists.\n\
@@ -659,90 +716,85 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     .unwrap();
     writeln!(code, "        self.node_manager.as_deref()").unwrap();
     writeln!(code, "    }}\n").unwrap();
+    Ok(())
+}
 
-    // Generate methods that delegate to either node_client or wallet_client
+fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> std::io::Result<()> {
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
         let ret_ty = if m.results.len() == 1 {
-            format!("Value")
+            "Value"
         } else {
-            "Value".to_string()
-        };
-
-        let doc_comment = doc_comment::format_doc_comment(&m.description);
-        for line in doc_comment.lines() {
+            "Value"
+        }
+        .to_string();
+        for line in doc_comment::format_doc_comment(&m.description).lines() {
             writeln!(code, "    {}", line).unwrap();
         }
-
         if m.arguments.is_empty() {
+            let target = if WALLET_METHODS.contains(&m.name.as_str()) {
+                "wallet_client"
+            } else {
+                "node_client"
+            };
             writeln!(
                 code,
                 "    pub async fn {}(&self) -> Result<{}, TransportError> {{",
                 method_snake, ret_ty
             )
             .unwrap();
-            // Check if this is a wallet method
-            if WALLET_METHODS.contains(&m.name.as_str()) {
-                writeln!(code, "        self.wallet_client.{}().await", method_snake).unwrap();
-            } else {
-                writeln!(code, "        self.node_client.{}().await", method_snake).unwrap();
-            }
+            writeln!(code, "        self.{}.{}().await", target, method_snake).unwrap();
         } else {
-            let mut param_list = String::new();
-            for (i, arg) in m.arguments.iter().enumerate() {
-                if i > 0 {
-                    param_list.push_str(", ");
-                }
-                let param_name = if arg.names[0] == "type" {
-                    "_type"
-                } else {
-                    &camel_to_snake_case(&arg.names[0])
-                };
-                let param_ty = rust_type_for(&arg.names[0], &arg.type_);
-                write!(param_list, "{}: {}", param_name, param_ty).unwrap();
-            }
-
+            let param_list = m
+                .arguments
+                .iter()
+                .map(|arg| {
+                    let name = if arg.names[0] == "type" {
+                        "_type"
+                    } else {
+                        &camel_to_snake_case(&arg.names[0])
+                    };
+                    let ty = rust_type_for(&arg.names[0], &arg.type_);
+                    format!("{}: {}", name, ty)
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
             writeln!(
                 code,
                 "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{",
                 method_snake, param_list, ret_ty
             )
             .unwrap();
-
-            let mut args = String::new();
-            for (i, arg) in m.arguments.iter().enumerate() {
-                if i > 0 {
-                    args.push_str(", ");
-                }
-                let param_name = if arg.names[0] == "type" {
-                    "_type"
-                } else {
-                    &camel_to_snake_case(&arg.names[0])
-                };
-                write!(args, "{}", param_name).unwrap();
-            }
-
-            // Check if this is a wallet method
-            if WALLET_METHODS.contains(&m.name.as_str()) {
-                writeln!(
-                    code,
-                    "        self.wallet_client.{}({}).await",
-                    method_snake, args
-                )
-                .unwrap();
+            let args = m
+                .arguments
+                .iter()
+                .map(|arg| {
+                    if arg.names[0] == "type" {
+                        "_type".to_string()
+                    } else {
+                        camel_to_snake_case(&arg.names[0])
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            let target = if WALLET_METHODS.contains(&m.name.as_str()) {
+                "wallet_client"
             } else {
-                writeln!(
-                    code,
-                    "        self.node_client.{}({}).await",
-                    method_snake, args
-                )
-                .unwrap();
-            }
+                "node_client"
+            };
+            writeln!(
+                code,
+                "        self.{}.{}({}).await",
+                target, method_snake, args
+            )
+            .unwrap();
         }
         writeln!(code, "    }}\n").unwrap();
     }
+    Ok(())
+}
 
-    // Update the helper methods for sendtoaddress
+fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "/// Helper method to send bitcoin to an address with either a confirmation target or fee rate.\n\
@@ -805,16 +857,19 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
      }}\n"
     )
     .unwrap();
+    Ok(())
+}
 
-    // Close the impl block
+fn emit_impl_block_end(code: &mut String) -> std::io::Result<()> {
     writeln!(code, "}}\n").unwrap();
+    Ok(())
+}
 
-    // Add Drop implementation
+fn emit_drop_impl(code: &mut String, client_name: &str) -> std::io::Result<()> {
     writeln!(code, "impl Drop for {} {{", client_name).unwrap();
     writeln!(code, "    fn drop(&mut self) {{").unwrap();
     writeln!(code, "        let _ = self.node_manager.take();").unwrap();
     writeln!(code, "    }}").unwrap();
     writeln!(code, "}}\n").unwrap();
-
-    Ok(code)
+    Ok(())
 }
