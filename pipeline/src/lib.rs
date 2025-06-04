@@ -677,7 +677,10 @@ documentation = "https://docs.rs/bitcoin-rpc-midas"
 anyhow = "1.0"
 async-trait = "0.1"
 bitcoin = { version = "0.32.6", features = ["rand", "serde"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12.15", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.10"
