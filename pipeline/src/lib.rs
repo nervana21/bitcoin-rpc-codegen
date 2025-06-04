@@ -661,7 +661,7 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
 publish = true
 
 name = "bitcoin-rpc-midas"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Bitcoin RPC Codegen Core Developers"]
 license = "MIT OR Apache-2.0"
