@@ -1,62 +1,36 @@
 flowchart LR
-  %% ────────────────── RPC‑API ──────────────────
-  subgraph RPC_API["rpc_api"]
-    direction TB
-    rpc_api["RPC‑API<br/>(types, errors, versions)"]
-  end
+  %% ───────────────────────── Nodes ─────────────────────────
+  RPC_API["rpc_api"]:::api
+  Parser["parser"]:::parser
+  SchemaNorm["schema_normalizer"]:::schema
+  SchemaVal["schema_validator"]:::schema
+  Codegen["codegen"]:::codegen
+  Transport["transport"]:::transport
+  Pipeline["pipeline"]:::pipeline
+  Midas["bitcoin‑rpc‑midas"]:::midas
+  NodeMgr["node"]:::node
+  Config["config"]:::config
 
-  %% ────────────────── Parser ──────────────────
-  subgraph PARSER["parser"]
-    direction TB
-    parser["parser<br/>(HelpParser)"]
-  end
+  %% ───────────────────────── Flow ─────────────────────────
+  RPC_API  --> Parser
+  Parser   --> SchemaNorm
+  SchemaNorm --> SchemaVal
+  SchemaNorm --> Codegen
+  Codegen  --> Transport
+  Codegen  --> Pipeline
+  Pipeline --> Midas
 
-  %% ────────────────── Schema ──────────────────
-  subgraph SCHEMA["schema"]
-    direction TB
-    schema_norm["schema_normalizer"]
-    schema_val["schema_validator"]
-  end
+  %%  Node‑side utilities
+  NodeMgr  --> Transport
+  NodeMgr  --> Config
 
-  %% ────────────────── Codegen ──────────────────
-  subgraph CODEGEN["codegen"]
-    direction TB
-    codegen["codegen"]
-  end
-
-  %% ────────────────── Transport ──────────────────
-  subgraph TRANSPORT["transport"]
-    direction TB
-    transport["transport<br/>(JSON‑RPC HTTP)"]
-  end
-
-  %% ────────────────── Node Manager ──────────────────
-  subgraph NODE["node"]
-    direction TB
-    node_mgr["node<br/>(NodeManager)"]
-  end
-
-  %% ────────────────── Pipeline ──────────────────
-  subgraph PIPELINE["pipeline"]
-    direction TB
-    pipeline["pipeline<br/>(Code Generation)"]
-  end
-
-  %% ────────────────── Cross‑cutting crates ──────────────────
-  config["config"]
-  logging["logging"]
-
-  %% ────────────────── Dependencies ──────────────────
-  parser      --> rpc_api
-  schema_norm --> parser
-  schema_norm --> rpc_api
-  schema_val  --> schema_norm
-  codegen     --> schema_norm
-  codegen     --> transport
-  pipeline    --> parser
-  pipeline    --> rpc_api
-  pipeline    --> schema_norm
-  pipeline    --> schema_val
-  pipeline    --> codegen
-  node_mgr    --> config
-  node_mgr    --> transport
+  %% ───────────────────────── Styles ─────────────────────────
+  classDef api       fill:#d0e1ff,stroke:#2255aa,color:#000;
+  classDef parser    fill:#d0ffd0,stroke:#2a8a2a,color:#000;
+  classDef schema    fill:#e7d9ff,stroke:#6644aa,color:#000;
+  classDef codegen   fill:#ffd9d9,stroke:#aa2222,color:#000;
+  classDef transport fill:#fff7c7,stroke:#aa9922,color:#000;
+  classDef pipeline  fill:#fad5ff,stroke:#aa44aa,color:#000;
+  classDef midas     fill:#c9f5ff,stroke:#228899,color:#000;
+  classDef node      fill:#c9f5ff,stroke:#228899,color:#000;
+  classDef config    fill:#ffffff,stroke:#666666,color:#000;
