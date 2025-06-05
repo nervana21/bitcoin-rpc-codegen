@@ -1,0 +1,62 @@
+flowchart LR
+  %% ────────────────── RPC‑API ──────────────────
+  subgraph RPC_API["rpc_api"]
+    direction TB
+    rpc_api["RPC‑API<br/>(types, errors, versions)"]
+  end
+
+  %% ────────────────── Parser ──────────────────
+  subgraph PARSER["parser"]
+    direction TB
+    parser["parser<br/>(HelpParser)"]
+  end
+
+  %% ────────────────── Schema ──────────────────
+  subgraph SCHEMA["schema"]
+    direction TB
+    schema_norm["schema_normalizer"]
+    schema_val["schema_validator"]
+  end
+
+  %% ────────────────── Codegen ──────────────────
+  subgraph CODEGEN["codegen"]
+    direction TB
+    codegen["codegen"]
+  end
+
+  %% ────────────────── Transport ──────────────────
+  subgraph TRANSPORT["transport"]
+    direction TB
+    transport["transport<br/>(JSON‑RPC HTTP)"]
+  end
+
+  %% ────────────────── Node Manager ──────────────────
+  subgraph NODE["node"]
+    direction TB
+    node_mgr["node<br/>(NodeManager)"]
+  end
+
+  %% ────────────────── Pipeline ──────────────────
+  subgraph PIPELINE["pipeline"]
+    direction TB
+    pipeline["pipeline<br/>(Code Generation)"]
+  end
+
+  %% ────────────────── Cross‑cutting crates ──────────────────
+  config["config"]
+  logging["logging"]
+
+  %% ────────────────── Dependencies ──────────────────
+  parser      --> rpc_api
+  schema_norm --> parser
+  schema_norm --> rpc_api
+  schema_val  --> schema_norm
+  codegen     --> schema_norm
+  codegen     --> transport
+  pipeline    --> parser
+  pipeline    --> rpc_api
+  pipeline    --> schema_norm
+  pipeline    --> schema_val
+  pipeline    --> codegen
+  node_mgr    --> config
+  node_mgr    --> transport
