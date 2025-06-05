@@ -1,92 +1,78 @@
 # Bitcoin RPC Code Generator
 
-A **Universal Adapter** for Bitcoin RPC communication, seamlessly translating your Rust applications' requests into the native language of your Bitcoin nodes.
+A code generator that produces **bitcoin-rpc-midas** - a type-safe Rust library for Bitcoin RPC communication. Like King Midas turning everything to gold, bitcoin-rpc-midas transforms Bitcoin Core's C++ RPC interface into pure Rust gold, ensuring your application's Bitcoin node communication is guaranteed to work.
 
-No more compatibility headaches—simply tell your application, "Connect to my Bitcoin node," and the adapter intelligently handles the rest.
+## The Problem
 
-## What Does "Universal Adapter" Mean?
+Bitcoin Core's RPC interface evolves across versions, and manually maintaining RPC client code is error-prone and time-consuming. One wrong parameter type or missing field can lead to runtime failures that are hard to catch during development.
 
-- **Automatic Version Detection:** It queries your Bitcoin node, asking, "Which language (version) do you speak?"
-- **Dynamic Client Generation:** It responds with, "Great, I speak that language too!" and automatically generates type-safe Rust RPC client methods tailored specifically for your node's Bitcoin Core version.
-- **Type-safe and Secure:** The generated Rust methods and response types ensure compile-time validation, drastically reducing runtime errors.
+## The Solution
+
+This generator creates **bitcoin-rpc-midas** - a **guaranteed-compatible** Rust interface to your Bitcoin node:
+
+- **The Midas Touch:** Transforms Bitcoin Core's C++ RPC interface into pure Rust gold
+- **Compile-Time Guarantees:** bitcoin-rpc-midas is type-safe and matches your Bitcoin node's exact RPC interface. If it compiles, it works.
+- **Version-Aware:** Automatically detects your Bitcoin node version and generates the correct interface.
+- **Zero Runtime Surprises:** All RPC methods and response types are generated from Bitcoin Core's source, ensuring perfect compatibility.
+
+## Key Benefits
+
+- **Golden Type Safety:** Like Midas's touch, every C++ RPC call is transformed into type-safe Rust gold
+- **Eliminates RPC Compatibility Issues:** No more runtime errors from mismatched parameter types or response structures
+- **Developer Experience:** Full IDE support with autocomplete and type hints
+- **Maintenance-Free:** Automatically adapts to your Bitcoin node version
+- **Production-Ready:** Generated code is optimized and follows Rust best practices
 
 ## Features
 
-- **Bitcoin Core v28 Support:** Currently supports Bitcoin Core v28 RPC API, with plans to expand to other versions.
-- **Strongly Typed API:** Eliminates guesswork and manual parsing, improving maintainability and security.
-- **Robust Error Handling:** Uses idiomatic Rust error handling (`anyhow`) to clearly communicate issues during RPC calls.
-- **Seamless Integration:** Generated code is easily integrated into your Rust projects, fitting naturally into your build process via Cargo's `OUT_DIR`.
-- **Test Node Support:** Includes a `BitcoinTestClient` for testing and development, with support for:
-  - Wallet creation and management
-  - Address generation (including bech32m)
-  - Block generation and mining
-  - Blockchain state queries
+- **Bitcoin Core Version Support:** Pre-generated support for Bitcoin Core v28. For other versions, run the generator against your node's RPC interface.
+- **Type-Safe API:** All RPC methods and responses are strongly typed
+- **Robust Error Handling:** Uses idiomatic Rust error handling (`anyhow`)
+- **Test Node Support:** Includes a `BitcoinTestClient` for development and testing
 
 ## Project Structure
 
-The project is organized into several key components:
-
 - **codegen/**: Core code generation logic
-  - RPC method macro generation
-  - Response type generation
-  - Namespace scaffolding
-  - Test node generation
 - **config/**: Configuration management
 - **parser/**: Bitcoin Core RPC API parsing
 - **pipeline/**: High-level code generation pipeline
 - **rpc-api/**: RPC API definitions and types
-- **schema/**: Schema normalization and validation
+- **schema/**: Schema normalization and validation (feeds codegen)
 - **transport/**: JSON-RPC transport layer
 
 ## Quick Start
 
-Install the generator with Cargo:
+### Using the Pre-generated Library
+
+Add the library to your project:
 
 ```bash
-cargo install bitcoin-rpc-codegen
+cargo add bitcoin-rpc-midas
 ```
 
-Or clone the repository:
+Or manually add to your `Cargo.toml`:
 
-```bash
-git clone https://github.com/nervana21/bitcoin-rpc-codegen.git
-cd bitcoin-rpc-codegen
-cargo build --release
+```toml
+[dependencies]
+midas = { package = "bitcoin-rpc-midas", version = "0.1.1" }
+
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+serde_json = "1.0"
+bitcoin = "0.32.0"
 ```
 
 ## Example Usage
 
-Here's a practical example showing how to use the `BitcoinTestClient` for testing:
-
 ```rust
-use bitcoin_rpc_codegen::BitcoinTestClient;
+use anyhow::Result;
+use midas::BitcoinTestClient;
 
-async fn test_bitcoin_node() -> anyhow::Result<()> {
-    // Initialize test node with sensible defaults
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = BitcoinTestClient::new().await?;
-
-    // Get initial blockchain state
-    let info = client.getblockchaininfo().await?;
-    println!("Initial blockchain state:\n{:#?}\n", info);
-
-    // Create and fund a test wallet
-    let wallet_name = "test_wallet";
-    let _wallet = client
-        .createwallet(
-            wallet_name.to_string(),
-            false,          // disable_private_keys
-            false,          // blank
-            "".to_string(), // passphrase
-            false,          // avoid_reuse
-            true,           // descriptors
-            false,          // load_on_startup
-            false,          // external_signer
-        )
-        .await?;
-
-    // Generate a new bech32m address
-    let address = client.getnewaddress("".to_string(), "bech32m".to_string()).await?.0;
-
+    let wallet_info = client.getwalletinfo().await?;
+    println!("Wallet state:\n{:#?}\n", wallet_info);
     Ok(())
 }
 ```
@@ -98,3 +84,7 @@ We welcome contributions! Please check out our [Contributing Guide](CONTRIBUTING
 ## License
 
 MIT License—see [LICENSE](LICENSE) for details.
+
+## Security Disclaimer
+
+Generated code communicates directly with your Bitcoin node. Always audit the generated code before using it on mainnet.

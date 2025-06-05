@@ -78,6 +78,12 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     write_cargo_toml(&crate_root)
         .with_context(|| format!("Failed to write Cargo.toml in: {:?}", crate_root))?;
 
+    // Write .gitignore with minimal exclusions
+    let gitignore_path = crate_root.join(".gitignore");
+    println!("[diagnostic] writing .gitignore at {:?}", gitignore_path);
+    fs::write(&gitignore_path, "/target\n/Cargo.lock\n")
+        .with_context(|| format!("Failed to write .gitignore at {:?}", gitignore_path))?;
+
     // Write README.md
     write_readme(&crate_root)
         .with_context(|| format!("Failed to write README.md in: {:?}", crate_root))?;

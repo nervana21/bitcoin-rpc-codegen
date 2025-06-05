@@ -4,7 +4,6 @@
 /target/
 !/target/generated/
 /bitcoin-rpc-midas/
-# /test-client/src/generated/
 /codegen/resources/
 
 # Rust artifacts
