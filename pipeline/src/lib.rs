@@ -730,7 +730,10 @@ This crate is designed for developers building tools, tests, or applications tha
 ## Example
 
 ```rust
+use anyhow::{anyhow, Result};
 use bitcoin_rpc_midas::BitcoinTestClient;
+use bitcoin::Amount;
+use serde_json::json;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
