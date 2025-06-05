@@ -32,13 +32,20 @@ This generator creates **bitcoin-rpc-midas** - a **guaranteed-compatible** Rust 
 
 ## Project Structure
 
-- **codegen/**: Core code generation logic
-- **config/**: Configuration management
-- **parser/**: Bitcoin Core RPC API parsing
-- **pipeline/**: High-level code generation pipeline
-- **rpc-api/**: RPC API definitions and types
-- **schema/**: Schema normalization and validation (feeds codegen)
-- **transport/**: JSON-RPC transport layer
+See [docs/structure.mmd](docs/structure.mmd) for a detailed visualization of the project's architecture and component relationships.
+
+The main components are:
+
+- **rpc_api/**: Bitcoin Core RPC API definitions and interface
+- **parser/**: Parses Bitcoin Core's RPC interface into structured data
+- **schema/**: Contains schema normalizer and validator for RPC definitions
+- **codegen/**: Core code generation logic for the Rust interface
+- **transport/**: JSON-RPC transport layer for node communication
+- **pipeline/**: Orchestrates the code generation process
+- **node/**: Node management and communication utilities
+- **config/**: Configuration management for the code generator
+
+The end result is **[bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-midas)** - a type-safe Rust library that provides a guaranteed-compatible interface to your Bitcoin node. This generated library is what you'll use in your Rust applications to communicate with Bitcoin Core.
 
 ## Quick Start
 
