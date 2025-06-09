@@ -94,4 +94,4 @@ MIT License—see [LICENSE](LICENSE) for details.
 
 ## Security Disclaimer
 
-Generated code communicates directly with your Bitcoin node. Always audit the generated code before using it on mainnet.
+This and all related code can communicate directly with bitcoind. Mainnet use requires caution: always audit the generated code, restrict RPC access to trusted interfaces, and avoid exposing your node to the public internet.
