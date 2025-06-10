@@ -100,4 +100,4 @@ MIT — see [LICENSE](LICENSE)
 
 ## Security Note
 
-This and all related software can communicate directly with bitcoind. Mainnet use requires caution: always audit the code, restrict RPC access to trusted interfaces, and avoid exposing your node to the public internet.
+This and all related software can communicate directly with _bitcoind_. Mainnet use requires caution: always audit the code, restrict RPC access to trusted interfaces, and avoid exposing your node to the public internet.
