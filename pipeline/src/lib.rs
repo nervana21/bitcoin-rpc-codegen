@@ -619,32 +619,21 @@ impl TestConfig {
     let mut file = File::create(&lib_rs)
         .with_context(|| format!("Failed to create lib.rs at {:?}", lib_rs))?;
 
-    writeln!(file, "//! Generated Bitcoin RPC client library.")?;
-    writeln!(file, "//!")?;
     writeln!(
         file,
-        "//! This library provides a strongly-typed interface to the Bitcoin RPC API."
-    )?;
-    writeln!(
-        file,
-        "//! It is generated from the Bitcoin Core RPC API documentation.\n"
-    )?;
-
-    writeln!(file, "pub mod config;")?;
-    writeln!(file, "pub mod node;")?;
-    writeln!(file, "pub mod transport;")?;
-    writeln!(file, "pub mod types;")?;
-    writeln!(file, "pub mod test_node;\n")?;
-
-    writeln!(file, "pub use config::Config;")?;
-    writeln!(file, "pub use node::BitcoinNodeManager;")?;
-    writeln!(
-        file,
-        "pub use transport::{{DefaultTransport, TransportError}};"
-    )?;
-    writeln!(
-        file,
-        "pub use crate::test_node::test_node::BitcoinTestClient;"
+        "//! Generated Bitcoin RPC client library.\n\
+         //!\n\
+         //! This library provides a strongly-typed interface to the Bitcoin RPC API.\n\
+         //! It is generated from the Bitcoin Core RPC API documentation.\n\n\
+         pub mod config;\n\
+         pub mod node;\n\
+         pub mod transport;\n\
+         pub mod types;\n\
+         pub mod test_node;\n\n\
+         pub use config::Config;\n\
+         pub use node::BitcoinNodeManager;\n\
+         pub use transport::{{DefaultTransport, TransportError}};\n\
+         pub use crate::test_node::test_node::BitcoinTestClient;"
     )?;
 
     ModuleGenerator::new(vec!["latest".into()], out_dir.to_path_buf())
