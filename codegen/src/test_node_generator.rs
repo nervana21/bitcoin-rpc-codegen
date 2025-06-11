@@ -27,15 +27,27 @@ use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
 use rpc_api::ApiMethod;
 use std::fmt::Write as _;
 
-/// Generates typed Rust clients for interacting with a Bitcoin Core node in test environments.
+/// A code generator that creates a type-safe Rust client library for Bitcoin Core test environments.
 ///
-/// `TestNodeGenerator` produces thin wrappers around RPC methods exposed by Bitcoin Core,
-/// generating type-safe parameter structs (`params.rs`), result wrappers (`result.rs`),
-/// and high-level clients (`BitcoinTestClient`, `BitcoinNodeClient`, and `BitcoinWalletClient`)
-/// for use in integration tests or test harnesses.
+/// This generator takes Bitcoin Core RPC API definitions and produces a complete Rust client library
+/// that provides a high-level, type-safe interface for:
+/// - Node lifecycle management (start/stop)
+/// - Wallet management and operations
+/// - Block mining and chain manipulation
+/// - All Bitcoin Core RPC methods with proper typing
 ///
-/// This generator assumes an API schema input and emits idiomatic Rust code, enabling
-/// easy and ergonomic testing of RPC interfaces without hand-rolled serialization logic.
+/// The generated client library serves as a test harness that bridges Bitcoin Core's RPC interface
+/// with Rust's type system, making it easier to write reliable Bitcoin Core integration tests
+/// without dealing with low-level RPC details.
+///
+/// The generator produces several key components:
+/// - Type-safe parameter structs for RPC calls
+/// - Type-safe result structs for RPC responses
+/// - A high-level `BitcoinTestClient` with ergonomic helpers
+/// - Separate node and wallet client interfaces
+///
+/// This abstraction layer enables developers to focus on test logic rather than RPC mechanics,
+/// while maintaining type safety and proper error handling throughout the test suite.
 pub struct TestNodeGenerator;
 
 impl CodeGenerator for TestNodeGenerator {
@@ -281,6 +293,7 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     emit_send_to_address_helpers(&mut code).unwrap();
     emit_impl_block_end(&mut code).unwrap();
     emit_drop_impl(&mut code, client_name).unwrap();
+
     Ok(code)
 }
 
@@ -292,6 +305,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use crate::transport::core::TransportExt;
 use crate::transport::{{DefaultTransport, TransportError}};
+use async_trait::async_trait;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
@@ -406,9 +420,13 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
             &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),
         ));
-        let node_client = BitcoinNodeClient::new(client.clone());
         
-        // Core initialization states that require waiting
+        // Create node and wallet clients
+        let node_client = BitcoinNodeClient::new(client.clone());
+        let wallet_client = BitcoinWalletClient::new(client.clone());
+        
+        // Wait for node to be ready for RPC
+        // Core initialization states that require waiting:
         // -28: RPC in warmup
         // -4:  RPC in warmup (alternative code)
         let init_states = [
@@ -416,7 +434,7 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
             \"\\\"code\\\":-4\",
         ];
         
-        let max_retries = 60; // Increased from 30 to 60 for slower systems
+        let max_retries = 30;
         let mut retries = 0;
         
         loop {{
@@ -443,7 +461,7 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         Ok(Self {{
             node_client,
-            wallet_client: BitcoinWalletClient::new(client),
+            wallet_client: BitcoinWalletClient::new(client.clone()),
             node_manager: Some(Box::new(node_manager)),
         }})
     }}"
@@ -500,8 +518,8 @@ fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
                          Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),\n\
                      ).with_wallet(wallet_name.clone()));\n\
                      \n\
-                     self.wallet_client.with_transport(new_transport.clone());\n\
-                     self.node_client.with_transport(new_transport);\n\
+                     self.wallet_client.with_transport(new_transport.clone());\n
+                     self.node_client.with_transport(new_transport);\n
                      Ok(wallet_name)\n\
                  }},\n\
                  Err(e) => Err(e),\n\
