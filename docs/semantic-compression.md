@@ -21,9 +21,9 @@ Let:
 
 Then:
 
-```math
-\text{Generative Complexity:} \quad \text{GC}(𝒮) = \min_{\Gamma : \Gamma(Δ) \to \mathcal{I} \models 𝒮} \; \lVert \Gamma \rVert
-```
+$$
+\text{Generative Complexity:} \quad \text{GC}(\mathcal{S}) = \min_{\Gamma : \Gamma(\Delta) \to \mathcal{I} \models \mathcal{S}} \; \|\Gamma\|
+$$
 
 Where:
 
@@ -80,9 +80,9 @@ This enables an iterative refinement process:
 
 Define:
 
-```math
-\text{SCR}(𝒮, Γ) = \frac{\lvert \mathcal{I} \rvert}{\lVert \Gamma \rVert}
-```
+$$
+\text{SCR}(\mathcal{S}, \Gamma) = \frac{|\mathcal{I}|}{\|\Gamma\|}
+$$
 
 Where `|ℐ|` is the size of the implementation and `‖Γ‖` is the generator size.
 
@@ -98,16 +98,24 @@ This ratio provides a **semantic density score**: how much specification-correct
 
 ---
 
-## Relation to `bitcoin-rpc-codegen`
+## Relation to Bitcoin Core and `bitcoin-rpc-codegen`
 
-This project implements a real-world instance of semantic compression:
+This project implements a real-world instance of semantic compression by compressing Bitcoin Core's RPC interface into a minimal generator:
 
+- Source: `𝒮 = Bitcoin Core v28 RPC interface`
+- Description: `Δ = api_v28.json`
 - Generator: `Γ = bitcoin-rpc-codegen`
-- Description: `Δ = api_vXX.json` for various Bitcoin Core versions
-- Output: `ℐ` = typed, version-aware Rust RPC clients
-- Metric: `‖Γ‖` = LOC or AST node count across the codegen pipeline
+- Output: `ℐ = bitcoin-rpc-midas`
 
-Ongoing work aims to reduce `‖Γ‖` while supporting richer subsets of `𝒮`.
+- Metric: `‖Γ‖` = LOC, AST node count, or token count of `Γ`
+
+The semantic compression is achieved by:
+
+1. Taking Bitcoin Core's RPC interface specification as input
+2. Expressing it in a minimal generator that can produce type-safe, version-aware Rust clients
+3. Maintaining semantic correctness while reducing the size of the generator (`‖Γ‖`)
+
+Ongoing work aims to reduce `‖Γ‖` while supporting richer subsets of `𝒮` and additional Bitcoin Core versions.
 
 ---
 
