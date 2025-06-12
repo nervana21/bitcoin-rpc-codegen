@@ -18,7 +18,7 @@ pub fn camel_to_snake_case(s: &str) -> String {
 
 /// Capitalizes the first character of a string and converts snake_case/kebab-case to PascalCase
 pub fn capitalize(s: &str) -> String {
-    s.split(|c| c == '_' || c == '-')
+    s.split(['_', '-'])
         .map(|word| {
             let mut chars = word.chars();
             match chars.next() {
