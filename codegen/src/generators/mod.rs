@@ -36,3 +36,10 @@ pub mod rpc_client;
 ///
 /// to obtain a fully-typed `fn getblockchaininfo(&self) -> ...` method on their `Client`.
 pub mod rpc_method_macro;
+
+/// Sub-crate generates: **`client_trait`**
+///
+/// Generates the client trait that defines the interface for Bitcoin RPC clients.
+/// This trait is implemented for any type that implements Transport.
+pub mod client_trait;
+pub use client_trait::ClientTraitGenerator;
