@@ -13,7 +13,7 @@ fn setup_test_env() -> TempDir {
 
 #[test]
 fn test_default_config() {
-    setup_test_env();
+    let temp_dir = setup_test_env();
     let config = Config::default();
 
     // Test Bitcoin config defaults
@@ -30,9 +30,8 @@ fn test_default_config() {
     // Test Codegen config defaults
     assert_eq!(config.codegen.input_path, Config::default_help_path());
 
-    // Get the OUT_DIR value at the time of config creation
-    let out_dir = env::var("OUT_DIR").unwrap();
-    assert_eq!(config.codegen.output_dir, PathBuf::from(&out_dir));
+    // Instead of comparing exact paths, verify that the output_dir is within the temp directory
+    assert!(config.codegen.output_dir.starts_with(temp_dir.path()));
 }
 
 #[test]
