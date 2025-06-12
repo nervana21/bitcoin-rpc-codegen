@@ -229,11 +229,7 @@ impl {} {{
                     } else {
                         &camel_to_snake_case(&arg.names[0])
                     };
-                    let ty = if arg.names[0] == "fee_rate" {
-                        "Option<bitcoin::Amount>"
-                    } else {
-                        &rust_type_for(&arg.names[0], &arg.type_)
-                    };
+                    let ty = rust_type_for(&arg.names[0], &arg.type_);
                     format!("{}: {}", name, ty)
                 })
                 .collect::<Vec<_>>()
@@ -253,15 +249,7 @@ impl {} {{
                 } else {
                     &camel_to_snake_case(&arg.names[0])
                 };
-                if arg.names[0] == "fee_rate" {
-                    writeln!(
-                        code,
-                        "        vec.push(match {} {{ Some(v) => serde_json::to_value(v.to_btc())?, None => serde_json::Value::Null }});",
-                        name
-                    ).unwrap();
-                } else {
-                    writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
-                }
+                writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
             }
 
             writeln!(
