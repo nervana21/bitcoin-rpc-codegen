@@ -36,8 +36,7 @@ pub fn format_doc_comment(description: &str) -> String {
             // Replace single quotes with double quotes when they look like string literals
             let line = line.replace("'", "\"");
             // Add space before possessive apostrophes
-            let line = line.replace("'s ", " 's ");
-            line
+            line.replace("'s ", " 's ")
         } else {
             line.to_string()
         };
