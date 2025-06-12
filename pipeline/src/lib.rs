@@ -17,6 +17,12 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 /* --------------------------------------------------------------------- */
+/*  Constants                                                            */
+/* --------------------------------------------------------------------- */
+/// The version of the generated bitcoin-rpc-midas crate
+pub const CRATE_VERSION: &str = "0.1.1";
+
+/* --------------------------------------------------------------------- */
 /*  Public entry: run() – build `bitcoin-rpc-midas` crate                            */
 /* --------------------------------------------------------------------- */
 /// Generates a fully self-contained `bitcoin-rpc-midas` crate under the workspace root.
@@ -619,6 +625,8 @@ impl TestConfig {
     let mut file = File::create(&lib_rs)
         .with_context(|| format!("Failed to create lib.rs at {:?}", lib_rs))?;
 
+    let version_nodots = CRATE_VERSION.replace('.', "");
+
     writeln!(
         file,
         "//! Generated Bitcoin RPC client library.\n\
@@ -656,7 +664,7 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
 publish = true
 
 name = "bitcoin-rpc-midas"
-version = "0.1.1"
+version = "{}"
 edition = "2021"
 authors = ["Bitcoin RPC Codegen Core Developers"]
 license = "MIT OR Apache-2.0"
@@ -684,7 +692,10 @@ tokio = { version = "1.0", features = ["time", "process", "io-util"] }
 tracing = "0.1"
 
 [workspace]
-"#;
+"#,
+        CRATE_VERSION
+    );
+
     fs::write(root.join("Cargo.toml"), toml)
         .with_context(|| format!("Failed to write bitcoin-rpc-midas Cargo.toml at {:?}", root))?;
     Ok(())
