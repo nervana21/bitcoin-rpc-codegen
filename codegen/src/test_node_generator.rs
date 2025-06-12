@@ -268,21 +268,21 @@ impl {} {{
 fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
     let mut code = String::new();
 
-    emit_imports(&mut code).unwrap();
-    emit_node_manager_trait(&mut code).unwrap();
-    emit_struct_definition(&mut code, client_name).unwrap();
-    emit_node_manager_impl(&mut code).unwrap();
-    emit_impl_block_start(&mut code, client_name).unwrap();
-    emit_constructors(&mut code).unwrap();
-    emit_wallet_methods(&mut code).unwrap();
-    emit_block_mining_helpers(&mut code).unwrap();
-    emit_reset_chain(&mut code).unwrap();
-    emit_stop_node(&mut code).unwrap();
-    emit_node_manager_accessor(&mut code).unwrap();
-    emit_delegated_rpc_methods(&mut code, methods).unwrap();
-    emit_send_to_address_helpers(&mut code).unwrap();
-    emit_impl_block_end(&mut code).unwrap();
-    emit_drop_impl(&mut code, client_name).unwrap();
+    emit_imports(&mut code)?;
+    emit_node_manager_trait(&mut code)?;
+    emit_struct_definition(&mut code, client_name)?;
+    emit_node_manager_impl(&mut code)?;
+    emit_impl_block_start(&mut code, client_name)?;
+    emit_constructors(&mut code)?;
+    emit_wallet_methods(&mut code)?;
+    emit_block_mining_helpers(&mut code)?;
+    emit_reset_chain(&mut code)?;
+    emit_stop_node(&mut code)?;
+    emit_node_manager_accessor(&mut code)?;
+    emit_delegated_rpc_methods(&mut code, methods)?;
+    emit_send_to_address_helpers(&mut code)?;
+    emit_impl_block_end(&mut code)?;
+    emit_drop_impl(&mut code, client_name)?;
 
     Ok(code)
 }
