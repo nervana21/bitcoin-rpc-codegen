@@ -67,6 +67,8 @@ fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> 
         "crate::transport::TransportError".to_string(),
         "crate::transport::core::wallet_methods::WALLET_METHODS".to_string(),
         "serde_json::Value".to_string(),
+        "std::future::Future".to_string(),
+        "serde::de::DeserializeOwned".to_string(),
     ]
     .into_iter()
     .map(|i| format!("use {};", i))
@@ -173,14 +175,7 @@ fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> 
             // dispatch on WALLET_METHODS
             let rpc_name = &m.name;
             let call_expr = format!(
-                // TODO: extract wallet-vs-node dispatch into a shared helper (e.g. RpcDispatchExt)
-                // so generated methods can just call `self.dispatch_json(...)` instead of duplicating
-                // this if/else in every method
-                "if WALLET_METHODS.contains(&\"{rpc}\") {{
-        self.wallet_call(\"{rpc}\", &params).await
-    }} else {{
-        self.call::<Value>(\"{rpc}\", &params).await
-    }}",
+                "self.dispatch_json::<Value>(\"{rpc}\", &params).await",
                 rpc = rpc_name
             );
 
