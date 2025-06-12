@@ -2,7 +2,7 @@
 //! by tying together discovery/parsing, schema normalization, and code generation.
 
 use anyhow::{Context, Result};
-use codegen::generators::TypesCodeGenerator;
+use codegen::generators::{ClientTraitGenerator, TypesCodeGenerator};
 use codegen::{
     namespace_scaffolder::ModuleGenerator, test_node_generator::TestNodeGenerator, write_generated,
     CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
@@ -147,7 +147,7 @@ fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     );
 
     // 1) Prepare module directories
-    let subdirs = ["transport", "types", "node"];
+    let subdirs = ["transport", "types", "node", "client_trait"];
     for sub in &subdirs {
         let module_dir = out_dir.join(sub);
         println!("[diagnostic] creating module directory: {:?}", module_dir);
@@ -605,6 +605,15 @@ impl TestConfig {
     write_mod_rs(&out_dir.join("transport"), &tx_files)
         .context("Failed to write transport mod.rs")?;
 
+    // After the transport layer generation:
+    println!("[diagnostic] generating client trait");
+    let client_trait_files = ClientTraitGenerator::new(CRATE_VERSION).generate(&norm);
+    write_generated(&out_dir.join("client_trait"), &client_trait_files)
+        .context("Failed to write client trait files")?;
+
+    write_mod_rs(&out_dir.join("client_trait"), &client_trait_files)
+        .context("Failed to write client_trait mod.rs")?;
+
     // 4) Types
     println!("[diagnostic] generating types code");
     let ty_files = TypesCodeGenerator.generate(&norm);
@@ -630,18 +639,21 @@ impl TestConfig {
     writeln!(
         file,
         "//! Generated Bitcoin RPC client library.\n\
-         //!\n\
-         //! This library provides a strongly-typed interface to the Bitcoin RPC API.\n\
-         //! It is generated from the Bitcoin Core RPC API documentation.\n\n\
-         pub mod config;\n\
-         pub mod node;\n\
-         pub mod transport;\n\
-         pub mod types;\n\
-         pub mod test_node;\n\n\
-         pub use config::Config;\n\
-         pub use node::BitcoinNodeManager;\n\
-         pub use transport::{{DefaultTransport, TransportError}};\n\
-         pub use crate::test_node::test_node::BitcoinTestClient;"
+     //!\n\
+     //! This library provides a strongly-typed interface to the Bitcoin RPC API.\n\
+     //! It is generated from the Bitcoin Core RPC API documentation.\n\n\
+     pub mod config;\n\
+     pub mod node;\n\
+     pub mod transport;\n\
+     pub mod types;\n\
+     pub mod test_node;\n\
+     pub mod client_trait;\n\n\
+     pub use config::Config;\n\
+     pub use node::BitcoinNodeManager;\n\
+     pub use transport::{{DefaultTransport, TransportError}};\n\
+     pub use crate::test_node::test_node::BitcoinTestClient;\n\
+     pub use crate::client_trait::client_trait::BitcoinClientV{};",
+        version_nodots
     )?;
 
     ModuleGenerator::new(vec!["latest".into()], out_dir.to_path_buf())
@@ -660,7 +672,8 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
     );
-    let toml = r#"[package]
+    let toml = format!(
+        r#"[package]
 publish = true
 
 name = "bitcoin-rpc-midas"
@@ -679,16 +692,16 @@ documentation = "https://docs.rs/bitcoin-rpc-midas"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-bitcoin = { version = "0.32.6", features = ["rand", "serde"] }
-reqwest = { version = "0.12.15", default-features = false, features = [
+bitcoin = {{ version = "0.32.6", features = ["rand", "serde"] }}
+reqwest = {{ version = "0.12.15", default-features = false, features = [
     "json",
     "rustls-tls",
-] }
-serde = { version = "1.0", features = ["derive"] }
+] }}
+serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = "1.0"
 tempfile = "3.10"
 thiserror = "2.0.12"
-tokio = { version = "1.0", features = ["time", "process", "io-util"] }
+tokio = {{ version = "1.0", features = ["time", "process", "io-util"] }}
 tracing = "0.1"
 
 [workspace]
@@ -730,18 +743,18 @@ This crate is designed for developers building tools, tests, or applications tha
 ## Example
 
 ```rust
-use anyhow::{anyhow, Result};
+use anyhow::{{anyhow, Result}};
 use bitcoin_rpc_midas::BitcoinTestClient;
 use bitcoin::Amount;
 use serde_json::json;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> anyhow::Result<()> {{
     let client = BitcoinTestClient::new().await?;
     let info = client.getblockchaininfo().await?;
-    println!("{:#?}", info);
+    println!("{{:#?}}", info);
     Ok(())
-}
+}}
 ```
 
 ## Installation
