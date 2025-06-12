@@ -423,7 +423,6 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         // Create node and wallet clients
         let node_client = BitcoinNodeClient::new(client.clone());
-        let wallet_client = BitcoinWalletClient::new(client.clone());
         
         // Wait for node to be ready for RPC
         // Core initialization states that require waiting:
