@@ -180,8 +180,8 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
         "use anyhow::Result;
 use serde_json::Value;
 use std::sync::Arc;
-use crate::transport::core::TransportExt;
-use crate::transport::{{DefaultTransport, TransportError}};
+use crate::transport::core::{{TransportExt, TransportError}};
+use crate::transport::DefaultTransport;
 
 #[derive(Debug, Clone)]
 pub struct {} {{
@@ -199,6 +199,7 @@ impl {} {{
         client_name, client_name
     )
     .unwrap();
+
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
         let ret_ty = "Value";
@@ -262,6 +263,7 @@ impl {} {{
                     writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
                 }
             }
+
             writeln!(
                 code,
                 "        Ok(self.client.call::<{}>(\"{}\", &vec).await?.into())
@@ -303,9 +305,8 @@ fn emit_imports(code: &mut String) -> std::io::Result<()> {
         "use anyhow::Result;
 use serde_json::Value;
 use std::sync::Arc;
-use crate::transport::core::TransportExt;
-use crate::transport::{{DefaultTransport, TransportError}};
-use async_trait::async_trait;
+use crate::transport::core::{{TransportError}};
+use crate::transport::DefaultTransport;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
@@ -313,8 +314,7 @@ use super::node::BitcoinNodeClient;
 use super::wallet::BitcoinWalletClient;
 
 use std::str::FromStr;
-use bitcoin::Amount;
-"
+use bitcoin::Amount;"
     )
     .unwrap();
     Ok(())
