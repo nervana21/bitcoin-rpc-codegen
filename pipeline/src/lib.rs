@@ -608,7 +608,7 @@ impl TestConfig {
     // After the transport layer generation:
     println!("[diagnostic] generating client trait");
     let client_trait_files = ClientTraitGenerator::new(CRATE_VERSION).generate(&norm);
-    write_generated(&out_dir.join("client_trait"), &client_trait_files)
+    write_generated(out_dir.join("client_trait"), &client_trait_files)
         .context("Failed to write client trait files")?;
 
     write_mod_rs(&out_dir.join("client_trait"), &client_trait_files)
