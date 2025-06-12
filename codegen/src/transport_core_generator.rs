@@ -1,4 +1,4 @@
-use crate::CodeGenerator;
+use crate::{wallet_methods::WALLET_METHODS, CodeGenerator};
 use rpc_api::ApiMethod;
 use std::fmt::Write as _;
 
@@ -36,7 +36,7 @@ fn emit_imports(code: &mut String) {
 }
 
 fn emit_wallet_methods(code: &mut String) {
-    let methods: String = crate::wallet_methods::WALLET_METHODS
+    let methods: String = WALLET_METHODS
         .iter()
         .map(|method| format!("        \"{}\",", method))
         .collect::<Vec<_>>()
