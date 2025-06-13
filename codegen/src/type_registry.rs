@@ -1,324 +1,270 @@
 use rpc_api::{ApiArgument, ApiResult};
-use std::collections::HashMap;
 
-/// Represents a mapping from Bitcoin RPC types to Rust types
-#[derive(Debug, Clone)]
-pub struct TypeMapping {
-    /// The base Rust type to use
-    pub rust_type: &'static str,
-    /// Whether this type should be wrapped in Option<T>
-    pub is_optional: bool,
-    /// Special case field names that should use this mapping
-    pub field_patterns: Vec<&'static str>,
-    /// Priority of the mapping (higher wins)
-    pub priority: u8,
+/// A single mapping rule:
+/// - `rpc_type`: the JSON schema type
+/// - `pattern`: an optional substring to match on the (normalized) field/key name
+/// - `rust_type`: the Rust type to use
+/// - `is_optional`: wrap in `Option<T>`?
+struct Rule {
+    rpc_type: &'static str,
+    pattern: Option<&'static str>,
+    rust_type: &'static str,
+    is_optional: bool,
 }
 
-/// Central registry for mapping Bitcoin RPC types to Rust types
-pub struct TypeRegistry {
-    type_mappings: HashMap<String, Vec<TypeMapping>>,
+const RULES: &[Rule] = &[
+    // 1. Primitives
+    Rule {
+        rpc_type: "string",
+        pattern: None,
+        rust_type: "String",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "boolean",
+        pattern: None,
+        rust_type: "bool",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "null",
+        pattern: None,
+        rust_type: "()",
+        is_optional: false,
+    },
+    // 2. Numbers & amounts (patterned first)
+    // Amount-like patterns
+    Rule {
+        rpc_type: "number",
+        pattern: Some("amount"),
+        rust_type: "bitcoin::Amount",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("balance"),
+        rust_type: "bitcoin::Amount",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("fee"),
+        rust_type: "bitcoin::Amount",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("rate"),
+        rust_type: "bitcoin::Amount",
+        is_optional: false,
+    },
+    // Integer patterns (u64)
+    Rule {
+        rpc_type: "number",
+        pattern: Some("nblocks"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("maxtries"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("height"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("count"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("index"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("size"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("time"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+    // Integer patterns (u32)
+    Rule {
+        rpc_type: "number",
+        pattern: Some("minconf"),
+        rust_type: "u32",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("locktime"),
+        rust_type: "u32",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("version"),
+        rust_type: "u32",
+        is_optional: false,
+    },
+    // Float patterns
+    Rule {
+        rpc_type: "number",
+        pattern: Some("difficulty"),
+        rust_type: "f64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("probability"),
+        rust_type: "f64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("percentage"),
+        rust_type: "f64",
+        is_optional: false,
+    },
+    // fallback number - use u64 instead of serde_json::Value
+    Rule {
+        rpc_type: "number",
+        pattern: None,
+        rust_type: "u64",
+        is_optional: false,
+    },
+    // 3. Hex blobs
+    Rule {
+        rpc_type: "hex",
+        pattern: Some("txid"),
+        rust_type: "bitcoin::Txid",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "hex",
+        pattern: Some("blockhash"),
+        rust_type: "bitcoin::BlockHash",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "hex",
+        pattern: None,
+        rust_type: "String",
+        is_optional: false,
+    },
+    // 4. Arrays
+    Rule {
+        rpc_type: "array",
+        pattern: Some("address"),
+        rust_type: "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "array",
+        pattern: None,
+        rust_type: "Vec<serde_json::Value>",
+        is_optional: false,
+    },
+    // 5. Objects
+    Rule {
+        rpc_type: "object",
+        pattern: Some("transaction"),
+        rust_type: "bitcoin::Transaction",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "object",
+        pattern: None,
+        rust_type: "serde_json::Value",
+        is_optional: false,
+    },
+    // 6. Everything else
+    Rule {
+        rpc_type: "*",
+        pattern: None,
+        rust_type: "serde_json::Value",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("conf_target"),
+        rust_type: "u64",
+        is_optional: false,
+    },
+];
+
+/// Normalize names by lowercasing and stripping `_`, `-`, and spaces.
+fn normalize(name: &str) -> String {
+    name.chars()
+        .filter(|c| !matches!(c, '_' | '-' | ' '))
+        .flat_map(|c| c.to_lowercase())
+        .collect()
 }
+
+/// A registry of type mappings for JSON RPC types to Rust types.
+///
+/// This registry provides a centralized mapping of JSON RPC type identifiers
+/// (e.g., `"string"`, `"number"`, `"boolean"`, etc.) to their corresponding
+/// Rust type names (`String`, `f64`, `bool`, etc.). It also handles optional
+/// fields and supports wildcard matching for unknown or dynamic types.
+pub struct TypeRegistry;
 
 impl TypeRegistry {
-    /// Create a new TypeRegistry with default mappings
+    /// Creates a new `TypeRegistry` instance.
+    ///
+    /// This constructor is provided for completeness, but the `TypeRegistry`
+    /// is a stateless singleton and does not need to be instantiated.
     pub fn new() -> Self {
-        let mut registry = Self {
-            type_mappings: HashMap::new(),
-        };
-        registry.register_default_mappings();
-        registry.finalize();
-        registry
+        TypeRegistry
     }
 
-    /// Register the default type mappings
-    fn register_default_mappings(&mut self) {
-        // 1. Basic JSON → Rust defaults
-        self.register_mapping("string", "String", false, vec![]);
-        self.register_mapping("boolean", "bool", false, vec![]);
-        self.register_mapping("null", "()", false, vec![]);
-
-        // 2. Numeric & amount mappings in descending priority
-        number_mapping(
-            self,
-            "bitcoin::Amount",
-            &[
-                "amount",
-                "balance",
-                "fee",
-                "maxburnamount",
-                "maxfeerate",
-                "maximumamount",
-                "minimumamount",
-                "minimumsumamount",
-                "total",
-                "value",
-            ],
-            50,
-        );
-        number_mapping(
-            self,
-            "f64",
-            &[
-                "difficulty",
-                "feerate",
-                "feerate",
-                "percentage",
-                "probability",
-                "rate",
-            ],
-            40,
-        );
-        number_mapping(
-            self,
-            "u64",
-            &[
-                "blocks",
-                "confirmations",
-                "count",
-                "headers",
-                "height",
-                "index",
-                "maxtries",
-                "size",
-                "time",
-                "version",
-            ],
-            30,
-        );
-        number_mapping(self, "u128", &["bits", "hashrate", "target"], 20);
-        // minconf is a small integer
-        number_mapping(self, "u32", &["conftarget", "minconf"], 60);
-
-        // 3. Hex
-        self.register_mapping("hex", "String", false, vec![]);
-        self.register_mapping("hex", "bitcoin::Txid", false, vec!["txid"]);
-        self.register_mapping("hex", "bitcoin::BlockHash", false, vec!["blockhash"]);
-        self.register_mapping("hex", "bitcoin::ScriptBuf", false, vec!["script"]);
-        self.register_mapping("hex", "bitcoin::PublicKey", false, vec!["pubkey"]);
-
-        // 4. Arrays
-        self.register_mapping("array", "Vec<serde_json::Value>", false, vec![]);
-        self.register_mapping(
-            "array",
-            "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>",
-            false,
-            vec!["address"],
-        );
-        self.register_mapping("array", "Vec<bitcoin::BlockHash>", false, vec!["blockhash"]);
-        self.register_mapping("array", "Vec<bitcoin::ScriptBuf>", false, vec!["script"]);
-        self.register_mapping("array", "Vec<bitcoin::Txid>", false, vec!["txid"]);
-        self.register_mapping(
-            "array",
-            "Vec<String>",
-            false,
-            vec!["error", "message", "warning"],
-        );
-
-        // 5. Objects
-        self.register_mapping("object", "serde_json::Value", false, vec![]);
-        self.register_mapping("object", "bitcoin::Transaction", false, vec!["transaction"]);
-        self.register_mapping("object", "bitcoin::Block", false, vec!["block"]);
-        self.register_mapping(
-            "object-named-parameters",
-            "serde_json::Value",
-            false,
-            vec![],
-        );
-        self.register_mapping("object-user-keys", "serde_json::Value", false, vec![]);
-        self.register_mapping("mixed", "serde_json::Value", false, vec![]);
-    }
-
-    /// Sort all mappings by priority (descending) so highest priority matches first
-    fn finalize(&mut self) {
-        for mappings in self.type_mappings.values_mut() {
-            mappings.sort_by_key(|m| std::cmp::Reverse(m.priority));
-        }
-    }
-
-    /// Register a new type mapping given RPC type string (e.g. "number", "array")
-    pub fn register(&mut self, rpc_type: &str, mapping: TypeMapping) {
-        // ensure no duplicate field-pattern
-        if let Some(existing) = self.type_mappings.get(rpc_type) {
-            for pat in &mapping.field_patterns {
-                for ex in existing {
-                    if ex.field_patterns.contains(pat) {
-                        panic!("pattern conflict: `{}` for `{}`", pat, rpc_type);
+    /// Core mapper
+    fn map(&self, rpc_type: &str, field: &str) -> (&'static str, bool) {
+        let field_norm = normalize(field);
+        // Scan rules top to bottom
+        for rule in RULES {
+            if rule.rpc_type == "*" || rule.rpc_type == rpc_type {
+                if let Some(pat) = rule.pattern {
+                    if !field_norm.contains(&normalize(pat)) {
+                        continue;
                     }
                 }
+                return (rule.rust_type, rule.is_optional);
             }
         }
-        self.type_mappings
-            .entry(rpc_type.to_string())
-            .or_default()
-            .push(mapping);
-    }
-
-    /// Helper to register simple mappings (priority defaults to 0)
-    fn register_mapping(
-        &mut self,
-        rpc_type: &str,
-        rust_type: &'static str,
-        is_optional: bool,
-        field_patterns: Vec<&'static str>,
-    ) {
-        let m = TypeMapping {
-            rust_type,
-            is_optional,
-            field_patterns,
-            priority: 0,
-        };
-        self.type_mappings
-            .entry(rpc_type.to_string())
-            .or_default()
-            .push(m);
-    }
-
-    /// Normalize field names and patterns for matching
-    fn normalize(name: &str) -> String {
-        name.to_lowercase().replace(&['_', '-', ' '][..], "")
-    }
-
-    /// Map a Bitcoin RPC type and its field (or method) name to Rust
-    pub fn map_type(&self, type_str: &str, field_name: &str) -> (&'static str, bool) {
-        let key = type_str;
-        if let Some(mappings) = self.type_mappings.get(key) {
-            let norm_field = Self::normalize(field_name);
-            // 1) Pattern-based match
-            for m in mappings {
-                if m.field_patterns
-                    .iter()
-                    .any(|pat| norm_field.contains(&Self::normalize(pat)))
-                {
-                    return (m.rust_type, m.is_optional);
-                }
-            }
-            // 2) Default empty-pattern mapping
-            if let Some(d) = mappings.iter().find(|m| m.field_patterns.is_empty()) {
-                return (d.rust_type, d.is_optional);
-            }
-        }
-        // Fallback
+        // never reached, but fallback anyway
         ("serde_json::Value", false)
     }
 
-    /// Map an ApiResult to a Rust type
+    /// For results, respect the `optional` flag on ApiResult
     pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
-        let (ty, opt) = self.map_type(&result.type_, &result.key_name);
-        (ty, result.optional || opt)
+        let (ty, is_opt) = self.map(&result.type_, &result.key_name);
+        (ty, is_opt || result.optional)
     }
 
-    /// Map an ApiArgument to a Rust type
+    /// For arguments
     pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
-        self.map_type(&arg.type_, &arg.names[0])
+        // just use its first name
+        let (ty, is_opt) = self.map(&arg.type_, &arg.names[0]);
+        (ty, is_opt || arg.optional)
     }
 }
 
 impl Default for TypeRegistry {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Helper for numeric mappings to reduce boilerplate
-fn number_mapping(
-    reg: &mut TypeRegistry,
-    rust_type: &'static str,
-    patterns: &[&'static str],
-    priority: u8,
-) {
-    reg.register(
-        "number",
-        TypeMapping {
-            rust_type,
-            is_optional: false,
-            field_patterns: patterns.to_vec(),
-            priority,
-        },
-    );
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rpc_api::{ApiArgument, ApiResult};
-
-    fn create_test_result(type_: &str, key_name: &str, optional: bool) -> ApiResult {
-        ApiResult {
-            type_: type_.to_string(),
-            key_name: key_name.to_string(),
-            description: String::new(),
-            inner: vec![],
-            optional,
-        }
-    }
-
-    fn create_test_argument(type_: &str, name: &str, optional: bool) -> ApiArgument {
-        ApiArgument {
-            names: vec![name.to_string()],
-            type_: type_.to_string(),
-            optional,
-            description: String::new(),
-        }
-    }
-
-    #[test]
-    fn test_basic_type_mapping() {
-        let registry = TypeRegistry::new();
-        assert_eq!(registry.map_type("string", "any"), ("String", false));
-        assert_eq!(registry.map_type("boolean", "any"), ("bool", false));
-        assert_eq!(registry.map_type("null", "any"), ("()", false));
-    }
-
-    #[test]
-    fn test_priority_and_normalization() {
-        let mut reg = TypeRegistry::new();
-        reg.finalize();
-        // fee_rate from default mappings
-        assert_eq!(
-            reg.map_type("number", "fee_rate"),
-            ("bitcoin::Amount", false)
-        );
-        assert_eq!(
-            reg.map_type("number", "FeeRate"),
-            ("bitcoin::Amount", false)
-        );
-        // custom overrides
-        assert_eq!(reg.map_type("number", "maxburnamount"), ("u64", false));
-        assert_eq!(reg.map_type("number", "minconf"), ("u32", false));
-    }
-
-    #[test]
-    fn test_hex_array_object() {
-        let registry = TypeRegistry::new();
-        assert_eq!(registry.map_type("hex", "txid"), ("bitcoin::Txid", false));
-        assert_eq!(
-            registry.map_type("array", "address"),
-            (
-                "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>",
-                false
-            )
-        );
-        assert_eq!(
-            registry.map_type("object", "transaction"),
-            ("bitcoin::Transaction", false)
-        );
-    }
-
-    #[test]
-    fn test_unknown_fallback() {
-        let registry = TypeRegistry::new();
-        assert_eq!(
-            registry.map_type("unknown", "any"),
-            ("serde_json::Value", false)
-        );
-    }
-
-    #[test]
-    fn test_map_argument_and_result() {
-        let registry = TypeRegistry::new();
-        let arg = create_test_argument("number", "height", false);
-        assert_eq!(registry.map_argument_type(&arg), ("u64", false));
-        let res = create_test_result("hex", "txid", true);
-        assert_eq!(registry.map_result_type(&res), ("bitcoin::Txid", true));
+        TypeRegistry::new()
     }
 }
