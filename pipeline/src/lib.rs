@@ -2,7 +2,7 @@
 //! by tying together discovery/parsing, schema normalization, and code generation.
 
 use anyhow::{Context, Result};
-use codegen::generators::{ClientTraitGenerator, TypesCodeGenerator};
+use codegen::generators::{ClientTraitGenerator, ResponseTypeCodeGenerator};
 use codegen::{
     namespace_scaffolder::ModuleGenerator, test_node_generator::TestNodeGenerator, write_generated,
     CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
@@ -616,7 +616,7 @@ impl TestConfig {
 
     // 4) Types
     println!("[diagnostic] generating types code");
-    let ty_files = TypesCodeGenerator.generate(&norm);
+    let ty_files = ResponseTypeCodeGenerator.generate(&norm);
     write_generated(out_dir.join("types"), &ty_files).context("Failed to write types files")?;
     write_mod_rs(&out_dir.join("types"), &ty_files).context("Failed to write types mod.rs")?;
 
