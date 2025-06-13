@@ -113,7 +113,7 @@ fn generate_params_code(methods: &[ApiMethod]) -> String {
 
 fn generate_result_code(methods: &[ApiMethod]) -> String {
     let mut code =
-        String::from("//! Result structs for RPC method returns\nuse serde::Deserialize;\nuse serde::de::DeserializeOwned;\n\n");
+        String::from("//! Result structs for RPC method returns\nuse serde::Deserialize;\n\n");
     for m in methods {
         if m.results.len() != 1 {
             continue;
@@ -135,14 +135,21 @@ fn generate_mod_rs() -> String {
     let mut code = String::new();
     writeln!(
         code,
-        "//! Test node module for Bitcoin RPC testing\n\
-         pub mod params;\n\
-         pub mod result;\n\
-         pub mod wallet;\n\
-         pub mod node;\n\
-         pub use test_node::test_node::BitcoinTestClient;\n\
-         pub use wallet::BitcoinWalletClient;\n\
-         pub use node::BitcoinNodeClient;"
+        "//! Test node module for Bitcoin RPC testing
+#[cfg(test)]
+pub mod test_node {{
+    pub mod params;
+    pub mod result;
+    pub mod wallet;
+    pub mod node;
+
+    // re-export common clients
+    pub use test_node::test_node::BitcoinTestClient;
+    pub use wallet::BitcoinWalletClient;
+    pub use node::BitcoinNodeClient;
+
+    // TODO: Break these sub-modules out behind feature-flags or a registry
+}}"
     )
     .unwrap();
     code
@@ -182,16 +189,34 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
     use std::fmt::Write;
     let mut code = String::new();
 
+    // Add #[cfg(test)] at the top of the file
+    writeln!(code, "#[cfg(test)]").unwrap();
+
+    // Check if any method uses serde_json::Value
+    let needs_value = methods.iter().any(|m| {
+        !m.arguments.is_empty()
+            || (m.results.len() == 1 && m.results[0].type_.to_lowercase() != "none")
+    });
+
     writeln!(
         code,
         "use anyhow::Result;
-use serde_json::Value;
 use std::sync::Arc;
 use crate::transport::core::{{TransportExt, TransportError}};
 use crate::transport::DefaultTransport;
 use crate::types::latest_types::*;
+{}",
+        if needs_value {
+            "#[cfg(test)]\nuse serde_json::Value;\n"
+        } else {
+            ""
+        }
+    )
+    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-#[derive(Debug, Clone)]
+    writeln!(
+        code,
+        "#[derive(Debug, Clone)]
 pub struct {0} {{
     client: Arc<DefaultTransport>,
 }}
@@ -328,11 +353,11 @@ fn emit_imports(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
         "use anyhow::Result;
-use serde_json::Value;
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
 use crate::transport::DefaultTransport;
 use crate::types::latest_types::*;
+use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
