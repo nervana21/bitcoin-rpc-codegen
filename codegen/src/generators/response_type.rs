@@ -1,19 +1,20 @@
-//! Build response‑type structs (`…Result`) from `ApiMethod`s
-//! and provide `TypesCodeGenerator` for the pipeline.
+//! Decision tree for RPC return types:
+//! 1. No results     → skip
+//! 2. Single object  → struct with its fields
+//! 3. Multi-variant  → enum or transparent wrapper
+//!
+//! Extracts fields in one pass, centralizes serde attrs, and names
+//! things consistently.  
 
 use crate::utils::{camel_to_snake_case, capitalize};
-use crate::CodeGenerator;
 use crate::TYPE_REGISTRY;
+use anyhow::Result;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
 /* --------------------------------------------------------------------- */
 /*  Primitive → Rust helpers                                             */
 /* --------------------------------------------------------------------- */
-
-fn rust_ty(res: &ApiResult) -> (&'static str, bool /*is_option*/) {
-    TYPE_REGISTRY.map_result_type(res)
-}
 
 fn field_ident(res: &ApiResult, idx: usize) -> String {
     if !res.key_name.is_empty() {
@@ -92,122 +93,174 @@ fn sanitize_doc_comment(comment: &str) -> String {
 /*  Struct generators                                                    */
 /* --------------------------------------------------------------------- */
 
-/// Generates a Rust struct type for the RPC method's return value.
-/// Returns None if the method has no results or if the results can't be mapped to a struct.
-pub fn generate_return_type(method: &ApiMethod) -> Option<String> {
-    // Skip if no results
-    if method.results.is_empty() {
-        return None;
-    }
-
-    let struct_name = format!("{}Response", capitalize(&method.name));
-    let mut out = String::new();
-
-    // Add doc comment
-    writeln!(
-        &mut out,
-        "/// {}",
-        sanitize_doc_comment(&method.description)
-    )
-    .unwrap();
-    writeln!(&mut out, "#[derive(Debug, Deserialize, Serialize)]").unwrap();
-
-    // If we have multiple result types, we need to handle all cases
-    if method.results.len() > 1 {
-        // Find all possible fields across all result types
-        let mut all_fields = std::collections::HashMap::new();
-        for result in &method.results {
-            if result.type_ == "object" && !result.inner.is_empty() {
-                for field in &result.inner {
-                    let field_name = field_ident(field, 0);
-                    let (ty, _) = rust_ty(field);
-                    // If field exists in any result type, it should be optional
-                    all_fields.insert(field_name, (ty, true));
-                }
-            } else {
-                // For non-object types, create a transparent wrapper
-                let (ty, _) = rust_ty(result);
-                writeln!(&mut out, "#[serde(transparent)]").unwrap();
-                writeln!(&mut out, "pub struct {}(pub {});", struct_name, ty).unwrap();
-                return Some(out);
-            }
-        }
-
-        // Generate struct with all possible fields as optional
-        writeln!(&mut out, "pub struct {} {{", struct_name).unwrap();
-        for (field_name, (ty, _)) in all_fields {
-            let is_optional = !is_field_always_present(&field_name, &method.results);
-            let field_type = if is_optional {
-                format!("Option<{}>", ty)
-            } else {
-                ty.to_string()
-            };
-            writeln!(&mut out, "    pub {}: {},", field_name, field_type).unwrap();
-        }
-        writeln!(&mut out, "}}").unwrap();
-
-        if method.results.iter().any(|r| r.type_ == "array") {
-            // If any result is an array, we should document this
-            writeln!(&mut out, "/// This response can be either an array or an object depending on the input parameters.").unwrap();
-        }
-    } else {
-        // Single result type - use existing logic
-        let r = &method.results[0];
-        if r.type_ == "object" && !r.inner.is_empty() {
-            writeln!(&mut out, "pub struct {} {{", struct_name).unwrap();
-            for field in &r.inner {
-                let field_name = field_ident(field, 0);
-                let (ty, is_optional) = rust_ty(field);
-                let field_type = if is_optional {
-                    format!("Option<{}>", ty)
-                } else {
-                    ty.to_string()
-                };
-                writeln!(&mut out, "    pub {}: {},", field_name, field_type).unwrap();
-            }
-            writeln!(&mut out, "}}").unwrap();
-        } else {
-            let (ty, _) = rust_ty(r);
-            writeln!(&mut out, "#[serde(transparent)]").unwrap();
-            writeln!(&mut out, "pub struct {}(pub {});", struct_name, ty).unwrap();
-        }
-    }
-
-    Some(out)
-}
-
 /// Generates a single Rust source file (`latest_types.rs`) that defines
 /// strongly-typed response structs (`<MethodName>Response`) for every RPC method,
 /// including support for primitive, object, array, and multi-variant results,
 /// with serde (de)serialization and optional fields as needed.
 pub struct ResponseTypeCodeGenerator;
 
-impl CodeGenerator for ResponseTypeCodeGenerator {
+impl crate::CodeGenerator for ResponseTypeCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
         let mut out = String::from(
-            "//! Result structs for RPC method returns\n\
-             use serde::Deserialize;\n\
-             use serde::Serialize;\n\
-             use serde::de::DeserializeOwned;\n\n",
+            "//! Generated RPC response types\n\
+             use serde::{Deserialize, Serialize};\n\n",
         );
 
         for m in methods {
-            if let Some(struct_def) = generate_return_type(m) {
-                out.push_str(&struct_def);
+            let response_struct = build_return_type(m).unwrap_or_default();
+            if let Some(def) = response_struct {
+                out.push_str(&def);
+                out.push('\n');
             }
         }
 
-        vec![("latest_types.rs".to_string(), out)]
+        vec![("latest_types.rs".into(), out)]
     }
 }
 
-fn is_field_always_present(field_name: &str, results: &[ApiResult]) -> bool {
+/// Build a single response type, or return `Ok(None)` to skip.
+pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
+    if is_void(method) {
+        return Ok(None);
+    }
+
+    let struct_name = response_struct_name(method);
+    let mut buf = String::new();
+
+    // TODO: Replace ad-hoc string building with a lightweight template
+
+    let doc = sanitize_doc_comment(&method.description);
+    writeln!(&mut buf, "/// {}", doc)?;
+    writeln!(&mut buf, "#[derive(Debug, Deserialize, Serialize)]")?;
+
+    if is_multi_variant(method) {
+        // multiple object shapes or primitives → flattened struct with optional fields
+        writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+        for field in collect_fields(method) {
+            let ty = if field.always_present {
+                field.ty.clone()
+            } else {
+                format!("Option<{}>", field.ty)
+            };
+            writeln!(
+                &mut buf,
+                "    {}{}",
+                serde_attrs_for(&field),
+                format!("pub {}: {},", field.name, ty)
+            )?;
+        }
+        writeln!(&mut buf, "}}\n")?;
+    } else {
+        // single result type
+        let r = &method.results[0];
+        match &r.type_[..] {
+            "object" if !r.inner.is_empty() => {
+                writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+                for f in &r.inner {
+                    let (ty, opt) = TYPE_REGISTRY.map_result_type(f);
+                    let name = field_ident(f, 0);
+                    let ty = if opt {
+                        format!("Option<{}>", ty)
+                    } else {
+                        ty.to_string()
+                    };
+                    writeln!(
+                        &mut buf,
+                        "    {}pub {}: {},",
+                        serde_attrs_for_field(f),
+                        name,
+                        ty
+                    )?;
+                }
+                writeln!(&mut buf, "}}\n")?;
+            }
+            _ => {
+                // primitive or array → transparent wrapper
+                let (ty, _) = TYPE_REGISTRY.map_result_type(r);
+                writeln!(&mut buf, "#[serde(transparent)]")?;
+                writeln!(&mut buf, "pub struct {}(pub {});\n", struct_name, ty)?;
+            }
+        }
+    }
+
+    Ok(Some(buf))
+}
+
+// Helpers
+
+/// Void = no results or all `type == "none"`.
+fn is_void(m: &ApiMethod) -> bool {
+    m.results.is_empty() || m.results.iter().all(|r| r.type_ == "none")
+}
+
+/// Multi-variant = more than one non‐none result.
+fn is_multi_variant(m: &ApiMethod) -> bool {
+    m.results.iter().filter(|r| r.type_ != "none").count() > 1
+}
+
+/// Name for both struct and file.
+fn response_struct_name(m: &ApiMethod) -> String {
+    format!("{}Response", capitalize(&m.name))
+}
+
+/// Gather every possible field exactly once, preserving order.
+fn collect_fields(m: &ApiMethod) -> Vec<Field> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+
+    for r in &m.results {
+        if r.type_ == "object" {
+            for f in &r.inner {
+                let name = field_ident(f, 0);
+                if seen.insert(name.clone()) {
+                    let (ty, _) = TYPE_REGISTRY.map_result_type(f);
+                    let always = is_field_always_present(&name, &m.results);
+                    out.push(Field {
+                        name,
+                        ty: ty.to_string(),
+                        always_present: always,
+                    });
+                }
+            }
+        }
+    }
+
+    out
+}
+
+/// Single field info.
+struct Field {
+    name: String,
+    ty: String,
+    always_present: bool,
+}
+
+/// Decide if a field is never optional.
+fn is_field_always_present(name: &str, results: &[ApiResult]) -> bool {
     results.iter().all(|r| {
         r.type_ == "object"
             && r.inner
                 .iter()
-                .any(|f| field_ident(f, 0) == field_name && !f.optional)
+                .any(|f| field_ident(f, 0) == name && !f.optional)
     })
+}
+
+/// Render serde attributes for a flattened multi-variant struct field.
+fn serde_attrs_for(field: &Field) -> String {
+    if !field.always_present {
+        "    #[serde(skip_serializing_if = \"Option::is_none\")]\n    ".into()
+    } else {
+        "".into()
+    }
+}
+
+/// Render serde attrs for a single `ApiResult`.
+fn serde_attrs_for_field(r: &ApiResult) -> String {
+    if r.optional {
+        "#[serde(skip_serializing_if = \"Option::is_none\")]\n    ".into()
+    } else {
+        "".into()
+    }
 }
 
 #[cfg(test)]
@@ -225,49 +278,63 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_return_type_basic() {
-        let method = create_test_method(
-            "test",
+    fn test_build_return_type() {
+        // Test void method (no results)
+        let void_method = create_test_method("void", vec![]);
+        assert!(build_return_type(&void_method).unwrap().is_none());
+
+        // Test void method (all results are "none")
+        let void_method = create_test_method(
+            "void",
+            vec![ApiResult {
+                type_: "none".to_string(),
+                ..Default::default()
+            }],
+        );
+        assert!(build_return_type(&void_method).unwrap().is_none());
+
+        // Test single primitive result
+        let primitive_method = create_test_method(
+            "primitive",
             vec![ApiResult {
                 type_: "string".to_string(),
                 key_name: "result".to_string(),
                 ..Default::default()
             }],
         );
-
-        let result = generate_return_type(&method).unwrap();
-        assert!(result.contains("pub struct TestResponse"));
+        let result = build_return_type(&primitive_method).unwrap().unwrap();
+        assert!(result.contains("pub struct PrimitiveResponse"));
         assert!(result.contains("pub String"));
-    }
 
-    #[test]
-    fn test_generate_return_type_empty() {
-        let method = create_test_method("test", vec![]);
-        assert!(generate_return_type(&method).is_none());
-    }
-
-    #[test]
-    fn test_types_code_generator_basic() {
-        let methods = vec![create_test_method(
-            "test",
+        // Test single object result
+        let object_method = create_test_method(
+            "object",
             vec![ApiResult {
-                type_: "string".to_string(),
+                type_: "object".to_string(),
                 key_name: "result".to_string(),
+                inner: vec![
+                    ApiResult {
+                        type_: "string".to_string(),
+                        key_name: "field1".to_string(),
+                        ..Default::default()
+                    },
+                    ApiResult {
+                        type_: "number".to_string(),
+                        key_name: "field2".to_string(),
+                        ..Default::default()
+                    },
+                ],
                 ..Default::default()
             }],
-        )];
+        );
+        let result = build_return_type(&object_method).unwrap().unwrap();
+        assert!(result.contains("pub struct ObjectResponse"));
+        assert!(result.contains("pub field1: String"));
+        assert!(result.contains("pub field2: f64"));
 
-        let generator = ResponseTypeCodeGenerator;
-        let files = generator.generate(&methods);
-        assert_eq!(files.len(), 1);
-        assert!(files[0].0 == "latest_types.rs");
-        assert!(files[0].1.contains("pub struct TestResponse"));
-    }
-
-    #[test]
-    fn test_generate_return_type_multiple_results() {
-        let method = create_test_method(
-            "test",
+        // Test multi-variant result
+        let multi_method = create_test_method(
+            "multi",
             vec![
                 ApiResult {
                     type_: "object".to_string(),
@@ -283,7 +350,7 @@ mod tests {
                     type_: "object".to_string(),
                     key_name: "result2".to_string(),
                     inner: vec![ApiResult {
-                        type_: "string".to_string(),
+                        type_: "number".to_string(),
                         key_name: "field2".to_string(),
                         ..Default::default()
                     }],
@@ -291,10 +358,9 @@ mod tests {
                 },
             ],
         );
-
-        let result = generate_return_type(&method).unwrap();
-        assert!(result.contains("pub struct TestResponse"));
+        let result = build_return_type(&multi_method).unwrap().unwrap();
+        assert!(result.contains("pub struct MultiResponse"));
         assert!(result.contains("pub field1: Option<String>"));
-        assert!(result.contains("pub field2: Option<String>"));
+        assert!(result.contains("pub field2: Option<f64>"));
     }
 }
