@@ -10,7 +10,7 @@
 use anyhow::Result;
 use generators::doc_comment;
 use lazy_static::lazy_static;
-use rpc_api::ApiMethod;
+use rpc_api::{ApiArgument, ApiMethod};
 use schema::validator::validate_numeric_value;
 use std::{fs, path::Path};
 
@@ -49,7 +49,7 @@ pub mod test_node_generator;
 /// Central registry for mapping Bitcoin RPC types to Rust types.
 /// Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
 pub mod type_registry;
-pub use type_registry::{TypeMapping, TypeRegistry};
+pub use type_registry::TypeRegistry;
 
 /// Sub-crate: **`transport_core_generator`**
 ///
@@ -117,7 +117,7 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use generators::response_type::generate_return_type;
+        use generators::response_type::build_return_type;
         use utils::{capitalize, sanitize_method_name};
 
         methods
@@ -160,7 +160,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 let docs_md = doc_comment::generate_example_docs(m, "latest")
                     .trim_end()
                     .to_string();
-                let response_struct = generate_return_type(m).unwrap_or_default();
+                let response_struct = build_return_type(m).unwrap_or_default().unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
                 } else {
@@ -206,68 +206,12 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
 }
 
 lazy_static! {
-    /// # Bitcoin RPC Type System
+     /// Bitcoin RPC Type System
     ///
-    /// The type system handles several categories of values:
-    ///
-    /// ## Integer Values (u64)
-    /// - Block heights
-    /// - Transaction counts
-    /// - Version numbers
-    /// - Confirmation counts
-    /// - Block counts
-    /// - Header counts
-    /// - Index values
-    /// - Size values
-    /// - Time values
-    ///
-    /// ## Small Integers (u32)
-    /// - Confirmation targets
-    /// - Minimum confirmations
-    ///
-    /// ## Floating Point Values (f64)
-    /// - Mining difficulty
-    /// - Fee rates
-    /// - Probabilities
-    /// - Percentages
-    /// - General rates
-    ///
-    /// ## Bitcoin Amounts (bitcoin::Amount)
-    /// - Transaction amounts
-    /// - Fees
-    /// - Balances
-    /// - Minimum/maximum amounts
-    /// - Maximum burn amounts
-    /// - Maximum fee rates
-    /// - Total amounts
-    ///
-    /// ## Large Numbers (u128)
-    /// - Target values
-    /// - Hash rates
-    /// - Block bits
-    ///
-    /// ## Hex Values
-    /// - Transaction IDs (bitcoin::Txid)
-    /// - Block hashes (bitcoin::BlockHash)
-    /// - Scripts (bitcoin::ScriptBuf)
-    /// - Public keys (bitcoin::PublicKey)
-    /// - Raw hex strings (String)
-    ///
-    /// ## Arrays
-    /// - Address lists (Vec<bitcoin::Address>)
-    /// - Block hash lists (Vec<bitcoin::BlockHash>)
-    /// - Script lists (Vec<bitcoin::ScriptBuf>)
-    /// - Transaction ID lists (Vec<bitcoin::Txid>)
-    /// - Error/warning lists (Vec<String>)
-    /// - Generic arrays (Vec<serde_json::Value>)
-    ///
-    /// ## Objects
-    /// - Transactions (bitcoin::Transaction)
-    /// - Blocks (bitcoin::Block)
-    /// - Generic objects (serde_json::Value)
-    ///
-    /// Each type is chosen based on the field's purpose and precision requirements.
-    /// The system uses a priority-based mapping system to handle overlapping cases.
+    /// See `docs/type_system.md` for the full taxonomy of integer, float, amount,
+    /// large number, hex, array, and object mappings.
+    #[doc = include_str!("../../docs/type_system.md")]
+    // TODO: Define a `RpcCategory` enum and wire it into `TypeRegistry` for code-driven docs
     pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
 }
 
@@ -290,7 +234,12 @@ impl TypeRegistry {
         type_str: &str,
         field_name: &str,
     ) -> Result<(), String> {
-        let (rust_type, _) = self.map_type(type_str, field_name);
+        let (rust_type, _) = self.map_argument_type(&ApiArgument {
+            type_: type_str.to_string(),
+            names: vec![field_name.to_string()],
+            optional: false,
+            description: String::new(),
+        });
         validate_numeric_value(value, rust_type).map_err(|e| e.to_string())
     }
 }
