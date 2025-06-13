@@ -11,6 +11,7 @@ use anyhow::Result;
 use generators::doc_comment;
 use lazy_static::lazy_static;
 use rpc_api::ApiMethod;
+use schema::validator::validate_numeric_value;
 use std::{fs, path::Path};
 
 pub mod generators;
@@ -205,12 +206,91 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
 }
 
 lazy_static! {
-    /// Canonical Type Registry: the single source of truth for Bitcoin‑RPC ⇢ Rust mappings.
+    /// # Bitcoin RPC Type System
     ///
-    /// - Normalized RPC primitives → Rust primitives
-    /// - Named structs/enums discovered during parsing
-    /// - Version-specific overrides (e.g., `Numeric` vs `Amount`)
+    /// The type system handles several categories of values:
     ///
-    /// All code-generation phases consult this registry to ensure consistent type conversions.
+    /// ## Integer Values (u64)
+    /// - Block heights
+    /// - Transaction counts
+    /// - Version numbers
+    /// - Confirmation counts
+    /// - Block counts
+    /// - Header counts
+    /// - Index values
+    /// - Size values
+    /// - Time values
+    ///
+    /// ## Small Integers (u32)
+    /// - Confirmation targets
+    /// - Minimum confirmations
+    ///
+    /// ## Floating Point Values (f64)
+    /// - Mining difficulty
+    /// - Fee rates
+    /// - Probabilities
+    /// - Percentages
+    /// - General rates
+    ///
+    /// ## Bitcoin Amounts (bitcoin::Amount)
+    /// - Transaction amounts
+    /// - Fees
+    /// - Balances
+    /// - Minimum/maximum amounts
+    /// - Maximum burn amounts
+    /// - Maximum fee rates
+    /// - Total amounts
+    ///
+    /// ## Large Numbers (u128)
+    /// - Target values
+    /// - Hash rates
+    /// - Block bits
+    ///
+    /// ## Hex Values
+    /// - Transaction IDs (bitcoin::Txid)
+    /// - Block hashes (bitcoin::BlockHash)
+    /// - Scripts (bitcoin::ScriptBuf)
+    /// - Public keys (bitcoin::PublicKey)
+    /// - Raw hex strings (String)
+    ///
+    /// ## Arrays
+    /// - Address lists (Vec<bitcoin::Address>)
+    /// - Block hash lists (Vec<bitcoin::BlockHash>)
+    /// - Script lists (Vec<bitcoin::ScriptBuf>)
+    /// - Transaction ID lists (Vec<bitcoin::Txid>)
+    /// - Error/warning lists (Vec<String>)
+    /// - Generic arrays (Vec<serde_json::Value>)
+    ///
+    /// ## Objects
+    /// - Transactions (bitcoin::Transaction)
+    /// - Blocks (bitcoin::Block)
+    /// - Generic objects (serde_json::Value)
+    ///
+    /// Each type is chosen based on the field's purpose and precision requirements.
+    /// The system uses a priority-based mapping system to handle overlapping cases.
     pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
+}
+
+impl TypeRegistry {
+    /// Validates that a JSON value matches the expected type for a given field.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The JSON value to validate
+    /// * `type_str` - The RPC type string (e.g., "number", "string", etc.)
+    /// * `field_name` - The name of the field being validated
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the value matches the expected type
+    /// * `Err(String)` with an error message if validation fails
+    pub fn validate_value(
+        &self,
+        value: &serde_json::Value,
+        type_str: &str,
+        field_name: &str,
+    ) -> Result<(), String> {
+        let (rust_type, _) = self.map_type(type_str, field_name);
+        validate_numeric_value(value, rust_type).map_err(|e| e.to_string())
+    }
 }
