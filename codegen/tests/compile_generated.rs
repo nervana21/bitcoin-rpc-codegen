@@ -1,4 +1,4 @@
-use codegen::generators::TypesCodeGenerator;
+use codegen::generators::ResponseTypeCodeGenerator;
 use codegen::{write_generated, CodeGenerator, TransportCodeGenerator};
 use rpc_api::{parse_api_json, ApiMethod, ApiResult};
 use std::{fs, process::Command};
@@ -145,7 +145,7 @@ fn response_type_generation_with_special_fields() {
     }];
 
     // Generate types
-    let type_gen = TypesCodeGenerator;
+    let type_gen = ResponseTypeCodeGenerator;
     let type_files = type_gen.generate(&methods);
     write_generated(&types_dir, &type_files).expect("write_generated types");
 
