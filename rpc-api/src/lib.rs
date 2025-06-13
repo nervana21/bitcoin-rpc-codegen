@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// An RPC method's full schema
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApiMethod {
     pub name: String,
     pub description: String,
@@ -24,7 +24,7 @@ pub struct ApiArgument {
 }
 
 /// One result field from an RPC method
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApiResult {
     pub key_name: String,
     #[serde(rename = "type")]
