@@ -1,21 +1,16 @@
 // codegen/templates/client_trait.rs
 
 use async_trait::async_trait;
-use crate::transport::Transport;
+use crate::transport::{Transport, TransportExt, TransportError};
+use crate::transport::core::wallet_methods::WALLET_METHODS;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 {{IMPORTS}}
 
 #[doc = r#"A versioned client trait for Bitcoin Core v{{VERSION}}"#]
 #[async_trait]
-pub trait BitcoinClientV{{VERSION_NODOTS}}: Send + Sync {
+pub trait BitcoinClientV{{VERSION_NODOTS}}: Send + Sync + Transport + TransportExt + RpcDispatchExt {
 {{TRAIT_METHODS}}
-}
-
-#[async_trait]
-impl<C> BitcoinClientV{{VERSION_NODOTS}} for C
-where
-    C: Transport + Sync + Send,
-{
-{{IMPL_METHODS}}
 }
 
 /// Helper to route calls to the node or wallet namespace automatically.
@@ -37,6 +32,7 @@ pub trait RpcDispatchExt: Transport + TransportExt {
 }
 
 impl<T: Transport + TransportExt + ?Sized> RpcDispatchExt for T {}
+
 // helper trait, so any Transport gets a wallet_call by default
 pub trait WalletTransportExt: Transport + TransportExt {
     fn wallet_call<T: serde::Serialize + std::marker::Sync, R: serde::de::DeserializeOwned>(
@@ -52,4 +48,11 @@ pub trait WalletTransportExt: Transport + TransportExt {
         self.call(method, &value_params).await
     }}
 }
+
 impl<T: Transport + TransportExt + ?Sized> WalletTransportExt for T {}
+
+// Provide default implementation for any type that implements Transport + TransportExt
+#[async_trait]
+impl<T: Transport + TransportExt + Send + Sync> BitcoinClientV{{VERSION_NODOTS}} for T {
+{{TRAIT_METHODS}}
+}
