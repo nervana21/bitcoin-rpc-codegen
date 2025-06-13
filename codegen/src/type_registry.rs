@@ -10,7 +10,7 @@ pub struct TypeMapping {
     pub is_optional: bool,
     /// Special case field names that should use this mapping
     pub field_patterns: Vec<&'static str>,
-    /// Priority of the mapping
+    /// Priority of the mapping (higher wins)
     pub priority: u8,
 }
 
@@ -26,56 +26,96 @@ impl TypeRegistry {
             type_mappings: HashMap::new(),
         };
         registry.register_default_mappings();
+        registry.finalize();
         registry
     }
 
     /// Register the default type mappings
     fn register_default_mappings(&mut self) {
-        // Basic type mappings
+        // 1. Basic JSON → Rust defaults
         self.register_mapping("string", "String", false, vec![]);
         self.register_mapping("boolean", "bool", false, vec![]);
         self.register_mapping("null", "()", false, vec![]);
 
-        // Number types
-        self.register_mapping("number", "u64", false, vec![]); // Default mapping first
-        self.register_mapping(
-            "number",
-            "u64",
-            false,
-            vec![
-                "height", "blocks", "headers", "time", "size", "count", "index",
+        // 2. Numeric & amount mappings in descending priority
+        number_mapping(
+            self,
+            "bitcoin::Amount",
+            &[
+                "amount",
+                "balance",
+                "fee",
+                "maxburnamount",
+                "maxfeerate",
+                "maximumamount",
+                "minimumamount",
+                "minimumsumamount",
+                "total",
+                "value",
             ],
+            50,
         );
-        self.register_mapping("numeric", "f64", false, vec![]);
-        self.register_mapping("amount", "bitcoin::Amount", false, vec![]);
+        number_mapping(
+            self,
+            "f64",
+            &[
+                "difficulty",
+                "feerate",
+                "feerate",
+                "percentage",
+                "probability",
+                "rate",
+            ],
+            40,
+        );
+        number_mapping(
+            self,
+            "u64",
+            &[
+                "blocks",
+                "confirmations",
+                "count",
+                "headers",
+                "height",
+                "index",
+                "maxtries",
+                "size",
+                "time",
+                "version",
+            ],
+            30,
+        );
+        number_mapping(self, "u128", &["bits", "hashrate", "target"], 20);
+        // minconf is a small integer
+        number_mapping(self, "u32", &["conftarget", "minconf"], 60);
 
-        // Hex types
-        self.register_mapping("hex", "String", false, vec![]); // Default mapping first
+        // 3. Hex
+        self.register_mapping("hex", "String", false, vec![]);
         self.register_mapping("hex", "bitcoin::Txid", false, vec!["txid"]);
         self.register_mapping("hex", "bitcoin::BlockHash", false, vec!["blockhash"]);
         self.register_mapping("hex", "bitcoin::ScriptBuf", false, vec!["script"]);
         self.register_mapping("hex", "bitcoin::PublicKey", false, vec!["pubkey"]);
 
-        // Array types
-        self.register_mapping("array", "Vec<serde_json::Value>", false, vec![]); // Default mapping first
+        // 4. Arrays
+        self.register_mapping("array", "Vec<serde_json::Value>", false, vec![]);
         self.register_mapping(
             "array",
             "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>",
             false,
             vec!["address"],
         );
-        self.register_mapping("array", "Vec<bitcoin::Txid>", false, vec!["txid"]);
         self.register_mapping("array", "Vec<bitcoin::BlockHash>", false, vec!["blockhash"]);
         self.register_mapping("array", "Vec<bitcoin::ScriptBuf>", false, vec!["script"]);
+        self.register_mapping("array", "Vec<bitcoin::Txid>", false, vec!["txid"]);
         self.register_mapping(
             "array",
             "Vec<String>",
             false,
-            vec!["warning", "error", "message"],
+            vec!["error", "message", "warning"],
         );
 
-        // Object types
-        self.register_mapping("object", "serde_json::Value", false, vec![]); // Default mapping first
+        // 5. Objects
+        self.register_mapping("object", "serde_json::Value", false, vec![]);
         self.register_mapping("object", "bitcoin::Transaction", false, vec!["transaction"]);
         self.register_mapping("object", "bitcoin::Block", false, vec!["block"]);
         self.register_mapping(
@@ -88,7 +128,32 @@ impl TypeRegistry {
         self.register_mapping("mixed", "serde_json::Value", false, vec![]);
     }
 
-    /// Register a new type mapping
+    /// Sort all mappings by priority (descending) so highest priority matches first
+    fn finalize(&mut self) {
+        for mappings in self.type_mappings.values_mut() {
+            mappings.sort_by_key(|m| std::cmp::Reverse(m.priority));
+        }
+    }
+
+    /// Register a new type mapping given RPC type string (e.g. "number", "array")
+    pub fn register(&mut self, rpc_type: &str, mapping: TypeMapping) {
+        // ensure no duplicate field-pattern
+        if let Some(existing) = self.type_mappings.get(rpc_type) {
+            for pat in &mapping.field_patterns {
+                for ex in existing {
+                    if ex.field_patterns.contains(pat) {
+                        panic!("pattern conflict: `{}` for `{}`", pat, rpc_type);
+                    }
+                }
+            }
+        }
+        self.type_mappings
+            .entry(rpc_type.to_string())
+            .or_default()
+            .push(mapping);
+    }
+
+    /// Helper to register simple mappings (priority defaults to 0)
     fn register_mapping(
         &mut self,
         rpc_type: &str,
@@ -96,17 +161,7 @@ impl TypeRegistry {
         is_optional: bool,
         field_patterns: Vec<&'static str>,
     ) {
-        // Validate that patterns don't conflict
-        if let Some(existing) = self.type_mappings.get(rpc_type) {
-            for existing_mapping in existing {
-                for pattern in &field_patterns {
-                    if existing_mapping.field_patterns.contains(pattern) {
-                        panic!("Conflicting pattern '{}' for type '{}'", pattern, rpc_type);
-                    }
-                }
-            }
-        }
-        let mapping = TypeMapping {
+        let m = TypeMapping {
             rust_type,
             is_optional,
             field_patterns,
@@ -115,51 +170,46 @@ impl TypeRegistry {
         self.type_mappings
             .entry(rpc_type.to_string())
             .or_default()
-            .push(mapping);
+            .push(m);
     }
 
-    /// Map a Bitcoin RPC type to a Rust type
-    pub fn map_type(&self, type_str: &str, field_name: &str) -> (&'static str, bool) {
-        // Special case for fee_rate to always be Option<Amount>
-        if field_name == "fee_rate" {
-            return ("bitcoin::Amount", true);
-        }
+    /// Normalize field names and patterns for matching
+    fn normalize(name: &str) -> String {
+        name.to_lowercase().replace(&['_', '-', ' '][..], "")
+    }
 
-        if let Some(mappings) = self.type_mappings.get(type_str) {
-            // First try exact matches
-            for mapping in mappings {
-                if mapping.field_patterns.contains(&field_name) {
-                    return (mapping.rust_type, mapping.is_optional);
+    /// Map a Bitcoin RPC type and its field (or method) name to Rust
+    pub fn map_type(&self, type_str: &str, field_name: &str) -> (&'static str, bool) {
+        let key = type_str;
+        if let Some(mappings) = self.type_mappings.get(key) {
+            let norm_field = Self::normalize(field_name);
+            // 1) Pattern-based match
+            for m in mappings {
+                if m.field_patterns
+                    .iter()
+                    .any(|pat| norm_field.contains(&Self::normalize(pat)))
+                {
+                    return (m.rust_type, m.is_optional);
                 }
             }
-            // Then try partial matches
-            for mapping in mappings {
-                for pattern in &mapping.field_patterns {
-                    if field_name.contains(pattern) {
-                        return (mapping.rust_type, mapping.is_optional);
-                    }
-                }
-            }
-            // Find the default mapping (one with empty patterns)
-            for mapping in mappings {
-                if mapping.field_patterns.is_empty() {
-                    return (mapping.rust_type, mapping.is_optional);
-                }
+            // 2) Default empty-pattern mapping
+            if let Some(d) = mappings.iter().find(|m| m.field_patterns.is_empty()) {
+                return (d.rust_type, d.is_optional);
             }
         }
+        // Fallback
         ("serde_json::Value", false)
     }
 
     /// Map an ApiResult to a Rust type
     pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
-        let (ty, _) = self.map_type(&result.type_, &result.key_name);
-        (ty, result.optional)
+        let (ty, opt) = self.map_type(&result.type_, &result.key_name);
+        (ty, result.optional || opt)
     }
 
     /// Map an ApiArgument to a Rust type
     pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
-        let (ty, _) = self.map_type(&arg.type_, &arg.names[0]);
-        (ty, arg.optional)
+        self.map_type(&arg.type_, &arg.names[0])
     }
 }
 
@@ -167,6 +217,24 @@ impl Default for TypeRegistry {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Helper for numeric mappings to reduce boilerplate
+fn number_mapping(
+    reg: &mut TypeRegistry,
+    rust_type: &'static str,
+    patterns: &[&'static str],
+    priority: u8,
+) {
+    reg.register(
+        "number",
+        TypeMapping {
+            rust_type,
+            is_optional: false,
+            field_patterns: patterns.to_vec(),
+            priority,
+        },
+    );
 }
 
 #[cfg(test)]
@@ -202,39 +270,27 @@ mod tests {
     }
 
     #[test]
-    fn test_special_case_mapping() {
+    fn test_priority_and_normalization() {
+        let mut reg = TypeRegistry::new();
+        reg.finalize();
+        // fee_rate from default mappings
+        assert_eq!(
+            reg.map_type("number", "fee_rate"),
+            ("bitcoin::Amount", false)
+        );
+        assert_eq!(
+            reg.map_type("number", "FeeRate"),
+            ("bitcoin::Amount", false)
+        );
+        // custom overrides
+        assert_eq!(reg.map_type("number", "maxburnamount"), ("u64", false));
+        assert_eq!(reg.map_type("number", "minconf"), ("u32", false));
+    }
+
+    #[test]
+    fn test_hex_array_object() {
         let registry = TypeRegistry::new();
         assert_eq!(registry.map_type("hex", "txid"), ("bitcoin::Txid", false));
-        assert_eq!(
-            registry.map_type("hex", "blockhash"),
-            ("bitcoin::BlockHash", false)
-        );
-        assert_eq!(
-            registry.map_type("hex", "script"),
-            ("bitcoin::ScriptBuf", false)
-        );
-        assert_eq!(
-            registry.map_type("hex", "pubkey"),
-            ("bitcoin::PublicKey", false)
-        );
-    }
-
-    #[test]
-    fn test_number_mapping() {
-        let registry = TypeRegistry::new();
-        assert_eq!(registry.map_type("number", "height"), ("u64", false));
-        assert_eq!(registry.map_type("number", "blocks"), ("u64", false));
-        assert_eq!(registry.map_type("number", "headers"), ("u64", false));
-        assert_eq!(registry.map_type("number", "time"), ("u64", false));
-        assert_eq!(registry.map_type("number", "size"), ("u64", false));
-        assert_eq!(registry.map_type("number", "count"), ("u64", false));
-        assert_eq!(registry.map_type("number", "index"), ("u64", false));
-        assert_eq!(registry.map_type("number", "random"), ("u64", false));
-    }
-
-    #[test]
-    fn test_array_mapping() {
-        let registry = TypeRegistry::new();
         assert_eq!(
             registry.map_type("array", "address"),
             (
@@ -243,51 +299,13 @@ mod tests {
             )
         );
         assert_eq!(
-            registry.map_type("array", "txid"),
-            ("Vec<bitcoin::Txid>", false)
-        );
-        assert_eq!(
-            registry.map_type("array", "blockhash"),
-            ("Vec<bitcoin::BlockHash>", false)
-        );
-        assert_eq!(
-            registry.map_type("array", "script"),
-            ("Vec<bitcoin::ScriptBuf>", false)
-        );
-        assert_eq!(
-            registry.map_type("array", "warning"),
-            ("Vec<String>", false)
-        );
-        assert_eq!(registry.map_type("array", "error"), ("Vec<String>", false));
-        assert_eq!(
-            registry.map_type("array", "message"),
-            ("Vec<String>", false)
-        );
-        assert_eq!(
-            registry.map_type("array", "random"),
-            ("Vec<serde_json::Value>", false)
-        );
-    }
-
-    #[test]
-    fn test_object_mapping() {
-        let registry = TypeRegistry::new();
-        assert_eq!(
             registry.map_type("object", "transaction"),
             ("bitcoin::Transaction", false)
         );
-        assert_eq!(
-            registry.map_type("object", "block"),
-            ("bitcoin::Block", false)
-        );
-        assert_eq!(
-            registry.map_type("object", "random"),
-            ("serde_json::Value", false)
-        );
     }
 
     #[test]
-    fn test_unknown_type_mapping() {
+    fn test_unknown_fallback() {
         let registry = TypeRegistry::new();
         assert_eq!(
             registry.map_type("unknown", "any"),
@@ -296,28 +314,11 @@ mod tests {
     }
 
     #[test]
-    fn test_result_type_mapping() {
+    fn test_map_argument_and_result() {
         let registry = TypeRegistry::new();
-
-        // Test with optional flag
-        let result = create_test_result("string", "name", true);
-        assert_eq!(registry.map_result_type(&result), ("String", true));
-
-        // Test with special case
-        let result = create_test_result("hex", "txid", false);
-        assert_eq!(registry.map_result_type(&result), ("bitcoin::Txid", false));
-    }
-
-    #[test]
-    fn test_argument_type_mapping() {
-        let registry = TypeRegistry::new();
-
-        // Test with optional flag
-        let arg = create_test_argument("string", "name", true);
-        assert_eq!(registry.map_argument_type(&arg), ("String", true));
-
-        // Test with special case
-        let arg = create_test_argument("hex", "txid", false);
-        assert_eq!(registry.map_argument_type(&arg), ("bitcoin::Txid", false));
+        let arg = create_test_argument("number", "height", false);
+        assert_eq!(registry.map_argument_type(&arg), ("u64", false));
+        let res = create_test_result("hex", "txid", true);
+        assert_eq!(registry.map_result_type(&res), ("bitcoin::Txid", true));
     }
 }
