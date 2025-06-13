@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use crate::transport::{Transport, TransportExt, TransportError};
 use crate::transport::core::wallet_methods::WALLET_METHODS;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
 {{IMPORTS}}
 
 #[doc = r#"A versioned client trait for Bitcoin Core v{{VERSION}}"#]
