@@ -93,11 +93,39 @@ fn sanitize_doc_comment(comment: &str) -> String {
 /*  Struct generators                                                    */
 /* --------------------------------------------------------------------- */
 
-/// Generates a single Rust source file (`latest_types.rs`) that defines
-/// strongly-typed response structs (`<MethodName>Response`) for every RPC method,
-/// including support for primitive, object, array, and multi-variant results,
-/// with serde (de)serialization and optional fields as needed.
-pub struct ResponseTypeCodeGenerator;
+/// Code generator for producing type-safe Rust representations of Bitcoin RPC responses.
+///
+/// This struct is responsible for generating a single Rust source file, `latest_types.rs`,
+/// which defines one strongly-typed struct per RPC method (e.g., `GetBlockResponse`).
+/// Each struct mirrors the shape of that method's return value, supporting:
+/// - Primitive types (e.g., `u64`, `String`)
+/// - Structs for nested objects
+/// - Enums for union/multi-variant outputs
+/// - Vectors for arrays
+/// - `Option<T>` for nullable or conditionally present fields
+///
+/// All generated types are annotated for use with `serde` to support automatic (de)serialization.
+/// This ensures correctness, improves developer ergonomics, and enables compile-time validation
+/// of response structures across Bitcoin Core versions.
+///
+/// Intended to be used as part of a version-aware code generation pipeline.
+
+pub struct ResponseTypeCodeGenerator {
+    version: String,
+}
+
+impl ResponseTypeCodeGenerator {
+    /// Creates a new `ResponseTypeCodeGenerator` for a specific Bitcoin Core RPC version.
+    ///
+    /// The provided `version` string is used to namespace or suffix generated types,
+    /// ensuring compatibility with different versions of the RPC interface.
+
+    pub fn new(version: impl Into<String>) -> Self {
+        Self {
+            version: version.into(),
+        }
+    }
+}
 
 impl crate::CodeGenerator for ResponseTypeCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
@@ -114,7 +142,7 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
             }
         }
 
-        vec![("latest_types.rs".into(), out)]
+        vec![(format!("{}_types.rs", self.version), out)]
     }
 }
 
