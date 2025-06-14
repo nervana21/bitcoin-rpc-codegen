@@ -20,6 +20,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 config = { path = "../config" }
+rpc-api = { path = "../rpc-api" }
 
 [dev-dependencies]
 tokio-test = "0.4"

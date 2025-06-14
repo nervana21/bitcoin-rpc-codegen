@@ -12,11 +12,6 @@ use std::path::Path;
 pub fn discover_methods(bitcoind_bin: &Path) -> Result<Vec<ApiMethod>, String> {
     let cli = BitcoinCli::new(bitcoind_bin);
 
-    // Get version and methods
-    let _version = cli
-        .get_version()
-        .map_err(|e| format!("Failed to get Bitcoin version: {}", e))?;
-
     let methods = cli
         .get_methods()
         .map_err(|e| format!("Failed to get RPC methods: {}", e))?;

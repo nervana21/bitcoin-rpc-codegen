@@ -36,6 +36,8 @@ pub struct TestConfig {
     /// The password for RPC authentication.
     /// Can be customized to match your `bitcoin.conf` `rpcpassword` setting.
     pub rpc_password: String,
+    /// Bitcoin Core version; `None` to auto-detect
+    pub core_version: Option<u32>,
 }
 
 impl Default for TestConfig {
@@ -44,6 +46,7 @@ impl Default for TestConfig {
             rpc_port: 0,
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
+            core_version: None,
         }
     }
 }
@@ -77,7 +80,7 @@ impl TestConfig {
                 port: self.rpc_port,
                 username: self.rpc_username,
                 password: self.rpc_password,
-                core_version: None,
+                core_version: self.core_version,
             },
             ..Config::default()
         }
@@ -89,6 +92,7 @@ impl TestConfig {
             rpc_port: config.bitcoin.port,
             rpc_username: config.bitcoin.username.clone(),
             rpc_password: config.bitcoin.password.clone(),
+            core_version: config.bitcoin.core_version,
         }
     }
 }

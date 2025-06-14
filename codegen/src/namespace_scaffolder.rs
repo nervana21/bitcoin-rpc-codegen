@@ -30,6 +30,7 @@
 //! entire module hierarchy that stitches together code‑generated RPC clients and
 //! type definitions, eliminating the need to touch `mod.rs` files ever again.
 
+use rpc_api::Version;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -44,17 +45,17 @@ use std::{
 /// * `out_dir` is the root folder that already contains `client/`,
 ///   `types/`, etc. (e.g. `client/src/generated`).
 pub struct ModuleGenerator {
-    versions: Vec<String>,
+    versions: Vec<Version>,
     out_dir: PathBuf,
 }
 
 impl ModuleGenerator {
     /// Create a new generator for the given `versions` and output directory.
-    pub fn new(versions: Vec<String>, out_dir: PathBuf) -> Self {
+    pub fn new(versions: Vec<Version>, out_dir: PathBuf) -> Self {
         Self { versions, out_dir }
     }
 
-    /// Convenience orchestrator – call this once and you’ll get **all**
+    /// Convenience orchestrator – call this once and you'll get **all**
     /// `mod.rs` files written:
     /// 1. `client/<version>/mod.rs`
     /// 2. `types/<version>_types/mod.rs`
@@ -93,13 +94,13 @@ impl ModuleGenerator {
         writeln!(client_mod_rs).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         for version in &self.versions {
-            writeln!(client_mod_rs, "pub mod {};", version)
+            writeln!(client_mod_rs, "pub mod {};", version.as_str())
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
         }
         writeln!(client_mod_rs).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         for version in &self.versions {
-            writeln!(client_mod_rs, "pub use self::{}::*;", version)
+            writeln!(client_mod_rs, "pub use self::{}::*;", version.as_str())
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
         }
 
@@ -120,13 +121,13 @@ impl ModuleGenerator {
         writeln!(types_mod_rs).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub mod {}_types;", version)
+            writeln!(types_mod_rs, "pub mod {}_types;", version.as_str())
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
         }
         writeln!(types_mod_rs).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub use self::{}_types::*;", version)
+            writeln!(types_mod_rs, "pub use self::{}_types::*;", version.as_str())
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
         }
 
@@ -139,7 +140,7 @@ impl ModuleGenerator {
 
 /// Helper function to generate a mod.rs file declaring versioned modules.
 fn generate_versioned_mod_rs(
-    versions: &[String],
+    versions: &[Version],
     out_dir: &Path,
     subdir: &str,
     mod_template: &str,
@@ -147,7 +148,7 @@ fn generate_versioned_mod_rs(
     use std::fmt::Write;
 
     let mod_rs_content = versions.iter().fold(String::new(), |mut output, version| {
-        let _ = writeln!(output, "{}", mod_template.replace("{}", version));
+        let _ = writeln!(output, "{}", mod_template.replace("{}", &version.as_str()));
         output
     });
 

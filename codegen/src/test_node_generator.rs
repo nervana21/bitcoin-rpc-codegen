@@ -24,7 +24,7 @@ Benefits:
 use crate::utils::camel_to_snake_case;
 use crate::wallet_methods::WALLET_METHODS;
 use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
-use rpc_api::ApiMethod;
+use rpc_api::{ApiArgument, ApiMethod};
 use std::fmt::Write as _;
 
 /// A code generator that creates a type-safe Rust client library for Bitcoin Core test environments.
@@ -48,7 +48,22 @@ use std::fmt::Write as _;
 ///
 /// This abstraction layer enables developers to focus on test logic rather than RPC mechanics,
 /// while maintaining type safety and proper error handling throughout the test suite.
-pub struct TestNodeGenerator;
+pub struct TestNodeGenerator {
+    version: String,
+}
+
+impl TestNodeGenerator {
+    /// Creates a new `TestNodeGenerator` configured for a specific Bitcoin Core version.
+    ///
+    /// The `version` string determines which RPC methods and structures are used when generating
+    /// type-safe test clients and associated modules. This allows test code to stay in sync with
+    /// version-specific behavior in Bitcoin Core.
+    pub fn new(version: impl Into<String>) -> Self {
+        Self {
+            version: version.into(),
+        }
+    }
+}
 
 impl CodeGenerator for TestNodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
@@ -66,9 +81,12 @@ impl CodeGenerator for TestNodeGenerator {
             .cloned()
             .collect();
 
-        let wallet_code = generate_subclient("BitcoinWalletClient", &wallet_methods).unwrap();
-        let node_code = generate_subclient("BitcoinNodeClient", &node_methods).unwrap();
-        let combined_code = generate_combined_client("BitcoinTestClient", methods).unwrap();
+        let wallet_code =
+            generate_subclient("BitcoinWalletClient", &wallet_methods, &self.version).unwrap();
+        let node_code =
+            generate_subclient("BitcoinNodeClient", &node_methods, &self.version).unwrap();
+        let combined_code =
+            generate_combined_client("BitcoinTestClient", methods, &self.version).unwrap();
 
         let mod_rs_code = generate_mod_rs();
 
@@ -122,7 +140,7 @@ fn generate_result_code(methods: &[ApiMethod]) -> String {
         let ty = rust_type_for(&r.key_name, &r.type_);
         writeln!(
             code,
-            "#[derive(Debug, Deserialize)]\npub struct {}Result(pub {});\n",
+            "#[derive(Debug, Deserialize)]\n#[serde(transparent)]\npub struct {}Response(pub {});\n",
             camel(&m.name),
             ty
         )
@@ -135,21 +153,33 @@ fn generate_mod_rs() -> String {
     let mut code = String::new();
     writeln!(
         code,
-        "//! Test node module for Bitcoin RPC testing\n\
-         pub mod params;\n\
-         pub mod result;\n\
-         pub mod wallet;\n\
-         pub mod node;\n\
-         pub use test_node::test_node::BitcoinTestClient;\n\
-         pub use wallet::BitcoinWalletClient;\n\
-         pub use node::BitcoinNodeClient;"
+        "//! Test node module for Bitcoin RPC testing
+#[cfg(test)]
+pub mod test_node {{
+    pub mod params;
+    pub mod result;
+    pub mod wallet;
+    pub mod node;
+
+    // re-export common clients
+    pub use test_node::test_node::BitcoinTestClient;
+    pub use wallet::BitcoinWalletClient;
+    pub use node::BitcoinNodeClient;
+
+    // TODO: Break these sub-modules out behind feature-flags or a registry
+}}"
     )
     .unwrap();
     code
 }
 
 fn rust_type_for(param_name: &str, api_ty: &str) -> String {
-    let (base_ty, is_option) = TYPE_REGISTRY.map_type(api_ty, param_name);
+    let (base_ty, is_option) = TYPE_REGISTRY.map_argument_type(&ApiArgument {
+        type_: api_ty.to_string(),
+        names: vec![param_name.to_string()],
+        optional: false,
+        description: String::new(),
+    });
     if is_option {
         format!("Option<{}>", base_ty)
     } else {
@@ -173,22 +203,48 @@ fn camel(s: &str) -> String {
     out
 }
 
-fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
+fn generate_subclient(
+    client_name: &str,
+    methods: &[ApiMethod],
+    version: &str,
+) -> std::io::Result<String> {
+    use std::fmt::Write;
     let mut code = String::new();
+
+    // Add #[cfg(test)] at the top of the file
+    writeln!(code, "#[cfg(test)]").unwrap();
+
+    // Check if any method uses serde_json::Value
+    let needs_value = methods.iter().any(|m| {
+        !m.arguments.is_empty()
+            || (m.results.len() == 1 && m.results[0].type_.to_lowercase() != "none")
+    });
+
     writeln!(
         code,
         "use anyhow::Result;
-use serde_json::Value;
 use std::sync::Arc;
 use crate::transport::core::{{TransportExt, TransportError}};
 use crate::transport::DefaultTransport;
+use crate::types::{}_types::*;
+{}",
+        version,
+        if needs_value {
+            "#[cfg(test)]\nuse serde_json::Value;\n"
+        } else {
+            ""
+        }
+    )
+    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-#[derive(Debug, Clone)]
-pub struct {} {{
+    writeln!(
+        code,
+        "#[derive(Debug, Clone)]
+pub struct {0} {{
     client: Arc<DefaultTransport>,
 }}
 
-impl {} {{
+impl {0} {{
     pub fn new(client: Arc<DefaultTransport>) -> Self {{
         Self {{ client }}
     }}
@@ -196,79 +252,112 @@ impl {} {{
     pub fn with_transport(&mut self, client: Arc<DefaultTransport>) {{
         self.client = client;
     }}",
-        client_name, client_name
+        client_name
     )
-    .unwrap();
+    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
+    // 2) One method per RPC
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
-        let ret_ty = "Value";
+        let returns_unit = m.results.is_empty() || m.results[0].type_.to_lowercase() == "none";
+        let ret_ty = if returns_unit {
+            "()".to_string()
+        } else {
+            format!("{}Response", camel(&m.name))
+        };
+
+        // doc comments
         writeln!(
             code,
             "\n{}",
             doc_comment::format_doc_comment(&m.description)
         )
-        .unwrap();
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-        if m.arguments.is_empty() {
-            writeln!(
-                code,
-                "    pub async fn {}(&self) -> Result<{}, TransportError> {{
-        Ok(self.client.call::<{}>(\"{}\", &[]).await?.into())
-    }}",
-                method_snake, ret_ty, ret_ty, m.name
-            )
-            .unwrap();
+        // signature line
+        let params_sig = if m.arguments.is_empty() {
+            "".to_string()
         } else {
-            let param_list = m
-                .arguments
+            m.arguments
                 .iter()
                 .map(|arg| {
                     let name = if arg.names[0] == "type" {
-                        "_type"
+                        "_type".to_string()
                     } else {
-                        &camel_to_snake_case(&arg.names[0])
+                        camel_to_snake_case(&arg.names[0])
                     };
                     let ty = rust_type_for(&arg.names[0], &arg.type_);
                     format!("{}: {}", name, ty)
                 })
                 .collect::<Vec<_>>()
-                .join(", ");
+                .join(", ")
+        };
+        writeln!(
+            code,
+            "    pub async fn {method}(&self{sig}) -> Result<{ret}, TransportError> {{",
+            method = method_snake,
+            sig = if params_sig.is_empty() {
+                "".into()
+            } else {
+                format!(", {}", params_sig)
+            },
+            ret = ret_ty,
+        )
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-            writeln!(
-                code,
-                "    pub async fn {}(&self, {}) -> Result<{}, TransportError> {{
-        let mut vec = vec![];",
-                method_snake, param_list, ret_ty
-            )
-            .unwrap();
-
+        // build params vector
+        if !m.arguments.is_empty() {
+            writeln!(code, "        let mut params = Vec::new();")
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             for arg in &m.arguments {
                 let name = if arg.names[0] == "type" {
                     "_type"
                 } else {
                     &camel_to_snake_case(&arg.names[0])
                 };
-                writeln!(code, "        vec.push(serde_json::to_value({})?);", name).unwrap();
+                // Always convert to Value, regardless of type
+                writeln!(
+                    code,
+                    "        params.push(serde_json::to_value({})?);",
+                    name
+                )
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             }
-
-            writeln!(
-                code,
-                "        Ok(self.client.call::<{}>(\"{}\", &vec).await?.into())
-    }}",
-                ret_ty, m.name
-            )
-            .unwrap();
         }
+
+        // call
+        writeln!(code, "        // dispatch and deserialize to `{}`", ret_ty)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        writeln!(
+            code,
+            "        self.client.call::<{ret}>(\"{rpc}\", &{vec}).await",
+            ret = ret_ty,
+            rpc = m.name,
+            vec = if m.arguments.is_empty() {
+                "[]".to_string()
+            } else {
+                "params".to_string()
+            },
+        )
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+        // close fn
+        writeln!(code, "    }}").map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     }
-    writeln!(code, "}}\n").unwrap();
+
+    // 3) Close impl block
+    writeln!(code, "}}\n").map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     Ok(code)
 }
 
-fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
+fn generate_combined_client(
+    client_name: &str,
+    methods: &[ApiMethod],
+    version: &str,
+) -> std::io::Result<String> {
     let mut code = String::new();
 
-    emit_imports(&mut code)?;
+    emit_imports(&mut code, version)?;
     emit_node_manager_trait(&mut code)?;
     emit_struct_definition(&mut code, client_name)?;
     emit_node_manager_impl(&mut code)?;
@@ -287,14 +376,15 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     Ok(code)
 }
 
-fn emit_imports(code: &mut String) -> std::io::Result<()> {
+fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
     writeln!(
         code,
         "use anyhow::Result;
-use serde_json::Value;
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
 use crate::transport::DefaultTransport;
+use crate::types::{}_types::*;
+use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
@@ -302,7 +392,8 @@ use super::node::BitcoinNodeClient;
 use super::wallet::BitcoinWalletClient;
 
 use std::str::FromStr;
-use bitcoin::Amount;"
+use bitcoin::Amount;",
+        version
     )
     .unwrap();
     Ok(())
@@ -478,7 +569,7 @@ fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
              \n\
              // Check if wallet exists\n\
              let wallets = self.wallet_client.listwallets().await?;\n\
-             if wallets.as_array().map_or(false, |w| w.contains(&wallet_name.clone().into())) {{\n\
+             if wallets.0.iter().any(|w| w == &wallet_name) {{\n\
                  // Unload existing wallet\n\
                  self.wallet_client.unloadwallet(wallet_name.clone(), false).await?;\n\
              }}\n\
@@ -534,21 +625,30 @@ fn emit_block_mining_helpers(code: &mut String) -> std::io::Result<()> {
         ).await?;
 
         println!(\"[debug] Getting new address\");
-        let address_value = self.wallet_client.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
-        println!(\"[debug] Address value: {{:?}}\", address_value);
-        let address = address_value.as_str().ok_or_else(|| TransportError::Rpc(\"Expected string address\".into()))?.to_string();
-        println!(\"[debug] Generated address: {{}}\", address);
+        let address = self.wallet_client.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
+        println!(\"[debug] Generated address: {{:?}}\", address);
         println!(\"[debug] Generating blocks\");
-        let blocks = self.node_client.generatetoaddress(num_blocks, address.clone(), maxtries).await?;
+        let blocks = self.node_client.generatetoaddress(
+            num_blocks,
+            address.0.clone(),
+            maxtries
+        ).await?;
         println!(\"[debug] Generated blocks: {{:?}}\", blocks);
-        Ok((address, blocks))
+        Ok((address.0, serde_json::to_value(blocks)?))
     }}\n"
     ).unwrap();
     Ok(())
 }
 
 fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
-    let block_hash_type = TYPE_REGISTRY.map_type("hex", "blockhash").0;
+    let block_hash_type = TYPE_REGISTRY
+        .map_argument_type(&ApiArgument {
+            type_: "hex".to_string(),
+            names: vec!["blockhash".to_string()],
+            optional: false,
+            description: String::new(),
+        })
+        .0;
     writeln!(
         code,
         "    /// Resets the blockchain to a clean state.\n\
@@ -561,15 +661,15 @@ fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
              self.node_client.pruneblockchain(0).await?;\n\
              // Check if we still have blocks\n\
              let info = self.node_client.getblockchaininfo().await?;\n\
-             let current_height = info[\"blocks\"].as_u64().unwrap_or(0);\n\
+             let current_height = info.blocks;\n\
              if current_height > 1 {{\n\
                  // Invalidate all blocks except genesis\n\
                  for height in (1..=current_height).rev() {{\n\
-                     let block_hash = {block_hash_type}::from_str(self.node_client.getblockhash(height).await?.as_str().unwrap()).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
+                     let block_hash = {block_hash_type}::from_str(&self.node_client.getblockhash(height).await?.0).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
                      self.node_client.invalidateblock(block_hash).await?;\n\
                  }}\n\
                  // Reconsider genesis block\n\
-                 let genesis_hash = {block_hash_type}::from_str(self.node_client.getblockhash(0).await?.as_str().unwrap()).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
+                 let genesis_hash = {block_hash_type}::from_str(&self.node_client.getblockhash(0).await?.0).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
                  self.node_client.reconsiderblock(genesis_hash).await?;\n\
              }}\n\
              Ok(())\n\
@@ -609,12 +709,18 @@ fn emit_node_manager_accessor(code: &mut String) -> std::io::Result<()> {
 fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> std::io::Result<()> {
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
-        let ret_ty = "Value".to_string();
         let doc_comment = doc_comment::format_doc_comment(&m.description);
         let target = if WALLET_METHODS.contains(&m.name.as_str()) {
             "wallet_client"
         } else {
             "node_client"
+        };
+
+        // Get the specific return type for this method
+        let ret_ty = if m.results.is_empty() || m.results[0].type_.to_lowercase() == "none" {
+            "()".to_string()
+        } else {
+            format!("{}Response", camel(&m.name))
         };
 
         let (param_list, args) = if m.arguments.is_empty() {
@@ -687,9 +793,9 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
          conf_target: u64,\n\
          estimate_mode: String,\n\
      ) -> Result<Value, TransportError> {{\n\
-         self.wallet_client.sendtoaddress(\n\
+         Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
              address,\n\
-             amount,\n\
+             serde_json::to_value(amount.to_btc().to_string())?,\n\
              \"\".to_string(),\n\
              \"\".to_string(),\n\
              false,\n\
@@ -697,9 +803,9 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
              conf_target,\n\
              estimate_mode,\n\
              false,\n\
-             None, // Changed from Amount::ZERO to None\n\
+             serde_json::Value::Null,\n\
              false,\n\
-         ).await\n\
+         ).await?)?)\n\
      }}\n\
      \n\
      pub async fn send_to_address_with_fee_rate(\n\
@@ -708,9 +814,9 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
      amount: Amount,\n\
      fee_rate: Amount,\n\
  ) -> Result<Value, TransportError> {{\n\
-     self.wallet_client.sendtoaddress(\n\
+     Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
          address,\n\
-         amount,\n\
+         serde_json::to_value(amount.to_btc().to_string())?,\n\
          \"\".to_string(),\n\
          \"\".to_string(),\n\
          false,\n\
@@ -718,9 +824,9 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
          0u64,\n\
          \"unset\".to_string(),\n\
          false,\n\
-         Some(fee_rate), // Changed to wrap fee_rate in Some()\n\
+         serde_json::to_value(fee_rate.to_btc().to_string())?,\n\
          false,\n\
-     ).await\n\
+     ).await?)?)\n\
  }}\n"
     ).unwrap();
     Ok(())

@@ -17,7 +17,7 @@ pub mod doc_comment;
 ///   (`Option<T>`, `skip_serializing_if`).
 /// - Exported as `TypesCodeGenerator`, used by the transport generator.
 pub mod response_type;
-pub use response_type::TypesCodeGenerator;
+pub use response_type::ResponseTypeCodeGenerator;
 
 /// Sub-crate generates: **`rpc_client`**
 ///

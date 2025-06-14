@@ -112,7 +112,7 @@ fn test_custom_config_values() {
     config.bitcoin.port = 8333;
     config.bitcoin.username = "custom_user".to_string();
     config.bitcoin.password = "custom_pass".to_string();
-    config.bitcoin.core_version = Some("v29".to_string());
+    config.bitcoin.core_version = Some(28);
 
     // Modify Logging config
     config.logging.level = "debug".to_string();
@@ -127,7 +127,7 @@ fn test_custom_config_values() {
     assert_eq!(config.bitcoin.port, 8333);
     assert_eq!(config.bitcoin.username, "custom_user");
     assert_eq!(config.bitcoin.password, "custom_pass");
-    assert_eq!(config.bitcoin.core_version, Some("v29".to_string()));
+    assert_eq!(config.bitcoin.core_version, Some(28));
 
     assert_eq!(config.logging.level, "debug");
     assert_eq!(

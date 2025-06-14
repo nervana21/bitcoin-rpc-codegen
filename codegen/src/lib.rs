@@ -10,7 +10,8 @@
 use anyhow::Result;
 use generators::doc_comment;
 use lazy_static::lazy_static;
-use rpc_api::ApiMethod;
+use rpc_api::{ApiArgument, ApiMethod};
+use schema::validator::validate_numeric_value;
 use std::{fs, path::Path};
 
 pub mod generators;
@@ -48,7 +49,7 @@ pub mod test_node_generator;
 /// Central registry for mapping Bitcoin RPC types to Rust types.
 /// Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
 pub mod type_registry;
-pub use type_registry::{TypeMapping, TypeRegistry};
+pub use type_registry::TypeRegistry;
 
 /// Sub-crate: **`transport_core_generator`**
 ///
@@ -116,7 +117,7 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use generators::response_type::generate_return_type;
+        use generators::response_type::build_return_type;
         use utils::{capitalize, sanitize_method_name};
 
         methods
@@ -159,7 +160,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 let docs_md = doc_comment::generate_example_docs(m, "latest")
                     .trim_end()
                     .to_string();
-                let response_struct = generate_return_type(m).unwrap_or_default();
+                let response_struct = build_return_type(m).unwrap_or_default().unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
                 } else {
@@ -205,12 +206,53 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
 }
 
 lazy_static! {
-    /// Canonical Type Registry: the single source of truth for Bitcoin‑RPC ⇢ Rust mappings.
+     /// Bitcoin RPC Type System
     ///
-    /// - Normalized RPC primitives → Rust primitives
-    /// - Named structs/enums discovered during parsing
-    /// - Version-specific overrides (e.g., `Numeric` vs `Amount`)
-    ///
-    /// All code-generation phases consult this registry to ensure consistent type conversions.
+    /// See `docs/type_system.md` for the full taxonomy of integer, float, amount,
+    /// large number, hex, array, and object mappings.
+    #[doc = include_str!("../../docs/type_system.md")]
+    // TODO: Define a `RpcCategory` enum and wire it into `TypeRegistry` for code-driven docs
     pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
 }
+
+impl TypeRegistry {
+    /// Validates that a JSON value matches the expected type for a given field.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The JSON value to validate
+    /// * `type_str` - The RPC type string (e.g., "number", "string", etc.)
+    /// * `field_name` - The name of the field being validated
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the value matches the expected type
+    /// * `Err(String)` with an error message if validation fails
+    pub fn validate_value(
+        &self,
+        value: &serde_json::Value,
+        type_str: &str,
+        field_name: &str,
+    ) -> Result<(), String> {
+        let (rust_type, _) = self.map_argument_type(&ApiArgument {
+            type_: type_str.to_string(),
+            names: vec![field_name.to_string()],
+            optional: false,
+            description: String::new(),
+        });
+        validate_numeric_value(value, rust_type).map_err(|e| e.to_string())
+    }
+}
+
+// TODO(multiprocess): Introduce an `RpcComponent` abstraction to formally distinguish between
+// independently-addressable RPC components like `node`, `wallet`, `index`, and `gui`.
+//
+// This will support:
+// - routing method calls to different endpoints (e.g., node.sock vs wallet.sock)
+// - preventing runtime errors by associating methods with their component
+// - future `CombinedClient` that multiplexes requests across components
+//
+// This abstraction will become essential as Bitcoin Core moves toward
+// separate processes with their own RPC servers.
+//
+// Start by creating a `components.rs` module defining `RpcComponent` and a registry of methods.

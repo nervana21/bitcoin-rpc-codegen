@@ -20,3 +20,4 @@ node = { path = "../node" }
 parser = { path = "../parser" }
 rpc-api = { path = "../rpc-api" }
 transport = { path = "../transport" }
+schema = { path = "../schema" }

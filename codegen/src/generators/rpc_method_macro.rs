@@ -150,7 +150,7 @@ fn generate_method_args(method: &ApiMethod) -> String {
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
         let arg_type = {
-            let (ty, _) = TYPE_REGISTRY.map_type(&arg.type_, &arg.names[0]);
+            let (ty, _) = TYPE_REGISTRY.map_argument_type(arg);
             ty.to_string()
         };
         // Escape reserved keywords
@@ -214,7 +214,22 @@ fn get_return_type(result: &rpc_api::ApiResult) -> String {
     }
 }
 
-fn map_type_to_rust(type_str: &str) -> String {
+/// Converts a JSON RPC type identifier into its corresponding Rust type name.
+///
+/// This centralized mapping ensures that schema types like `"string"`, `"number"`,
+/// and `"boolean"` are consistently translated to their Rust equivalents (`String`,
+/// `f64`, `bool`, etc.). Any unrecognized or dynamic object types default to
+/// `serde_json::Value`, preserving flexibility for unknown or evolving schemas.
+///
+/// # Arguments
+///
+/// * `type_str` – A string slice representing the JSON RPC type label.
+///
+/// # Returns
+///
+/// A `String` containing the Rust type name to use in generated code or runtime
+/// conversions.
+pub fn map_type_to_rust(type_str: &str) -> String {
     match type_str {
         "string" => "String".to_string(),
         "number" => "f64".to_string(),

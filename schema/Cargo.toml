@@ -7,3 +7,4 @@ edition = "2021"
 rpc-api = { path = "../rpc-api" }
 parser = { path = "../parser" }
 thiserror = "2.0.12"
+serde_json = "1.0.140"

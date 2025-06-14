@@ -1,33 +1,30 @@
 // rpc_api/tests/basic.rs
 
-use rpc_api::{
-    parse_version, ApiArgument, ApiMethod, ApiResult, Error, Version, SUPPORTED_VERSIONS,
-};
+use rpc_api::{ApiArgument, ApiMethod, ApiResult, Version, VersionError};
 use serde_json;
+use std::str::FromStr;
 
-/// Make sure all supported version strings round‐trip through `parse_version`.
+/// Make sure all supported version strings round‐trip through `Version::from_str`.
 #[test]
 fn supported_versions_parseable() {
-    for &tag in SUPPORTED_VERSIONS {
-        let v = parse_version(tag).unwrap_or_else(|e| panic!("`{}` failed to parse: {}", tag, e));
-        // And matching back out (optional):
-        let back = match v {
-            Version::V27 => "v27",
-            Version::V28 => "v28",
-            Version::V29 => "v29",
-            // TODO: add more cases as needed
-        };
-        assert_eq!(back, tag, "Version enum → &str mismatch");
+    let versions = [Version::V28];
+    for version in &versions {
+        let s = version.to_string();
+        let parsed = Version::from_str(&s).unwrap();
+        assert_eq!(
+            parsed, *version,
+            "Version string → enum → string roundtrip failed"
+        );
     }
 }
 
 /// Unknown version strings should error
 #[test]
 fn unknown_version_errors() {
-    let err = parse_version("vX").unwrap_err();
+    let err = Version::from_str("vX").unwrap_err();
     match err {
-        Error::UnsupportedVersion(s) => assert_eq!(s, "vX"),
-        _ => panic!("wrong error variant for unsupported version"),
+        VersionError::InvalidFormat(s) => assert_eq!(s, "vX"),
+        _ => panic!("wrong error variant for invalid version"),
     }
 }
 

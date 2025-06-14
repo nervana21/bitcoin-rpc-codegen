@@ -4,8 +4,11 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub mod version;
+pub use version::{Version, VersionError};
+
 /// An RPC method's full schema
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApiMethod {
     pub name: String,
     pub description: String,
@@ -24,7 +27,7 @@ pub struct ApiArgument {
 }
 
 /// One result field from an RPC method
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApiResult {
     pub key_name: String,
     #[serde(rename = "type")]
@@ -34,41 +37,13 @@ pub struct ApiResult {
     pub optional: bool,
 }
 
-/// Supported Bitcoin‐Core RPC versions
-pub const SUPPORTED_VERSIONS: &[&str] = &["v27", "v28", "v29" /* etc. */];
-
-/// Parsed version enum
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Version {
-    V27,
-    V28,
-    V29,
-    // TODO: add support for prior versions
-}
-
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("unsupported version: {0}")]
-    UnsupportedVersion(String),
-
-    #[error("failed to parse version: {0}")]
-    VersionParseError(String),
-
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-}
-
-/// Convert a string tag into our `Version` enum
-pub fn parse_version(s: &str) -> Result<Version, Error> {
-    match s {
-        "v27" => Ok(Version::V27),
-        "v28" => Ok(Version::V28),
-        "v29" => Ok(Version::V29),
-        other => Err(Error::UnsupportedVersion(other.to_string())),
-    }
 }
 
 pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
