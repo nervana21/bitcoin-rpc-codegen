@@ -23,15 +23,23 @@ This toolchain solves these problems by providing:
 - ✅ **Built-in testing support** — built-in regtest node management
 - ✅ **Reliable execution** — no port conflicts or manual wiring
 
-## Theory and Philosophy
+## Semantic Compression: The Guiding Principle
 
-This project applies the principle of **semantic compression**: capturing the full behavioral contract of Bitcoin Core's RPC interface in the smallest, most maintainable generator possible. Instead of hand-written wrappers or abstracted layers, it mechanically translates RPC definitions into idiomatic, compile-time-safe Rust code, resulting in a minimal implementation that expresses maximal semantic fidelity — a clean compression of protocol behavior into structured code.
+This project implements a **semantic compression** architecture: rather than manually implementing thousands of lines of code to interface with an evolving protocol, we transform the interface into a concise, structured schema that drives a code generator to produce type-safe Rust clients.
+
+This approach delivers:
+
+- Minimal maintenance overhead
+- Comprehensive version compatibility
+- A canonical source of truth (`api.json`) that governs all generated code
+
+The architecture is designed to **systematically reduce complexity**. Code duplication, version incompatibilities, and behavioral inconsistencies are treated as defects in the generator implementation rather than inherent limitations of the system.
 
 Read more: [`docs/semantic-compression.md`](docs/semantic-compression.md)
 
 ## 🪙 Focused on Bitcoin Core & Rust
 
-This project is built with a narrow focus on Bitcoin Core, codifying its live RPC schema in idiomatic Rust. This focus ensures strict compatibility with upstream releases and delivers a seamless, Rust-first developer experience.
+This project targets Bitcoin Core's live RPC interface and encodes it directly into idiomatic, async Rust clients. This tight coupling means strict fidelity to upstream behavior, with zero runtime guessing.
 
 ## Architecture
 
@@ -47,26 +55,25 @@ See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 - `node/` — Regtest node management and test client support
 - `pipeline/` — Orchestrates parsing → schema → generation
 
-All components are modular and reusable. You can build overlays, new language targets, or devtools by composing with this core.
+All components are modular and reusable. You can build overlays, language targets, or devtools by composing with this core.
 
 ## Quick Start
 
-> **⚠️ Heads up:** This repository contains the **code generator** itself, not the runtime client you import into your projects. To use the generated RPC client in your project, grab the published crate below.
+> **⚠️ Note:** This repository is the code generator. The runtime client is published separately.
 
 ### Installing the Client Library
 
-The client is published as `bitcoin-rpc-midas`. To add it:
+Install the generated RPC client as `bitcoin-rpc-midas`:
 
 ```bash
 cargo add bitcoin-rpc-midas
 ```
 
-Or manually add to your `Cargo.toml`:
+Or manually:
 
 ```toml
 [dependencies]
 bitcoin-rpc-midas = "0.1.1"
-
 anyhow = "1.0"
 bitcoin = "0.32.0"
 serde_json = "1.0"
