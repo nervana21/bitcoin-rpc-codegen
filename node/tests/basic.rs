@@ -1,6 +1,7 @@
 // node/tests/basic.rs
 
 use node::{BitcoinNodeManager, NodeManager, TestConfig};
+use rpc_api::version;
 use tokio_test::block_on;
 
 fn init_test_env() {
@@ -27,7 +28,7 @@ fn test_node_lifecycle() {
     // Test initial state
     let initial_state = block_on(node_manager.get_state()).unwrap();
     assert!(!initial_state.is_running);
-    assert!(initial_state.version.is_supported());
+    assert!(initial_state.version.is_known());
 
     // Test starting the node
     block_on(node_manager.start()).unwrap();
@@ -121,4 +122,35 @@ fn test_port_selection_behavior() {
     let node_manager = BitcoinNodeManager::new_with_config(&test_config).unwrap();
     let port = node_manager.rpc_port();
     assert_ne!(port, 0, "Expected a non-zero port to be selected");
+}
+
+#[test]
+fn test_node_version_behavior() {
+    init_test_env();
+    let test_config = TestConfig::default();
+    let node_manager = BitcoinNodeManager::new_with_config(&test_config).unwrap();
+
+    // Test initial state version
+    let initial_state = block_on(node_manager.get_state()).unwrap();
+    assert!(
+        initial_state.version.is_known(),
+        "Initial state version should be known"
+    );
+
+    // Verify version is one of the known versions
+    assert!(
+        version::KNOWN.contains(&initial_state.version),
+        "Version should be one of the known versions"
+    );
+
+    // Test version string representation
+    let version_str = initial_state.version.as_str();
+    assert!(
+        version_str.starts_with("v"),
+        "Version string should start with 'v'"
+    );
+    assert!(
+        version_str.len() >= 3,
+        "Version string should be at least 3 characters"
+    );
 }
