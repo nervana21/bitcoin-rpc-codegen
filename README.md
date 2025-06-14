@@ -3,7 +3,7 @@
 
 # Bitcoin RPC Code Generator
 
-Instantly generate [bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-midas), an async, type-safe Bitcoin Core client that makes Bitcoin testing and development 10× easier.
+Instantly generate [bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-midas), a type-safe Bitcoin Core client that makes Bitcoin testing and development 10× easier.
 
 ## Why Use This?
 
