@@ -40,8 +40,8 @@ pub struct BitcoinConfig {
     pub username: String,
     /// RPC password
     pub password: String,
-    /// Bitcoin Core version (e.g. "v29"); `None` to auto-detect
-    pub core_version: Option<String>,
+    /// Bitcoin Core version; `None` to auto-detect
+    pub core_version: Option<u32>,
 }
 
 /// Logging configuration

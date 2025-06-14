@@ -27,7 +27,7 @@ fn test_node_lifecycle() {
     // Test initial state
     let initial_state = block_on(node_manager.get_state()).unwrap();
     assert!(!initial_state.is_running);
-    assert!(!initial_state.version.is_empty());
+    assert!(initial_state.version.is_supported());
 
     // Test starting the node
     block_on(node_manager.start()).unwrap();
