@@ -11,9 +11,8 @@ pub enum Version {
 }
 
 // This becomes the single source of truth for supported versions
-pub const KNOWN: &'static [Version] = &[Version::V27, Version::V28];
+pub const KNOWN: &[Version] = &[Version::V27, Version::V28];
 
-// Update DEFAULT_VERSION to use KNOWN
 pub const DEFAULT_VERSION: Version = Version::V28;
 
 impl Version {

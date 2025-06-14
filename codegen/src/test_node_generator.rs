@@ -641,7 +641,7 @@ fn emit_block_mining_helpers(code: &mut String) -> std::io::Result<()> {
 }
 
 fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
-    let block_hash_type = (&TYPE_REGISTRY)
+    let block_hash_type = TYPE_REGISTRY
         .map_argument_type(&ApiArgument {
             type_: "hex".to_string(),
             names: vec!["blockhash".to_string()],

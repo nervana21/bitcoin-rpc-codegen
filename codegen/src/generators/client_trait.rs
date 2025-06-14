@@ -124,8 +124,8 @@ impl<'a> MethodTemplate<'a> {
         let none = self
             .method
             .results
-            .get(0)
-            .map_or(true, |r| r.type_.eq_ignore_ascii_case("none"));
+            .first()
+            .is_none_or(|r| r.type_.eq_ignore_ascii_case("none"));
         if none {
             "()".into()
         } else {

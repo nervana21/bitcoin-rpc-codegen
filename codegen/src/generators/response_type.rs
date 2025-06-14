@@ -109,7 +109,6 @@ fn sanitize_doc_comment(comment: &str) -> String {
 /// of response structures across Bitcoin Core versions.
 ///
 /// Intended to be used as part of a version-aware code generation pipeline.
-
 pub struct ResponseTypeCodeGenerator {
     version: String,
 }
@@ -119,7 +118,6 @@ impl ResponseTypeCodeGenerator {
     ///
     /// The provided `version` string is used to namespace or suffix generated types,
     /// ensuring compatibility with different versions of the RPC interface.
-
     pub fn new(version: impl Into<String>) -> Self {
         Self {
             version: version.into(),
@@ -156,7 +154,6 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
     let mut buf = String::new();
 
     // TODO: Replace ad-hoc string building with a lightweight template
-
     let doc = sanitize_doc_comment(&method.description);
     writeln!(&mut buf, "/// {}", doc)?;
     writeln!(&mut buf, "#[derive(Debug, Deserialize, Serialize)]")?;
@@ -172,9 +169,10 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
             };
             writeln!(
                 &mut buf,
-                "    {}{}",
+                "    {}pub {}: {},",
                 serde_attrs_for(&field),
-                format!("pub {}: {},", field.name, ty)
+                field.name,
+                ty
             )?;
         }
         writeln!(&mut buf, "}}\n")?;
