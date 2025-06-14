@@ -83,10 +83,6 @@ This gives a measure of **semantic density**—the total size of all generated i
 
 Together, these tools support maintainability and long-term evolution without code duplication.
 
-Here’s a cleaner, more compact version of your summary, with improved flow and rhythm:
-
----
-
 ## Summary
 
 Semantic compression reframes code generation as the search for the smallest generator that produces correct, version-aware implementations of a protocol. In `bitcoin-rpc-codegen`, this idea becomes practical: a way to simplify and stabilize the developer surface without losing precision.
