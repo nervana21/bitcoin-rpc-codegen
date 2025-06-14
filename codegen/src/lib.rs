@@ -243,3 +243,16 @@ impl TypeRegistry {
         validate_numeric_value(value, rust_type).map_err(|e| e.to_string())
     }
 }
+
+// TODO(multiprocess): Introduce an `RpcComponent` abstraction to formally distinguish between
+// independently-addressable RPC components like `node`, `wallet`, `index`, and `gui`.
+//
+// This will support:
+// - routing method calls to different endpoints (e.g., node.sock vs wallet.sock)
+// - preventing runtime errors by associating methods with their component
+// - future `CombinedClient` that multiplexes requests across components
+//
+// This abstraction will become essential as Bitcoin Core moves toward
+// separate processes with their own RPC servers.
+//
+// Start by creating a `components.rs` module defining `RpcComponent` and a registry of methods.
