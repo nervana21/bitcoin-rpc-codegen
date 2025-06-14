@@ -48,7 +48,22 @@ use std::fmt::Write as _;
 ///
 /// This abstraction layer enables developers to focus on test logic rather than RPC mechanics,
 /// while maintaining type safety and proper error handling throughout the test suite.
-pub struct TestNodeGenerator;
+pub struct TestNodeGenerator {
+    version: String,
+}
+
+impl TestNodeGenerator {
+    /// Creates a new `TestNodeGenerator` configured for a specific Bitcoin Core version.
+    ///
+    /// The `version` string determines which RPC methods and structures are used when generating
+    /// type-safe test clients and associated modules. This allows test code to stay in sync with
+    /// version-specific behavior in Bitcoin Core.
+    pub fn new(version: impl Into<String>) -> Self {
+        Self {
+            version: version.into(),
+        }
+    }
+}
 
 impl CodeGenerator for TestNodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
@@ -66,9 +81,12 @@ impl CodeGenerator for TestNodeGenerator {
             .cloned()
             .collect();
 
-        let wallet_code = generate_subclient("BitcoinWalletClient", &wallet_methods).unwrap();
-        let node_code = generate_subclient("BitcoinNodeClient", &node_methods).unwrap();
-        let combined_code = generate_combined_client("BitcoinTestClient", methods).unwrap();
+        let wallet_code =
+            generate_subclient("BitcoinWalletClient", &wallet_methods, &self.version).unwrap();
+        let node_code =
+            generate_subclient("BitcoinNodeClient", &node_methods, &self.version).unwrap();
+        let combined_code =
+            generate_combined_client("BitcoinTestClient", methods, &self.version).unwrap();
 
         let mod_rs_code = generate_mod_rs();
 
@@ -185,7 +203,11 @@ fn camel(s: &str) -> String {
     out
 }
 
-fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
+fn generate_subclient(
+    client_name: &str,
+    methods: &[ApiMethod],
+    version: &str,
+) -> std::io::Result<String> {
     use std::fmt::Write;
     let mut code = String::new();
 
@@ -204,8 +226,9 @@ fn generate_subclient(client_name: &str, methods: &[ApiMethod]) -> std::io::Resu
 use std::sync::Arc;
 use crate::transport::core::{{TransportExt, TransportError}};
 use crate::transport::DefaultTransport;
-use crate::types::latest_types::*;
+use crate::types::{}_types::*;
 {}",
+        version,
         if needs_value {
             "#[cfg(test)]\nuse serde_json::Value;\n"
         } else {
@@ -327,10 +350,14 @@ impl {0} {{
     Ok(code)
 }
 
-fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io::Result<String> {
+fn generate_combined_client(
+    client_name: &str,
+    methods: &[ApiMethod],
+    version: &str,
+) -> std::io::Result<String> {
     let mut code = String::new();
 
-    emit_imports(&mut code)?;
+    emit_imports(&mut code, version)?;
     emit_node_manager_trait(&mut code)?;
     emit_struct_definition(&mut code, client_name)?;
     emit_node_manager_impl(&mut code)?;
@@ -349,14 +376,14 @@ fn generate_combined_client(client_name: &str, methods: &[ApiMethod]) -> std::io
     Ok(code)
 }
 
-fn emit_imports(code: &mut String) -> std::io::Result<()> {
+fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
     writeln!(
         code,
         "use anyhow::Result;
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
 use crate::transport::DefaultTransport;
-use crate::types::latest_types::*;
+use crate::types::{}_types::*;
 use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
@@ -365,7 +392,8 @@ use super::node::BitcoinNodeClient;
 use super::wallet::BitcoinWalletClient;
 
 use std::str::FromStr;
-use bitcoin::Amount;"
+use bitcoin::Amount;",
+        version
     )
     .unwrap();
     Ok(())
