@@ -666,15 +666,18 @@ impl TestConfig {
      //!\n\
      //! This library provides a strongly-typed interface to the Bitcoin RPC API.\n\
      //! It is generated from the Bitcoin Core RPC API documentation.\n\n\
+     // Core modules\n\
      pub mod config;\n\
-     pub mod node;\n\
      pub mod transport;\n\
      pub mod types;\n\
+     pub mod node;\n\
      pub mod test_node;\n\
      pub mod client_trait;\n\n\
+     // Re-exports for ergonomic access\n\
+     pub use types::*;\n\
      pub use config::Config;\n\
-     pub use node::BitcoinNodeManager;\n\
      pub use transport::{{DefaultTransport, TransportError}};\n\
+     pub use node::BitcoinNodeManager;\n\
      pub use crate::test_node::test_node::BitcoinTestClient;\n\
      pub use crate::client_trait::client_trait::BitcoinClientV{};",
         version_nodots
@@ -880,10 +883,9 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
     if dir.ends_with("transport") {
         writeln!(
             content,
-            "pub mod core;
+            "pub mod core;\n\
              pub use core::{{Transport, TransportError, DefaultTransport, TransportExt}};\n"
-        )
-        .unwrap();
+        )?;
     }
 
     // Add module declarations and re-exports
