@@ -77,8 +77,8 @@ This gives a measure of **semantic density**—the total size of all generated i
 
 ## Practical Implications
 
-- A smaller $|\Gamma|$ means the interface is being captured more compactly
-- Supporting more $\{\mathcal{S}_v\}$ without increasing $|\Gamma|$ shows better generalization
+- A smaller $\|\Gamma\|$ means the interface is being captured more compactly
+- Supporting more $\{\mathcal{S}_v\}$ without increasing $\|\Gamma\|$ shows better generalization
 - Comparing different generators for the same $\mathcal{S}$ gives a principled way to evaluate design efficiency
 
 Together, these tools support maintainability and long-term evolution without code duplication.
