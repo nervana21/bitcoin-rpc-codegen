@@ -7,25 +7,19 @@ Instantly generate [bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-
 
 ## Why Use This?
 
-Bitcoin Core's RPC interface is powerful — but:
+Compared to hand-rolled RPC clients, this toolchain provides:
 
-- ❌ Repetitive to wrap by hand
-- ❌ Error-prone across versions
-- ❌ Fragile at runtime without type safety
-- ❌ Difficult to test reliably without full node setup logic
-- ❌ Prone to flaky bugs from port conflicts and manual wiring
+- Less repetition
+- Fewer versioning bugs
+- More compile-time guarantees
+- Easier local testing with embedded regtest
+- Better isolation from flaky environments and port conflicts
 
-This toolchain solves these problems by providing:
-
-- ✅ **Automatic code generation** — fully generated, production-grade client
-- ✅ **Version compatibility** — matches your node's exact RPC interface
-- ✅ **Type safety** — compile-time guarantees for all methods
-- ✅ **Built-in testing support** — built-in regtest node management
-- ✅ **Reliable execution** — no port conflicts or manual wiring
+Each improvement is aimed at making Bitcoin Core RPCs easier to integrate, test, and depend on in a modern Rust codebase. The result is a type-safe client that just works — aligned with upstream, resilient to changes, and ready for production use.
 
 ## Semantic Compression: The Guiding Principle
 
-This project implements a **semantic compression** architecture: rather than manually implementing thousands of lines of code to interface with an evolving protocol, we transform the interface into a concise, structured schema that drives a code generator to produce type-safe Rust clients.
+This project implements a **semantic compression** architecture: instead of hand-coding interfaces to a changing protocol, it models the RPC surface as structured data and generates type-safe Rust clients from that schema. This minimizes duplication while preserving fidelity to upstream behavior.
 
 This approach delivers:
 
@@ -37,39 +31,33 @@ The architecture is designed to **systematically reduce complexity**. Code dupli
 
 Read more: [`docs/semantic-compression.md`](docs/semantic-compression.md)
 
-## 🪙 Focused on Bitcoin Core & Rust
-
-This project targets Bitcoin Core's live RPC interface and encodes it directly into idiomatic, async Rust clients. This tight coupling means strict fidelity to upstream behavior, with zero runtime guessing.
-
 ## Architecture
 
 See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 
 ### Key Components
 
-- `rpc_api/` — JSON model of RPC methods and parameters
-- `parser/` — Parses `help` or `api.json` into structured form
-- `schema/` — Normalizes and validates parsed data
-- `codegen/` — Emits Rust modules and client implementations
-- `transport/` — Minimal async RPC transport + error handling
-- `node/` — Regtest node management and test client support
-- `pipeline/` — Orchestrates parsing → schema → generation
+- `rpc_api/`: JSON model of RPC methods and parameters
+- `parser/`: Parses `help` or `api.json` into structured form
+- `schema/`: Normalizes and validates parsed data
+- `codegen/`: Emits Rust modules and client implementations
+- `transport/`: Minimal async RPC transport + error handling
+- `node/`: Regtest node management and test client support
+- `pipeline/`: Orchestrates parsing → schema → generation
 
 All components are modular and reusable. You can build overlays, language targets, or devtools by composing with this core.
 
 ## Quick Start
 
-> **⚠️ Note:** This repository is the code generator. The runtime client is published separately.
+> **Note:** This repository provides the code generator. The generated client library is published separately as [`bitcoin-rpc-midas`](https://crates.io/crates/bitcoin-rpc-midas).
 
-### Installing the Client Library
-
-Install the generated RPC client as `bitcoin-rpc-midas`:
+### Install the Client
 
 ```bash
 cargo add bitcoin-rpc-midas
 ```
 
-Or manually:
+Or add it manually:
 
 ```toml
 [dependencies]
@@ -80,31 +68,33 @@ serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
-## Example Usage
+### Minimal Example
 
 ```rust
 use anyhow::Result;
-use bitcoin-rpc-midas::BitcoinTestClient;
+use bitcoin_rpc_midas::*; // Re-exports BitcoinTestClient and other helpers
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = BitcoinTestClient::new().await?;
     let wallet_info = client.getwalletinfo().await?;
-    println!("Wallet state:\n{:#?}\n", wallet_info);
+    println!("Wallet state:\n{:#?}", wallet_info);
     Ok(())
 }
 ```
 
+---
+
 ## Contributing
 
-This project is designed for collaboration and extension. Forks, PRs, patches, overlays, etc are all welcome.
-
-To get started, check out [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome — including forks, patches, extensions, or overlays.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 ## License
 
 MIT — see [LICENSE](LICENSE)
 
-## Security Note
+## Security
 
-This and all related software can communicate directly with _bitcoind_. Mainnet use requires caution: always audit the code, restrict RPC access to trusted interfaces, and avoid exposing your node to the public internet.
+This library communicates directly with `bitcoind`.
+**For mainnet use,** audit the code carefully, restrict RPC access to trusted hosts, and avoid exposing RPC endpoints to untrusted networks.
