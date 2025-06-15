@@ -17,7 +17,7 @@ pub struct ApiMethod {
 }
 
 /// One argument to an RPC method
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApiArgument {
     pub names: Vec<String>,
     #[serde(rename = "type")]
