@@ -12,7 +12,7 @@ use generators::doc_comment;
 use lazy_static::lazy_static;
 use rpc_api::{ApiArgument, ApiMethod};
 use schema::validator::validate_numeric_value;
-use std::{fs, path::Path};
+use std::{fs, path::Path, process::Command};
 
 pub mod generators;
 
@@ -84,6 +84,20 @@ pub trait CodeGenerator {
     }
 }
 
+fn format_with_rustfmt(path: &Path) {
+    if let Ok(status) = Command::new("rustfmt")
+        .arg("--edition=2021")
+        .arg(path)
+        .status()
+    {
+        if !status.success() {
+            eprintln!("[warn] rustfmt failed on {:?}", path);
+        }
+    } else {
+        eprintln!("[warn] rustfmt not found or failed to run for {:?}", path);
+    }
+}
+
 /// Persist a list of generated source files to disk under the given output directory,
 /// creating any necessary subdirectories and appending `.rs` if missing.
 pub fn write_generated<P: AsRef<Path>>(
@@ -100,7 +114,8 @@ pub fn write_generated<P: AsRef<Path>>(
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(path, src.as_bytes())?;
+        fs::write(&path, src.as_bytes())?;
+        format_with_rustfmt(&path);
     }
     Ok(())
 }
