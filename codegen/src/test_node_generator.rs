@@ -495,7 +495,7 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         // Wait for node to be ready for RPC
         println!(\"[DEBUG] Creating transport with port {{}}\", node_manager.rpc_port());
-        let client = Arc::new(DefaultTransport::new(
+        let client = Arc::new(DefaultTransport::new(\n\
             &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),
         ));
@@ -665,7 +665,8 @@ fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
              if current_height > 1 {{\n\
                  // Invalidate all blocks except genesis\n\
                  for height in (1..=current_height).rev() {{\n\
-                     let block_hash = {block_hash_type}::from_str(&self.node_client.getblockhash(height).await?.0).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
+                     let hash_str = self.node_client.getblockhash(height).await?.0;\n\
+                     let block_hash = {block_hash_type}::from_str(&hash_str).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
                      self.node_client.invalidateblock(block_hash).await?;\n\
                  }}\n\
                  // Reconsider genesis block\n\
