@@ -1,5 +1,8 @@
 //! High-level pipeline that generates a self-contained `bitcoin-rpc-midas` crate
 //! by tying together discovery/parsing, schema normalization, and code generation.
+//!
+//! This module provides the core functionality for generating a complete Bitcoin RPC client
+//! library, including transport layer, type definitions, and test node helpers.
 
 use anyhow::{Context, Result};
 use codegen::generators::{ClientTraitGenerator, ResponseTypeCodeGenerator};
@@ -16,17 +19,31 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
-/* --------------------------------------------------------------------- */
-/*  Constants                                                            */
-/* --------------------------------------------------------------------- */
 /// The version of the generated bitcoin-rpc-midas crate
 pub const CRATE_VERSION: &str = "0.1.1";
 
-/* --------------------------------------------------------------------- */
-/*  Public entry: run() – build `bitcoin-rpc-midas` crate                            */
-/* --------------------------------------------------------------------- */
-/// Generates a fully self-contained `bitcoin-rpc-midas` crate under the workspace root.
-/// Always emits into `<workspace-root>/bitcoin-rpc-midas` and prints verbose diagnostics.
+/// Generates a complete Bitcoin RPC client library structure and code.
+///
+/// This function orchestrates the entire code generation pipeline by:
+/// 1. Creating the necessary module directory structure
+/// 2. Parsing and normalizing the input schema (either from JSON or help text)
+/// 3. Generating the transport layer code for RPC communication
+/// 4. Creating type definitions for RPC responses
+/// 5. Generating test node helpers and client trait implementations
+/// 6. Setting up the library's root structure with proper module organization
+///
+/// The generated code provides a type-safe, async-ready client for interacting
+/// with Bitcoin Core's JSON-RPC interface, complete with all necessary
+/// dependencies and documentation.
+///
+/// # Arguments
+///
+/// * `input_path` - Optional path to the input file containing either JSON API spec or help text.
+///                  If None, defaults to "api.json" in the project root.
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of the generation process
 pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     // Find project root by looking for Cargo.toml
     let project_root = find_project_root()?;
@@ -58,7 +75,6 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     let crate_root = project_root.join("bitcoin-rpc-midas");
     println!("[diagnostic] target crate path: {:?}", crate_root);
 
-    // Remove existing bitcoin-rpc-midas directory if it exists
     if crate_root.exists() {
         println!("[diagnostic] removing existing bitcoin-rpc-midas directory");
         fs::remove_dir_all(&crate_root).with_context(|| {
@@ -75,12 +91,10 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     fs::create_dir_all(&src_dir)
         .with_context(|| format!("Failed to create src directory: {:?}", src_dir))?;
 
-    // Copy template files to src directory
     println!("[diagnostic] copying template files to src directory");
     copy_templates_to(&src_dir)
         .with_context(|| format!("Failed to copy template files to {:?}", src_dir))?;
 
-    // Write Cargo.toml
     write_cargo_toml(&crate_root)
         .with_context(|| format!("Failed to write Cargo.toml in: {:?}", crate_root))?;
 
@@ -118,6 +132,9 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
 }
 
 /// Find the workspace root by looking for the root Cargo.toml
+///
+///
+/// Returns `Result<PathBuf>` containing the path to the workspace root directory
 fn find_project_root() -> Result<PathBuf> {
     let mut current = env::current_dir()?;
     loop {
@@ -137,9 +154,16 @@ fn find_project_root() -> Result<PathBuf> {
     }
 }
 
-/* --------------------------------------------------------------------- */
-/*  Shared logic: generate code modules into an arbitrary directory      */
-/* --------------------------------------------------------------------- */
+/// Generate code into the specified output directory
+///
+/// # Arguments
+///
+/// * `out_dir` - The directory where the generated code will be written
+/// * `input_path` - Path to the input file containing either JSON API spec or help text
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of the generation process
 fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     println!(
         "[diagnostic] generate_into received out_dir: {:?}, input_path: {:?}",
@@ -664,9 +688,15 @@ impl TestConfig {
     Ok(())
 }
 
-/* --------------------------------------------------------------------- */
-/*  Utility: write minimal Cargo.toml for `bitcoin-rpc-midas`                      */
-/* --------------------------------------------------------------------- */
+/// Write the Cargo.toml file for the generated crate
+///
+/// # Arguments
+///
+/// * `root` - The root directory of the generated crate
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
 fn write_cargo_toml(root: &Path) -> Result<()> {
     println!(
         "[diagnostic] writing Cargo.toml at {:?}",
@@ -714,9 +744,15 @@ tracing = "0.1"
     Ok(())
 }
 
-/* --------------------------------------------------------------------- */
-/*  Utility: write README.md for `bitcoin-rpc-midas`                      */
-/* --------------------------------------------------------------------- */
+/// Write the README.md file for the generated crate
+///
+/// # Arguments
+///
+/// * `root` - The root directory of the generated crate
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the README.md file
 fn write_readme(root: &Path) -> Result<()> {
     println!(
         "[diagnostic] writing README.md at {:?}",
@@ -781,9 +817,15 @@ Contributions welcome.
     Ok(())
 }
 
-/* --------------------------------------------------------------------- */
-/*  RPC-client stub & mod.rs writer (unchanged)                          */
-/* --------------------------------------------------------------------- */
+/// Ensure the RPC client stub exists in the transport directory
+///
+/// # Arguments
+///
+/// * `transport_dir` - The transport module directory
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of ensuring the RPC client stub
 fn ensure_rpc_client(transport_dir: &Path) -> Result<()> {
     let stub_path = transport_dir.join("rpc_client.rs");
     println!("[diagnostic] ensuring rpc_client stub at {:?}", stub_path);
@@ -820,11 +862,21 @@ impl RpcClient {
     Ok(())
 }
 
+/// Write the mod.rs file for a module directory
+///
+/// # Arguments
+///
+/// * `dir` - The module directory
+/// * `files` - List of (filename, content) pairs to include in the module
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the mod.rs file
 fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
     let mod_rs = dir.join("mod.rs");
     let mut content = String::new();
 
-    // Re-export core transport types
+    // Special-case re-exports for transport core types
     if dir.ends_with("transport") {
         writeln!(
             content,
@@ -834,7 +886,7 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
         .unwrap();
     }
 
-    // Add module declarations
+    // Add module declarations and re-exports
     for (name, _) in files {
         if name.ends_with(".rs") {
             let module_name = name.trim_end_matches(".rs");
@@ -850,11 +902,15 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
     Ok(())
 }
 
-/* --------------------------------------------------------------------- */
-/*  Template file copying                                                */
-/* --------------------------------------------------------------------- */
-const TEMPLATE_FILES: &[&str] = &["config.rs"];
-
+/// Copy template files to the destination directory
+///
+/// # Arguments
+///
+/// * `dst_dir` - The destination directory for the template files
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of copying the template files
 fn copy_templates_to(dst_dir: &Path) -> Result<()> {
     let src_dir = PathBuf::from("templates");
 
@@ -871,3 +927,6 @@ fn copy_templates_to(dst_dir: &Path) -> Result<()> {
 
     Ok(())
 }
+
+/// Template files to be copied to the generated crate
+const TEMPLATE_FILES: &[&str] = &["config.rs"];
