@@ -547,6 +547,47 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     Ok(())
 }
 
+fn emit_wallet_options_struct(code: &mut String) -> std::io::Result<()> {
+    writeln!(
+        code,
+        r#"/// Options for creating or loading a Bitcoin Core wallet
+#[derive(Debug, Clone)]
+pub struct WalletOptions {{
+    pub disable_private_keys: bool,
+    pub blank: bool,
+    pub passphrase: String,
+    pub avoid_reuse: bool,
+    pub descriptors: bool,
+    pub load_on_startup: bool,
+    pub external_signer: bool,
+}}
+
+impl Default for WalletOptions {{
+    fn default() -> Self {{
+        WalletOptions {{
+            disable_private_keys: false,
+            blank: false,
+            passphrase: "".to_string(),
+            avoid_reuse: false,
+            descriptors: false,
+            load_on_startup: false,
+            external_signer: false,
+        }}
+    }}
+}}
+
+impl WalletOptions {{
+    pub fn with_descriptors(mut self) -> Self {{
+        self.descriptors = true;
+        self
+    }}
+}}
+"#
+    )
+    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    Ok(())
+}
+
 fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
