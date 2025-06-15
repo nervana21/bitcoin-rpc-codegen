@@ -361,6 +361,7 @@ fn generate_combined_client(
     emit_node_manager_trait(&mut code)?;
     emit_struct_definition(&mut code, client_name)?;
     emit_node_manager_impl(&mut code)?;
+    emit_wallet_options_struct(&mut code)?;
     emit_impl_block_start(&mut code, client_name)?;
     emit_constructors(&mut code)?;
     emit_wallet_methods(&mut code)?;
@@ -591,58 +592,54 @@ impl WalletOptions {{
 fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
-        "    /// Ensures a wallet exists with the given name and parameters.\n\
-         /// If the wallet already exists, it will be unloaded and recreated with the new parameters.\n\
-         /// If the wallet doesn't exist, it will be created.\n\
-         /// Returns the wallet name that was created/ensured.\n\
-         pub async fn ensure_wallet(\n\
+        "    /// Ensures a wallet exists using the given options.\n\
+         /// Loads the wallet if it already exists. Returns the wallet name.\n\
+         pub async fn ensure_wallet_with_options(\n\
              &mut self,\n\
-             wallet_name: Option<String>,\n\
-             disable_private_keys: bool,\n\
-             blank: bool,\n\
-             passphrase: String,\n\
-             avoid_reuse: bool,\n\
-             descriptors: bool,\n\
-             load_on_startup: bool,\n\
-             external_signer: bool,\n\
+             wallet_name: impl Into<String>,\n\
+             opts: WalletOptions,\n\
          ) -> Result<String, TransportError> {{\n\
-             let wallet_name = wallet_name.unwrap_or_else(|| \"default\".to_string());\n\
-             \n\
-             // Check if wallet exists\n\
+             let wallet_name = wallet_name.into();\n\n\
+             // Check if wallet is currently loaded\n\
              let wallets = self.wallet_client.listwallets().await?;\n\
              if wallets.0.iter().any(|w| w == &wallet_name) {{\n\
-                 // Unload existing wallet\n\
                  self.wallet_client.unloadwallet(wallet_name.clone(), false).await?;\n\
-             }}\n\
-             \n\
-             // Create the wallet\n\
-             match self.wallet_client.createwallet(\n\
-                 wallet_name.clone(),\n\
-                 disable_private_keys,\n\
-                 blank,\n\
-                 passphrase,\n\
-                 avoid_reuse,\n\
-                 descriptors,\n\
-                 load_on_startup,\n\
-                 external_signer,\n\
-             ).await {{\n\
+             }}\n\n\
+             // Try to create wallet\n\
+             match self.wallet_client\n\
+                 .createwallet(\n\
+                     wallet_name.clone(),\n\
+                     opts.disable_private_keys,\n\
+                     opts.blank,\n\
+                     opts.passphrase.clone(),\n\
+                     opts.avoid_reuse,\n\
+                     opts.descriptors,\n\
+                     opts.load_on_startup,\n\
+                     opts.external_signer,\n\
+                 )\n\
+                 .await\n\
+             {{\n\
                  Ok(_) => Ok(wallet_name),\n\
                  Err(TransportError::Rpc(err)) if err.contains(\"\\\"code\\\":-4\") => {{\n\
-                     // If the wallet database already exists, try to load it instead\n\
-                     self.wallet_client.loadwallet(wallet_name.clone(), false).await?;\n\
-                     \n\
-                     // Update both clients' transports to use this wallet\n\
-                     let new_transport = Arc::new(DefaultTransport::new(\n\
-                         &format!(\"http://127.0.0.1:{{}}\", self.node_manager.as_ref().unwrap().rpc_port()),\n\
-                         Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),\n\
-                     ).with_wallet(wallet_name.clone()));\n\
-                     \n\
-                     self.wallet_client.with_transport(new_transport.clone());\n
-                     self.node_client.with_transport(new_transport);\n
+                     // Try loading instead\n\
+                     self.wallet_client.loadwallet(wallet_name.clone(), false).await?;\n\n\
+                     let new_transport = Arc::new(\n\
+                         DefaultTransport::new(\n\
+                             &format!(\"http://127.0.0.1:{{}}\", self.node_manager.as_ref().unwrap().rpc_port()),\n\
+                             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),\n\
+                         )\n\
+                         .with_wallet(wallet_name.clone())\n\
+                     );\n\n\
+                     self.wallet_client.with_transport(new_transport.clone());\n\
+                     self.node_client.with_transport(new_transport);\n\n\
                      Ok(wallet_name)\n\
                  }},\n\
                  Err(e) => Err(e),\n\
              }}\n\
+         }}\n\n\
+         /// Shortcut for `ensure_wallet_with_options(\"test_wallet\", WalletOptions::default().with_descriptors())`\n\
+         pub async fn ensure_default_wallet(&mut self, name: impl Into<String>) -> Result<String, TransportError> {{\n\
+             self.ensure_wallet_with_options(name, WalletOptions::default().with_descriptors()).await\n\
          }}\n"
     ).unwrap();
     Ok(())
@@ -654,16 +651,7 @@ fn emit_block_mining_helpers(code: &mut String) -> std::io::Result<()> {
         "    /// Helper method to mine blocks to a new address
     pub async fn mine_blocks(&mut self, num_blocks: u64, maxtries: u64) -> Result<(String, Value), TransportError> {{
         // Ensure we have a wallet with default settings
-        let _wallet_name = self.ensure_wallet(
-            Some(\"test_wallet\".to_string()),  // Use specific wallet name
-            false, // enable private keys
-            false, // not blank
-            \"\".to_string(), // no passphrase
-            false, // don't avoid reuse
-            true,  // use descriptors
-            false, // don't load on startup
-            false, // no external signer
-        ).await?;
+        let _wallet_name = self.ensure_default_wallet(\"test_wallet\").await?;
 
         println!(\"[debug] Getting new address\");
         let address = self.wallet_client.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
