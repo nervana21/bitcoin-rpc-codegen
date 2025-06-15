@@ -893,13 +893,13 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
         if name.ends_with(".rs") {
             let module_name = name.trim_end_matches(".rs");
             if module_name != "mod" {
-                // Skip the mod.rs file itself
-                writeln!(content, "pub mod {};", module_name).unwrap();
+                writeln!(content, "pub mod {};", module_name)?;
+                writeln!(content, "pub use {}::*;", module_name)?;
             }
         }
     }
 
-    fs::write(&mod_rs, content.as_bytes())
+    fs::write(&mod_rs, content)
         .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
     Ok(())
 }
