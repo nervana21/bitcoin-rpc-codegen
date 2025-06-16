@@ -12,7 +12,7 @@ Split into dedicated modules under `codegen/src/test_node/`:
   - `emit_results.rs`: Generate `Result` structs
   - `emit_subclient.rs`: Generate node/wallet subclients
   - `emit_combined_client.rs`: Generate `BitcoinTestClient`, constructors, and lifecycle helpers
-      → ✅ Add all ergonomic helpers here (e.g., `reset_chain()`, `mine_blocks()`, etc.)
+      → Add all ergonomic helpers here (e.g., `reset_chain()`, `mine_blocks()`, etc.)
   - `utils.rs`: Utility functions (e.g. `camel()`, `rust_type_for()`)
 
 Benefits:
