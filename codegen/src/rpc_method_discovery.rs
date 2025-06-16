@@ -14,14 +14,14 @@ pub fn discover_methods(bitcoind_bin: &Path) -> Result<Vec<ApiMethod>, String> {
 
     let methods = cli
         .get_methods()
-        .map_err(|e| format!("Failed to get RPC methods: {}", e))?;
+        .map_err(|e| format!("Failed to get RPC methods: {e}"))?;
 
     // Convert each method into an ApiMethod structure
     let mut api_methods = Vec::new();
     for method_name in methods {
         let help_text = cli
             .get_help_text(&method_name)
-            .map_err(|e| format!("Failed to get help for {}: {}", method_name, e))?;
+            .map_err(|e| format!("Failed to get help for {method_name}: {e}"))?;
 
         api_methods.push(parse_help_text(&method_name, &help_text));
     }

@@ -235,7 +235,7 @@ use crate::types::{}_types::*;
             ""
         }
     )
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    .map_err(|e| std::io::Error::other(e))?;
 
     writeln!(
         code,
@@ -254,7 +254,7 @@ impl {0} {{
     }}",
         client_name
     )
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    .map_err(|e| std::io::Error::other(e))?;
 
     // 2) One method per RPC
     for m in methods {
@@ -272,7 +272,7 @@ impl {0} {{
             "\n{}",
             doc_comment::format_doc_comment(&m.description)
         )
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(|e| std::io::Error::other(e))?;
 
         // signature line
         let params_sig = if m.arguments.is_empty() {
@@ -303,12 +303,12 @@ impl {0} {{
             },
             ret = ret_ty,
         )
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(|e| std::io::Error::other(e))?;
 
         // build params vector
         if !m.arguments.is_empty() {
             writeln!(code, "        let mut params = Vec::new();")
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                .map_err(|e| std::io::Error::other(e))?;
             for arg in &m.arguments {
                 let name = if arg.names[0] == "type" {
                     "_type"
@@ -321,7 +321,7 @@ impl {0} {{
                     "        params.push(serde_json::to_value({})?);",
                     name
                 )
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                .map_err(|e| std::io::Error::other(e))?;
             }
         }
 
@@ -339,14 +339,14 @@ impl {0} {{
                 "params".to_string()
             },
         )
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(|e| std::io::Error::other(e))?;
 
         // close fn
-        writeln!(code, "    }}").map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        writeln!(code, "    }}").map_err(|e| std::io::Error::other(e))?;
     }
 
     // 3) Close impl block
-    writeln!(code, "}}\n").map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    writeln!(code, "}}\n").map_err(|e| std::io::Error::other(e))?;
     Ok(code)
 }
 
@@ -585,7 +585,7 @@ impl WalletOptions {{
 }}
 "#
     )
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    .map_err(|e| std::io::Error::other(e))?;
     Ok(())
 }
 
@@ -704,7 +704,7 @@ fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
              }}\n\
              Ok(())\n\
          }}\n"
-    ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+    ).map_err(|e| std::io::Error::other(e))
 }
 
 fn emit_stop_node(code: &mut String) -> std::io::Result<()> {

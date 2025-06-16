@@ -91,10 +91,10 @@ fn format_with_rustfmt(path: &Path) {
         .status()
     {
         if !status.success() {
-            eprintln!("[warn] rustfmt failed on {:?}", path);
+            eprintln!("[warn] rustfmt failed on {path:?}");
         }
     } else {
-        eprintln!("[warn] rustfmt not found or failed to run for {:?}", path);
+        eprintln!("[warn] rustfmt not found or failed to run for {path:?}");
     }
 }
 
@@ -146,7 +146,7 @@ impl CodeGenerator for TransportCodeGenerator {
                         } else {
                             a.names[0].clone()
                         };
-                        format!("{}: serde_json::Value", name)
+                        format!("{name}: serde_json::Value")
                     }))
                     .collect::<Vec<_>>()
                     .join(", ");
@@ -164,7 +164,7 @@ impl CodeGenerator for TransportCodeGenerator {
                             } else {
                                 a.names[0].clone()
                             };
-                            format!("json!({})", name)
+                            format!("json!({name})")
                         })
                         .collect::<Vec<_>>()
                         .join(", ");

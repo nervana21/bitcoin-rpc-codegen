@@ -54,7 +54,7 @@ pub fn sanitize_doc_comment(comment: &str) -> String {
 pub fn indent(s: &str, spaces: usize) -> String {
     let pad = " ".repeat(spaces);
     s.lines()
-        .map(|line| format!("{}{}", pad, line))
+        .map(|line| format!("{pad}{line}"))
         .collect::<Vec<_>>()
         .join("\n")
 }

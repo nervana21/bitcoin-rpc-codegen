@@ -65,7 +65,7 @@ fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> 
 fn build_imports() -> String {
     ["crate::types::*", "std::future::Future"]
         .iter()
-        .map(|p| format!("use {};", p))
+        .map(|p| format!("use {p};"))
         .collect::<Vec<_>>()
         .join("\n")
 }

@@ -38,7 +38,7 @@ fn emit_imports(code: &mut String) {
 fn emit_wallet_methods(code: &mut String) {
     let methods: String = WALLET_METHODS
         .iter()
-        .map(|method| format!("        \"{}\",", method))
+        .map(|method| format!("        \"{method}\","))
         .collect::<Vec<_>>()
         .join("\n");
 
