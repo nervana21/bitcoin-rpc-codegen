@@ -54,7 +54,7 @@ impl BitcoinCli {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let parsed: Value = serde_json::from_str(&stdout)
-            .map_err(|e| CliError::JsonError(format!("Invalid JSON in getnetworkinfo: {}", e)))?;
+            .map_err(|e| CliError::JsonError(format!("Invalid JSON in getnetworkinfo: {e}")))?;
 
         let version = parsed
             .get("version")
@@ -98,7 +98,7 @@ impl BitcoinCli {
             .map_err(|e| CliError::CommandFailed(e.to_string()))?;
 
         if !output.status.success() {
-            return Err(CliError::CommandFailed(format!("help {} failed", method)));
+            return Err(CliError::CommandFailed(format!("help {method} failed")));
         }
 
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
@@ -107,12 +107,12 @@ impl BitcoinCli {
     /// Save help text for all methods to a directory
     pub fn save_help_texts(&self, output_dir: &Path) -> Result<(), CliError> {
         let version = self.get_version()?;
-        let docs_dir = output_dir.join(format!("v{}", version));
+        let docs_dir = output_dir.join(format!("v{version}"));
         fs::create_dir_all(&docs_dir)?;
 
         for method in self.get_methods()? {
             let help_text = self.get_help_text(&method)?;
-            let out_path = docs_dir.join(format!("{}.txt", method));
+            let out_path = docs_dir.join(format!("{method}.txt"));
             fs::write(&out_path, help_text)?;
         }
 
