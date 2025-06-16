@@ -41,7 +41,7 @@ See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 - `parser/`: Parses `api.json` into structured form
 - `schema/`: Normalizes and validates parsed data
 - `codegen/`: Emits Rust modules and client implementations
-- `transport/`: Minimal async RPC transport + error handling
+- `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
 - `pipeline/`: Orchestrates parsing → schema → generation
 
