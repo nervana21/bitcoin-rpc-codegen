@@ -1,6 +1,4 @@
-# -----------------------------------------------------------------------------
 # Compiled outputs and generated files
-# -----------------------------------------------------------------------------
 /target/
 !/target/generated/
 /bitcoin-rpc-midas/
@@ -22,7 +20,3 @@ target/tmp/
 # Project-specific
 /feedback/
 .DS_Store
-.cursorrules
-
-# Track main project resources
-!/resources/

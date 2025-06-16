@@ -79,20 +79,13 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 The project is organized into several focused crates:
 
-- `rpc-api/`: Core RPC API definitions and types
-- `parser/`: Bitcoin RPC method parsing and validation
-- `schema/`: Schema definitions and validation
-- `codegen/`: Code generation for RPC clients
-- `transport/`: RPC transport layer implementation
-- `client/`: RPC client implementation
-- `node/`: Bitcoin node management
-- `pipeline/`: Code generation pipeline
-- `config/`: Configuration management
-- `logging/`: Logging infrastructure
-- `rpc-metrics/`: RPC metrics collection
-- `integration-test/`: Integration tests
-- `fuzz/`: Fuzzing tests
-- `verify/`: Verification tools
+- `rpc_api/`: JSON model of RPC methods and parameters
+- `parser/`: Parses `api.json` into structured form
+- `schema/`: Normalizes and validates parsed data
+- `codegen/`: Emits Rust modules and client implementations
+- `transport/`: Async RPC transport + error handling
+- `node/`: Regtest node management and test client support
+- `pipeline/`: Orchestrates parsing → schema → generation
 
 ## Guidelines for Pull Requests
 

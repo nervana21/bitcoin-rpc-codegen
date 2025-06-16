@@ -87,8 +87,7 @@ async fn main() -> Result<()> {
 
 ## Contributing
 
-Contributions are welcome — including forks, patches, extensions, or overlays.
-See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+Contributors are warmly welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
