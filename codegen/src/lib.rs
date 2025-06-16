@@ -133,7 +133,7 @@ pub struct TransportCodeGenerator;
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
         use generators::response_type::build_return_type;
-        use utils::{capitalize, sanitize_method_name};
+        use utils::capitalize;
 
         methods
             .iter()
@@ -203,7 +203,7 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
                     docs = docs_md,
                     resp_struct = response_struct,
                     rpc = m.name,
-                    fn_name = sanitize_method_name(&m.name),
+                    fn_name = &m.name,
                     fn_args = fn_args,
                     ok_ty = ok_ty,
                     params_vec = params_vec,

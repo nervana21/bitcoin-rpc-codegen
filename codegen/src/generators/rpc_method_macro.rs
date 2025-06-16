@@ -19,13 +19,13 @@
 //! * Pure function: emit the string, write it wherever you like.
 
 use crate::generators::doc_comment::format_doc_comment;
-use crate::utils::{capitalize, sanitize_method_name};
+use crate::utils::capitalize;
 use crate::TYPE_REGISTRY;
 use rpc_api::ApiMethod;
 
 /// Generates a client-side macro implementation for an RPC method
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
-    let method_name = sanitize_method_name(&method.name);
+    let method_name = &method.name;
     let macro_name = format!("impl_client_{version}__{method_name}");
     let description = format_doc_comment(&method.description);
     let mut function_defs = Vec::new();

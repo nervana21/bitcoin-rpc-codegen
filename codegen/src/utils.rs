@@ -29,27 +29,6 @@ pub fn capitalize(s: &str) -> String {
         .collect::<String>()
 }
 
-/// Sanitizes a method name for use as a filename
-pub fn sanitize_method_name(name: &str) -> String {
-    name.to_string()
-}
-
-/// Sanitizes documentation comments by escaping special characters
-pub fn sanitize_doc_comment(comment: &str) -> String {
-    comment
-        .lines()
-        .map(|line| {
-            // Escape any special characters in doc comments
-            line.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", " ")
-                .trim()
-                .to_string()
-        })
-        .collect::<Vec<_>>()
-        .join("\n    /// ")
-}
-
 /// Indents each line of a string by the specified number of spaces
 pub fn indent(s: &str, spaces: usize) -> String {
     let pad = " ".repeat(spaces);
