@@ -122,7 +122,7 @@ fn generate_params_code(methods: &[ApiMethod]) -> String {
                 &camel_to_snake_case(&p.names[0])
             };
             let ty = rust_type_for(&p.names[0], &p.type_);
-            writeln!(code, "    pub {}: {},", field, ty).unwrap();
+            writeln!(code, "    pub {field}: {ty},").unwrap();
         }
         writeln!(code, "}}\n").unwrap();
     }
@@ -181,7 +181,7 @@ fn rust_type_for(param_name: &str, api_ty: &str) -> String {
         description: String::new(),
     });
     if is_option {
-        format!("Option<{}>", base_ty)
+        format!("Option<{base_ty}>")
     } else {
         base_ty.to_string()
     }
@@ -235,26 +235,25 @@ use crate::types::{}_types::*;
             ""
         }
     )
-    .map_err(|e| std::io::Error::other(e))?;
+    .map_err(std::io::Error::other)?;
 
     writeln!(
         code,
         "#[derive(Debug, Clone)]
-pub struct {0} {{
+pub struct {client_name} {{
     client: Arc<DefaultTransport>,
 }}
 
-impl {0} {{
+impl {client_name} {{
     pub fn new(client: Arc<DefaultTransport>) -> Self {{
         Self {{ client }}
     }}
 
     pub fn with_transport(&mut self, client: Arc<DefaultTransport>) {{
         self.client = client;
-    }}",
-        client_name
+    }}"
     )
-    .map_err(|e| std::io::Error::other(e))?;
+    .map_err(std::io::Error::other)?;
 
     // 2) One method per RPC
     for m in methods {
@@ -272,7 +271,7 @@ impl {0} {{
             "\n{}",
             doc_comment::format_doc_comment(&m.description)
         )
-        .map_err(|e| std::io::Error::other(e))?;
+        .map_err(std::io::Error::other)?;
 
         // signature line
         let params_sig = if m.arguments.is_empty() {
@@ -287,7 +286,7 @@ impl {0} {{
                         camel_to_snake_case(&arg.names[0])
                     };
                     let ty = rust_type_for(&arg.names[0], &arg.type_);
-                    format!("{}: {}", name, ty)
+                    format!("{name}: {ty}")
                 })
                 .collect::<Vec<_>>()
                 .join(", ")
@@ -299,16 +298,16 @@ impl {0} {{
             sig = if params_sig.is_empty() {
                 "".into()
             } else {
-                format!(", {}", params_sig)
+                format!(", {params_sig}")
             },
             ret = ret_ty,
         )
-        .map_err(|e| std::io::Error::other(e))?;
+        .map_err(std::io::Error::other)?;
 
         // build params vector
         if !m.arguments.is_empty() {
             writeln!(code, "        let mut params = Vec::new();")
-                .map_err(|e| std::io::Error::other(e))?;
+                .map_err(std::io::Error::other)?;
             for arg in &m.arguments {
                 let name = if arg.names[0] == "type" {
                     "_type"
@@ -318,16 +317,15 @@ impl {0} {{
                 // Always convert to Value, regardless of type
                 writeln!(
                     code,
-                    "        params.push(serde_json::to_value({})?);",
-                    name
+                    "        params.push(serde_json::to_value({name})?);"
                 )
-                .map_err(|e| std::io::Error::other(e))?;
+                .map_err(std::io::Error::other)?;
             }
         }
 
         // call
-        writeln!(code, "        // dispatch and deserialize to `{}`", ret_ty)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        writeln!(code, "        // dispatch and deserialize to `{ret_ty}`")
+            .map_err(|e| std::io::Error::other(e))?;
         writeln!(
             code,
             "        self.client.call::<{ret}>(\"{rpc}\", &{vec}).await",
@@ -339,14 +337,14 @@ impl {0} {{
                 "params".to_string()
             },
         )
-        .map_err(|e| std::io::Error::other(e))?;
+        .map_err(std::io::Error::other)?;
 
         // close fn
-        writeln!(code, "    }}").map_err(|e| std::io::Error::other(e))?;
+        writeln!(code, "    }}").map_err(std::io::Error::other)?;
     }
 
     // 3) Close impl block
-    writeln!(code, "}}\n").map_err(|e| std::io::Error::other(e))?;
+    writeln!(code, "}}\n").map_err(std::io::Error::other)?;
     Ok(code)
 }
 
@@ -384,7 +382,7 @@ fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
 use crate::transport::DefaultTransport;
-use crate::types::{}_types::*;
+use crate::types::{version}_types::*;
 use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
@@ -393,8 +391,7 @@ use super::node::BitcoinNodeClient;
 use super::wallet::BitcoinWalletClient;
 
 use std::str::FromStr;
-use bitcoin::Amount;",
-        version
+use bitcoin::Amount;"
     )
     .unwrap();
     Ok(())
@@ -419,12 +416,11 @@ fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::Resu
     writeln!(
         code,
         "#[derive(Debug)]\n\
-         pub struct {} {{\n\
+         pub struct {client_name} {{\n\
              node_client: BitcoinNodeClient,\n\
              wallet_client: BitcoinWalletClient,\n\
              node_manager: Option<Box<dyn NodeManager>>,\n\
-         }}\n",
-        client_name
+         }}\n"
     )
     .unwrap();
     Ok(())
@@ -469,7 +465,7 @@ fn emit_node_manager_impl(code: &mut String) -> std::io::Result<()> {
 }
 
 fn emit_impl_block_start(code: &mut String, client_name: &str) -> std::io::Result<()> {
-    writeln!(code, "impl {} {{", client_name).unwrap();
+    writeln!(code, "impl {client_name} {{").unwrap();
     Ok(())
 }
 
@@ -585,7 +581,7 @@ impl WalletOptions {{
 }}
 "#
     )
-    .map_err(|e| std::io::Error::other(e))?;
+    .map_err(std::io::Error::other)?;
     Ok(())
 }
 
@@ -704,7 +700,7 @@ fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
              }}\n\
              Ok(())\n\
          }}\n"
-    ).map_err(|e| std::io::Error::other(e))
+    ).map_err(std::io::Error::other)
 }
 
 fn emit_stop_node(code: &mut String) -> std::io::Result<()> {
@@ -766,7 +762,7 @@ fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> std::
                         &camel_to_snake_case(&arg.names[0])
                     };
                     let ty = rust_type_for(&arg.names[0], &arg.type_);
-                    format!("{}: {}", name, ty)
+                    format!("{name}: {ty}")
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -868,7 +864,7 @@ fn emit_impl_block_end(code: &mut String) -> std::io::Result<()> {
 }
 
 fn emit_drop_impl(code: &mut String, client_name: &str) -> std::io::Result<()> {
-    writeln!(code, "impl Drop for {} {{", client_name).unwrap();
+    writeln!(code, "impl Drop for {client_name} {{").unwrap();
     writeln!(code, "    fn drop(&mut self) {{").unwrap();
     writeln!(code, "        let _ = self.node_manager.take();").unwrap();
     writeln!(code, "    }}").unwrap();

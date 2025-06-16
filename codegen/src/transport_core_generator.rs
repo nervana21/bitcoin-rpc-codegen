@@ -47,10 +47,9 @@ fn emit_wallet_methods(code: &mut String) {
         "/// List of Bitcoin Core wallet RPC methods\n\
          pub mod wallet_methods {{\n\
              pub const WALLET_METHODS: &[&str] = &[\n\
-         {}\n\
+         {methods}\n\
              ];\n\
-         }}\n",
-        methods
+         }}\n"
     )
     .unwrap();
 }
@@ -76,12 +75,11 @@ fn emit_error_impls(code: &mut String) {
     ] {
         writeln!(
             code,
-            "impl From<{}> for TransportError {{\n\
-                 fn from(err: {}) -> Self {{\n\
-                     TransportError::{}(err.to_string())\n\
+            "impl From<{from}> for TransportError {{\n\
+                 fn from(err: {from}) -> Self {{\n\
+                     TransportError::{variant}(err.to_string())\n\
                  }}\n\
-             }}\n",
-            from, from, variant
+             }}\n"
         )
         .unwrap();
     }

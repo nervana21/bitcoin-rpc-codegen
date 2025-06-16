@@ -24,7 +24,7 @@ pub fn format_doc_comment(description: &str) -> String {
                 }
                 doc.push_str("///\n");
             }
-            doc.push_str(&format!("/// {}\n", line));
+            doc.push_str(&format!("/// {line}\n"));
             in_code_block = !in_code_block;
             continue;
         }
@@ -79,7 +79,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                doc.push_str(&format!("/// {}\n", section_line));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if section.starts_with("Result:") {
@@ -87,7 +87,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                doc.push_str(&format!("/// {}\n", section_line));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if section.starts_with("Examples:") {
@@ -95,7 +95,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                doc.push_str(&format!("/// {}\n", section_line));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if !in_section {
@@ -103,7 +103,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for desc_line in section.lines() {
             let desc_line = desc_line.trim();
             if !desc_line.is_empty() {
-                doc.push_str(&format!("/// {}\n", desc_line));
+                doc.push_str(&format!("/// {desc_line}\n"));
             }
         }
     }
@@ -113,9 +113,9 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
 pub fn format_struct_field(field_name: &str, field_type: &str, description: &str) -> String {
     let desc = format_doc_comment(description);
     if desc.is_empty() {
-        format!("    pub {}: {},\n", field_name, field_type)
+        format!("    pub {field_name}: {field_type},\n")
     } else {
-        format!("{}\n    pub {}: {},\n", desc, field_name, field_type)
+        format!("{desc}\n    pub {field_name}: {field_type},\n")
     }
 }
 

@@ -76,9 +76,9 @@ impl CodeGenerator for RpcClientGenerator {
                     let (ty, opt) = rust_res_ty(r);
                     let field = camel_to_snake_case(&r.key_name);
                     if opt {
-                        writeln!(code, "        pub {}: Option<{}>,", field, ty).unwrap();
+                        writeln!(code, "        pub {field}: Option<{ty}>,").unwrap();
                     } else {
-                        writeln!(code, "        pub {}: {},", field, ty).unwrap();
+                        writeln!(code, "        pub {field}: {ty},").unwrap();
                     }
                 }
                 writeln!(code, "    }}\n").unwrap();
@@ -96,9 +96,9 @@ impl CodeGenerator for RpcClientGenerator {
                 let (ty, opt) = rust_arg_ty(arg);
                 let ident = camel_to_snake_case(&arg.names[0]);
                 params.push(if opt {
-                    format!("{}: Option<{}>", ident, ty)
+                    format!("{ident}: Option<{ty}>")
                 } else {
-                    format!("{}: {}", ident, ty)
+                    format!("{ident}: {ty}")
                 });
             }
             let ret_ty = if returns_unit {
@@ -122,12 +122,11 @@ impl CodeGenerator for RpcClientGenerator {
                 if opt {
                     writeln!(
                         code,
-                        "        ps.push(match {0} {{ Some(v) => serde_json::to_value(v)?, None => serde_json::Value::Null }});",
-                        id
+                        "        ps.push(match {id} {{ Some(v) => serde_json::to_value(v)?, None => serde_json::Value::Null }});"
                     )
                     .unwrap();
                 } else {
-                    writeln!(code, "        ps.push(serde_json::to_value({})?);", id).unwrap();
+                    writeln!(code, "        ps.push(serde_json::to_value({id})?);").unwrap();
                 }
             }
 

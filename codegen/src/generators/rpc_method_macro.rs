@@ -26,7 +26,7 @@ use rpc_api::ApiMethod;
 /// Generates a client-side macro implementation for an RPC method
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
     let method_name = sanitize_method_name(&method.name);
-    let macro_name = format!("impl_client_{}__{}", version, method_name);
+    let macro_name = format!("impl_client_{version}__{method_name}");
     let description = format_doc_comment(&method.description);
     let mut function_defs = Vec::new();
 
@@ -55,7 +55,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
 
     if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
         // 1) default‐params variant
-        let default_doc = format!("{} with default parameters.", description);
+        let default_doc = format!("{description} with default parameters.");
         let default_fn = format!(
             "/// {doc}\npub fn {name}_default(&self) -> Result<{ret}> {{
     {call}
@@ -67,24 +67,19 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         );
 
         // 2) specified‐params variant
-        let param_doc = format!("{} with specified parameters.", description);
+        let param_doc = format!("{description} with specified parameters.");
         let method_args = generate_method_args(method);
         let (required_args, optional_body_raw) = generate_args(method);
         let optional_body = optional_body_raw
             .lines()
-            .map(|line| format!("    {}", line))
+            .map(|line| format!("    {line}"))
             .collect::<Vec<_>>()
             .join("\n");
         let param_call = make_call(&required_args, &optional_body);
         let param_fn = format!(
-            "/// {doc}\npub fn {name}(&self{args}) -> Result<{ret}> {{
-    {call}
-}}",
-            doc = param_doc,
-            name = method_name,
-            args = method_args,
-            ret = return_ty,
-            call = param_call
+            "/// {param_doc}\npub fn {method_name}(&self{method_args}) -> Result<{return_ty}> {{
+    {param_call}
+}}"
         );
 
         function_defs.push(default_fn);
@@ -95,7 +90,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         let (required_args, optional_body_raw) = generate_args(method);
         let optional_body = optional_body_raw
             .lines()
-            .map(|line| format!("    {}", line))
+            .map(|line| format!("    {line}"))
             .collect::<Vec<_>>()
             .join("\n");
         let raw_call = make_call(&required_args, &optional_body);
@@ -121,13 +116,9 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         };
 
         let fn_def = format!(
-            "pub fn {name}(&self{args}) -> Result<{ret}> {{
-    {body}
-}}",
-            name = method_name,
-            args = method_args,
-            ret = return_ty,
-            body = call_body
+            "pub fn {method_name}(&self{method_args}) -> Result<{return_ty}> {{
+    {call_body}
+}}"
         );
 
         function_defs.push(fn_def);
@@ -155,14 +146,14 @@ fn generate_method_args(method: &ApiMethod) -> String {
         };
         // Escape reserved keywords
         let escaped_name = if arg_name == "type" {
-            format!("r#{}", arg_name)
+            format!("r#{arg_name}")
         } else {
             arg_name.clone()
         };
         if arg.optional {
-            args.push_str(&format!(", {}: Option<{}>", escaped_name, arg_type));
+            args.push_str(&format!(", {escaped_name}: Option<{arg_type}>"));
         } else {
-            args.push_str(&format!(", {}: {}", escaped_name, arg_type));
+            args.push_str(&format!(", {escaped_name}: {arg_type}"));
         }
     }
     args
@@ -175,21 +166,20 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
         let arg_name = &arg.names[0];
         // Escape reserved keywords
         let escaped_name = if arg_name == "type" {
-            format!("r#{}", arg_name)
+            format!("r#{arg_name}")
         } else {
             arg_name.clone()
         };
         let arg_expr = if method.name == "addnode" && arg_name == "command" {
             "serde_json::to_value(command)?".to_string()
         } else if arg.type_ == "object-named-parameters" {
-            format!("into_json({}.unwrap_or_default())?", escaped_name)
+            format!("into_json({escaped_name}.unwrap_or_default())?")
         } else {
-            format!("into_json({})?", escaped_name)
+            format!("into_json({escaped_name})?")
         };
         if arg.optional {
             optional_args.push(format!(
-                "if let Some({}) = {} {{\n    params.push(into_json({})?);\n}}",
-                escaped_name, escaped_name, escaped_name
+                "if let Some({escaped_name}) = {escaped_name} {{\n    params.push(into_json({escaped_name})?);\n}}"
             ));
         } else {
             required_args.push(arg_expr);
@@ -250,14 +240,14 @@ fn generate_object_type(result: &rpc_api::ApiResult) -> String {
         } else {
             capitalize(&result.key_name)
         };
-        format!("serde_json::{}", base_name)
+        format!("serde_json::{base_name}")
     }
 }
 
 fn indent(s: &str, spaces: usize) -> String {
     let pad = " ".repeat(spaces);
     s.lines()
-        .map(|line| format!("{}{}", pad, line))
+        .map(|line| format!("{pad}{line}"))
         .collect::<Vec<_>>()
         .join("\n")
 }

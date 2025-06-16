@@ -28,10 +28,9 @@ impl CodeGenerator for ClientTraitGenerator {
         // render mod.rs that re-exports the trait
         let version_no = self.version.replace('.', "");
         let mod_rs = format!(
-            "//! Auto-generated module for BitcoinClientV{v}\n\
+            "//! Auto-generated module for BitcoinClientV{version_no}\n\
              pub mod client_trait;\n\
-             pub use self::client_trait::BitcoinClientV{v};\n",
-            v = version_no
+             pub use self::client_trait::BitcoinClientV{version_no};\n"
         );
 
         vec![
@@ -105,11 +104,11 @@ impl<'a> MethodTemplate<'a> {
                 };
                 let (base_ty, _) = TYPE_REGISTRY.map_argument_type(arg);
                 let ty = if arg.optional {
-                    format!("Option<{}>", base_ty)
+                    format!("Option<{base_ty}>")
                 } else {
                     base_ty.to_string()
                 };
-                format!("{}: {}", name, ty)
+                format!("{name}: {ty}")
             })
             .collect::<Vec<_>>();
         if args.is_empty() {
@@ -144,7 +143,7 @@ impl<'a> MethodTemplate<'a> {
                 } else {
                     &format!("_{}", arg.names[0])
                 };
-                format!("            serde_json::json!({}),", name)
+                format!("            serde_json::json!({name}),")
             })
             .collect::<Vec<_>>()
             .join("\n")
@@ -164,12 +163,7 @@ impl<'a> MethodTemplate<'a> {
 {json}
         ];
         self.dispatch_json::<{ret}>(\"{rpc}\", &params).await
-    }}",
-            name = name,
-            sig = sig,
-            ret = ret,
-            json = json,
-            rpc = rpc
+    }}"
         )
     }
 

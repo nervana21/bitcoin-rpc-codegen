@@ -65,7 +65,7 @@ fn field_ident(res: &ApiResult, idx: usize) -> String {
         );
 
         if needs_escape {
-            format!("r#{}", snake_case)
+            format!("r#{snake_case}")
         } else {
             snake_case
         }
@@ -155,12 +155,12 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
 
     // TODO: Replace ad-hoc string building with a lightweight template
     let doc = sanitize_doc_comment(&method.description);
-    writeln!(&mut buf, "/// {}", doc)?;
+    writeln!(&mut buf, "/// {doc}")?;
     writeln!(&mut buf, "#[derive(Debug, Deserialize, Serialize)]")?;
 
     if is_multi_variant(method) {
         // multiple object shapes or primitives → flattened struct with optional fields
-        writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+        writeln!(&mut buf, "pub struct {struct_name} {{")?;
         for field in collect_fields(method) {
             let ty = if field.always_present {
                 field.ty.clone()
@@ -181,12 +181,12 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
         let r = &method.results[0];
         match &r.type_[..] {
             "object" if !r.inner.is_empty() => {
-                writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+                writeln!(&mut buf, "pub struct {struct_name} {{")?;
                 for f in &r.inner {
                     let (ty, opt) = TYPE_REGISTRY.map_result_type(f);
                     let name = field_ident(f, 0);
                     let ty = if opt {
-                        format!("Option<{}>", ty)
+                        format!("Option<{ty}>")
                     } else {
                         ty.to_string()
                     };
@@ -204,7 +204,7 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
                 // primitive or array → transparent wrapper
                 let (ty, _) = TYPE_REGISTRY.map_result_type(r);
                 writeln!(&mut buf, "#[serde(transparent)]")?;
-                writeln!(&mut buf, "pub struct {}(pub {});\n", struct_name, ty)?;
+                writeln!(&mut buf, "pub struct {struct_name}(pub {ty});\n")?;
             }
         }
     }
