@@ -85,7 +85,7 @@ impl CodeGenerator for TestNodeGenerator {
             generate_subclient("BitcoinWalletClient", &wallet_methods, &self.version).unwrap();
         let node_code =
             generate_subclient("BitcoinNodeClient", &node_methods, &self.version).unwrap();
-        let combined_code =
+        let client_code =
             generate_combined_client("BitcoinTestClient", methods, &self.version).unwrap();
 
         let mod_rs_code = generate_mod_rs();
@@ -93,7 +93,7 @@ impl CodeGenerator for TestNodeGenerator {
         vec![
             ("wallet.rs".to_string(), wallet_code),
             ("node.rs".to_string(), node_code),
-            ("test_node.rs".to_string(), combined_code),
+            ("client.rs".to_string(), client_code),
             ("params.rs".to_string(), params_code),
             ("result.rs".to_string(), result_code),
             ("mod.rs".to_string(), mod_rs_code),
@@ -155,19 +155,17 @@ fn generate_mod_rs() -> String {
         code,
         "//! Test node module for Bitcoin RPC testing
 #[cfg(test)]
-pub mod test_node {{
-    pub mod params;
-    pub mod result;
-    pub mod wallet;
-    pub mod node;
+pub mod params;
+pub mod result;
+pub mod wallet;
+pub mod node;
+pub mod client;
 
-    // re-export common clients
-    pub use test_node::test_node::BitcoinTestClient;
-    pub use wallet::BitcoinWalletClient;
-    pub use node::BitcoinNodeClient;
-
-    // TODO: Break these sub-modules out behind feature-flags or a registry
-}}"
+// re-export common clients
+pub use client::BitcoinTestClient;
+pub use wallet::BitcoinWalletClient;
+pub use node::BitcoinNodeClient;
+"
     )
     .unwrap();
     code

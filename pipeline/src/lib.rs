@@ -647,10 +647,10 @@ impl TestConfig {
     // 5) Test-node helpers
     println!("[diagnostic] generating test_node code");
     let tn_files = TestNodeGenerator::new(DEFAULT_VERSION.as_str()).generate(&norm);
-    write_generated(out_dir.join("test_node"), &tn_files)
-        .context("Failed to write test_node files")?;
-    write_mod_rs(&out_dir.join("test_node"), &tn_files)
-        .context("Failed to write test_node mod.rs")?;
+
+    // Write all generated files directly to test_node_dir
+    write_generated(&test_node_dir, &tn_files).context("Failed to write test_node files")?;
+    write_mod_rs(&test_node_dir, &tn_files).context("Failed to write test_node mod.rs")?;
 
     // Update lib.rs to include the client trait module
     let lib_rs = out_dir.join("lib.rs");
@@ -678,7 +678,7 @@ impl TestConfig {
      pub use config::Config;\n\
      pub use transport::{{DefaultTransport, TransportError}};\n\
      pub use node::BitcoinNodeManager;\n\
-     pub use crate::test_node::test_node::BitcoinTestClient;\n\
+     pub use crate::test_node::client::BitcoinTestClient;\n\
      pub use crate::client_trait::client_trait::BitcoinClientV{};",
         version_nodots
     )?;
