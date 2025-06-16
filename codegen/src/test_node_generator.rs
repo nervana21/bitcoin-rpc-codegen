@@ -315,11 +315,8 @@ impl {client_name} {{
                     &camel_to_snake_case(&arg.names[0])
                 };
                 // Always convert to Value, regardless of type
-                writeln!(
-                    code,
-                    "        params.push(serde_json::to_value({name})?);"
-                )
-                .map_err(std::io::Error::other)?;
+                writeln!(code, "        params.push(serde_json::to_value({name})?);")
+                    .map_err(std::io::Error::other)?;
             }
         }
 
