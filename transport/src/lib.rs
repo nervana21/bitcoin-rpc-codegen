@@ -88,10 +88,10 @@ impl Transport {
     pub fn new_with_auth<U: Into<String>>(url: U, rpcuser: &str, rpcpass: &str) -> Self {
         let mut headers = HeaderMap::new();
         let auth =
-            base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", rpcuser, rpcpass));
+            base64::engine::general_purpose::STANDARD.encode(format!("{rpcuser}:{rpcpass}"));
         headers.insert(
             AUTHORIZATION,
-            HeaderValue::from_str(&format!("Basic {}", auth)).unwrap(),
+            HeaderValue::from_str(&format!("Basic {auth}")).unwrap(),
         );
 
         let client = Client::builder().default_headers(headers).build().unwrap();
