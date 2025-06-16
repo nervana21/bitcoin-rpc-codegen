@@ -92,7 +92,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+Bitcoin RPC Code Generator is released under the terms of the MIT license. See [LICENSE](LICENSE) for more information or see https://opensource.org/license/MIT.
 
 ## Security
 
