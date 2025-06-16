@@ -162,7 +162,7 @@ impl NodeManager for BitcoinNodeManager {
         while Instant::now() < deadline {
             if let Some(child) = child_guard.as_mut() {
                 if let Ok(Some(status)) = child.try_wait() {
-                    let error = format!("Bitcoin node exited early with status: {}", status);
+                    let error = format!("Bitcoin node exited early with status: {status}");
                     error!("{}", error);
                     anyhow::bail!(error);
                 }
