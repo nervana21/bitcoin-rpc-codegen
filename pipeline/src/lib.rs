@@ -125,7 +125,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     }
 
     println!(
-        "✅ Completed generation of `bitcoin-rpc-midas` crate at {:?}",
+        "Completed generation of `bitcoin-rpc-midas` crate at {:?}",
         crate_root
     );
     Ok(())
@@ -687,7 +687,7 @@ impl TestConfig {
         .generate_all()
         .context("ModuleGenerator failed")?;
 
-    println!("✅ Generated modules in {:?}", out_dir);
+    println!("Generated modules in {:?}", out_dir);
     Ok(())
 }
 
