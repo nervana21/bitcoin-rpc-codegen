@@ -83,8 +83,6 @@ async fn main() -> Result<()> {
 }
 ```
 
----
-
 ## Contributing
 
 Contributors are warmly welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
