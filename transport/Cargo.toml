@@ -14,5 +14,5 @@ serde_json = "1.0"
 thiserror = "2.0.12"
 
 [dev-dependencies]
-mockito = "1.7.0"                              # for HTTP mocking in tests
+mockito = "1.7.0"
 tokio = { version = "1", features = ["full"] }
