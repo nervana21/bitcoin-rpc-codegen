@@ -28,7 +28,7 @@ fn test_default_config() {
     assert!(config.logging.file.is_none());
 
     // Test Codegen config defaults
-    assert_eq!(config.codegen.input_path, Config::default_help_path());
+    assert_eq!(config.codegen.input_path, PathBuf::from("api.json"));
 
     // Instead of comparing exact paths, verify that the output_dir is within the temp directory
     assert!(config.codegen.output_dir.starts_with(temp_dir.path()));
@@ -119,7 +119,7 @@ fn test_custom_config_values() {
     config.logging.file = Some(PathBuf::from("/var/log/bitcoin-rpc.log"));
 
     // Modify Codegen config
-    config.codegen.input_path = PathBuf::from("custom/help.txt");
+    config.codegen.input_path = PathBuf::from("custom/api.json");
     config.codegen.output_dir = PathBuf::from("custom/output");
 
     // Verify custom values
@@ -135,6 +135,6 @@ fn test_custom_config_values() {
         Some(PathBuf::from("/var/log/bitcoin-rpc.log"))
     );
 
-    assert_eq!(config.codegen.input_path, PathBuf::from("custom/help.txt"));
+    assert_eq!(config.codegen.input_path, PathBuf::from("custom/api.json"));
     assert_eq!(config.codegen.output_dir, PathBuf::from("custom/output"));
 }

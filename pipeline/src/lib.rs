@@ -26,7 +26,7 @@ pub const CRATE_VERSION: &str = "0.1.1";
 ///
 /// This function orchestrates the entire code generation pipeline by:
 /// 1. Creating the necessary module directory structure
-/// 2. Parsing and normalizing the input schema (either from JSON or help text)
+/// 2. Parsing and normalizing the input schema
 /// 3. Generating the transport layer code for RPC communication
 /// 4. Creating type definitions for RPC responses
 /// 5. Generating test node helpers and client trait implementations
@@ -38,7 +38,7 @@ pub const CRATE_VERSION: &str = "0.1.1";
 ///
 /// # Arguments
 ///
-/// * `input_path` - Optional path to the input file containing either JSON API spec or help text.
+/// * `input_path` - Optional path to the input file containing JSON API spec.
 ///                  If None, defaults to "api.json" in the project root.
 ///
 /// # Returns
@@ -159,7 +159,7 @@ fn find_project_root() -> Result<PathBuf> {
 /// # Arguments
 ///
 /// * `out_dir` - The directory where the generated code will be written
-/// * `input_path` - Path to the input file containing either JSON API spec or help text
+/// * `input_path` - Path to the input file containing JSON API spec
 ///
 /// # Returns
 ///

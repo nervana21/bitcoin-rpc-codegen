@@ -56,7 +56,7 @@ pub struct LoggingConfig {
 /// Code generation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodegenConfig {
-    /// Path to the `bitcoin-cli help` dump
+    /// Path to the API schema file (api.json)
     pub input_path: PathBuf,
     /// Where to write generated modules
     pub output_dir: PathBuf,
@@ -86,11 +86,6 @@ impl Config {
         Ok(config_dir.join("config.toml"))
     }
 
-    /// Get the path to the default help.txt file
-    pub fn default_help_path() -> PathBuf {
-        PathBuf::from("resources/help.txt")
-    }
-
     /// Get the default output directory for generated code
     pub fn default_output_dir() -> PathBuf {
         std::env::var("OUT_DIR")
@@ -114,7 +109,7 @@ impl Default for Config {
                 file: None,
             },
             codegen: CodegenConfig {
-                input_path: Self::default_help_path(),
+                input_path: PathBuf::from("api.json"),
                 output_dir: Self::default_output_dir(),
             },
         }
