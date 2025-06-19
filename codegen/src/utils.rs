@@ -28,12 +28,3 @@ pub fn capitalize(s: &str) -> String {
         })
         .collect::<String>()
 }
-
-/// Indents each line of a string by the specified number of spaces
-pub fn indent(s: &str, spaces: usize) -> String {
-    let pad = " ".repeat(spaces);
-    s.lines()
-        .map(|line| format!("{pad}{line}"))
-        .collect::<Vec<_>>()
-        .join("\n")
-}

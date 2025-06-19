@@ -244,6 +244,7 @@ fn generate_object_type(result: &rpc_api::ApiResult) -> String {
     }
 }
 
+/// Indents each line of a string by the specified number of spaces
 fn indent(s: &str, spaces: usize) -> String {
     let pad = " ".repeat(spaces);
     s.lines()
