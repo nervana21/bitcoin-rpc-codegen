@@ -27,9 +27,9 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-## Report bugs using GitHub's [issue tracker](https://github.com/yourusername/bitcoin-rpc-codegen/issues)
+## Report bugs using GitHub's [issue tracker](https://github.com/nervana21/bitcoin-rpc-codegen/issues)
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/bitcoin-rpc-codegen/issues/new); it's that easy! **Please replace `yourusername` with the actual GitHub organization or username if different.**
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/nervana21/bitcoin-rpc-codegen/issues/new); it's that easy! **Please replace `yourusername` with the actual GitHub organization or username if different.**
 
 ## Write bug reports with detail, background, and sample code
 
@@ -59,7 +59,7 @@ By contributing, you agree that your contributions will be licensed under its MI
 2. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/yourusername/bitcoin-rpc-codegen.git
+   git clone https://github.com/nervana21/bitcoin-rpc-codegen.git
    cd bitcoin-rpc-codegen
    ```
 
