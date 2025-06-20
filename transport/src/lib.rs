@@ -224,7 +224,7 @@ impl TransportTrait for Transport {
         Box<dyn std::future::Future<Output = Result<Value, TransportError>> + Send + 'a>,
     > {
         Box::pin(async move {
-            let params_serialized: Vec<Value> = params.iter().cloned().collect();
+            let params_serialized: Vec<Value> = params.to_vec();
             self.send_request(method, &params_serialized).await
         })
     }

@@ -42,7 +42,7 @@ pub struct BatchResults {{
 
             if returns_unit {
                 // For void methods, use () as the response type
-                writeln!(code, "    pub {}: (),", field_name).unwrap();
+                writeln!(code, "    pub {field_name}: (),").unwrap();
             } else {
                 // For non-void methods, always use Option<T> since we may not call every method in a batch
                 // TODO: Remove the superfluous Option wrapper by making only batched methods Option<T>,
@@ -57,7 +57,7 @@ pub struct BatchResults {{
                 } else {
                     format!("Option<{}Response>", capitalize(&m.name))
                 };
-                writeln!(code, "    pub {}: {},", field_name, response_type).unwrap();
+                writeln!(code, "    pub {field_name}: {response_type},").unwrap();
             }
         }
 
@@ -103,7 +103,7 @@ pub struct BatchBuilder {{
                     } else {
                         arg.names[0].clone()
                     };
-                    format!(", {}: Value", arg_name)
+                    format!(", {arg_name}: Value")
                 })
                 .collect::<Vec<_>>()
                 .join("");
@@ -120,24 +120,21 @@ pub struct BatchBuilder {{
                         } else {
                             arg.names[0].clone()
                         };
-                        format!("json!({})", arg_name)
+                        format!("json!({arg_name})")
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("vec![{}]", elems)
+                format!("vec![{elems}]")
             };
 
             writeln!(
                 code,
                 r#"    /// Queue a `{name}` RPC call
-    pub fn {name}(mut self{args}) -> Self {{
+    pub fn {name}(mut self{args_list}) -> Self {{
         self.calls.push(("{name}", {params}));
         self
     }}
-"#,
-                name = name,
-                args = args_list,
-                params = params
+"#
             )
             .unwrap();
         }
@@ -168,10 +165,10 @@ pub struct BatchBuilder {{
             let returns_unit = m.results.is_empty() || m.results.iter().all(|r| r.type_ == "none");
 
             if returns_unit {
-                writeln!(code, "            {}: (),", field_name).unwrap();
+                writeln!(code, "            {field_name}: (),").unwrap();
             } else {
                 // Always initialize to None since we may not call every method
-                writeln!(code, "            {}: None,", field_name).unwrap();
+                writeln!(code, "            {field_name}: None,").unwrap();
             }
         }
 

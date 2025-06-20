@@ -320,7 +320,7 @@ impl {client_name} {{
 
         // call
         writeln!(code, "        // dispatch and deserialize to `{ret_ty}`")
-            .map_err(|e| std::io::Error::other(e))?;
+            .map_err(std::io::Error::other)?;
         writeln!(
             code,
             "        self.client.call::<{ret}>(\"{rpc}\", &{vec}).await",
