@@ -356,7 +356,7 @@ mod tests {
         let result = build_return_type(&object_method).unwrap().unwrap();
         assert!(result.contains("pub struct ObjectResponse"));
         assert!(result.contains("pub field1: String"));
-        assert!(result.contains("pub field2: u64"));
+        assert!(result.contains("pub field2: f64"));
 
         // Test multi-variant result
         let multi_method = create_test_method(
@@ -387,6 +387,6 @@ mod tests {
         let result = build_return_type(&multi_method).unwrap().unwrap();
         assert!(result.contains("pub struct MultiResponse"));
         assert!(result.contains("pub field1: Option<String>"));
-        assert!(result.contains("pub field2: Option<u64>"));
+        assert!(result.contains("pub field2: Option<f64>"));
     }
 }

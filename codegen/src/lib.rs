@@ -124,7 +124,7 @@ pub fn write_generated<P: AsRef<Path>>(
 ///
 /// `TransportCodeGenerator` implements the `CodeGenerator` trait to produce, for each
 /// `ApiMethod`, a self-contained Rust source file containing:
-/// 1. An `async fn` that accepts a `&dyn Transport` and JSON-serializable parameters.
+/// 1. An `async fn` that accepts a `&dyn TransportTrait` and JSON-serializable parameters.
 /// 2. Logic to serialize those parameters into a `Vec<serde_json::Value>`.
 /// 3. A call to `transport.send_request(method_name, &params).await`.
 /// 4. Deserialization of the raw response into a typed `Response` struct (or raw `Value`).
@@ -139,7 +139,7 @@ impl CodeGenerator for TransportCodeGenerator {
             .iter()
             .map(|m| {
                 /* ---------- fn signature ---------- */
-                let fn_args = std::iter::once("transport: &dyn Transport".into())
+                let fn_args = std::iter::once("transport: &dyn TransportTrait".into())
                     .chain(m.arguments.iter().map(|a| {
                         let name = if a.names[0] == "type" {
                             format!("r#{}", a.names[0])
@@ -188,7 +188,7 @@ impl CodeGenerator for TransportCodeGenerator {
 
 use serde::{{Deserialize, Serialize}};
 use serde_json::{{Value, json}};
-use transport::{{Transport, TransportError}};
+use transport::{{TransportTrait, TransportError}};
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.

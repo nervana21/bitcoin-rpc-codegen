@@ -1,19 +1,19 @@
 // codegen/templates/client_trait.rs
 
 use async_trait::async_trait;
-use crate::transport::{Transport, TransportExt, TransportError};
+use crate::transport::{TransportTrait, TransportExt, TransportError};
 use crate::transport::core::wallet_methods::WALLET_METHODS;
 use serde::de::DeserializeOwned;
 {{IMPORTS}}
 
 #[doc = r#"A versioned client trait for Bitcoin Core v{{VERSION}}"#]
 #[async_trait]
-pub trait BitcoinClientV{{VERSION_NODOTS}}: Send + Sync + Transport + TransportExt + RpcDispatchExt {
+pub trait BitcoinClientV{{VERSION_NODOTS}}: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
 {{TRAIT_METHODS}}
 }
 
 /// Helper to route calls to the node or wallet namespace automatically.
-pub trait RpcDispatchExt: Transport + TransportExt {
+pub trait RpcDispatchExt: TransportTrait + TransportExt {
     /// Dispatch JSON-RPC methods by name.
     fn dispatch_json<R: DeserializeOwned>(
         &self,
@@ -30,10 +30,10 @@ pub trait RpcDispatchExt: Transport + TransportExt {
     }
 }
 
-impl<T: Transport + TransportExt + ?Sized> RpcDispatchExt for T {}
+impl<T: TransportTrait + TransportExt + ?Sized> RpcDispatchExt for T {}
 
-// helper trait, so any Transport gets a wallet_call by default
-pub trait WalletTransportExt: Transport + TransportExt {
+// helper trait, so any TransportTrait gets a wallet_call by default
+pub trait WalletTransportExt: TransportTrait + TransportExt {
     fn wallet_call<T: serde::Serialize + std::marker::Sync, R: serde::de::DeserializeOwned>(
         &self,
         method: &str,
@@ -48,10 +48,10 @@ pub trait WalletTransportExt: Transport + TransportExt {
     }}
 }
 
-impl<T: Transport + TransportExt + ?Sized> WalletTransportExt for T {}
+impl<T: TransportTrait + TransportExt + ?Sized> WalletTransportExt for T {}
 
-// Provide default implementation for any type that implements Transport + TransportExt
+// Provide default implementation for any type that implements TransportTrait + TransportExt
 #[async_trait]
-impl<T: Transport + TransportExt + Send + Sync> BitcoinClientV{{VERSION_NODOTS}} for T {
+impl<T: TransportTrait + TransportExt + Send + Sync> BitcoinClientV{{VERSION_NODOTS}} for T {
 {{TRAIT_METHODS}}
 }

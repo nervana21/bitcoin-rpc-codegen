@@ -5,7 +5,7 @@
 //! library, including transport layer, type definitions, and test node helpers.
 
 use anyhow::{Context, Result};
-use codegen::generators::{ClientTraitGenerator, ResponseTypeCodeGenerator};
+use codegen::generators::{BatchBuilderGenerator, ClientTraitGenerator, ResponseTypeCodeGenerator};
 use codegen::{
     namespace_scaffolder::ModuleGenerator, test_node_generator::TestNodeGenerator, write_generated,
     CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
@@ -619,14 +619,23 @@ impl TestConfig {
     write_generated(out_dir.join("transport"), &tx_files)
         .context("Failed to write transport files")?;
 
-    // Generate core transport types
-    println!("[diagnostic] generating core transport types");
     let core_files = TransportCoreGenerator.generate(&norm);
     write_generated(out_dir.join("transport"), &core_files)
         .context("Failed to write core transport files")?;
 
+    let batch_files = BatchBuilderGenerator.generate(&norm);
+    write_generated(out_dir.join("transport"), &batch_files)
+        .context("Failed to write batch builder files")?;
+
     ensure_rpc_client(&out_dir.join("transport")).context("Failed to ensure rpc_client stub")?;
-    write_mod_rs(&out_dir.join("transport"), &tx_files)
+
+    let all_transport_files = tx_files
+        .iter()
+        .chain(core_files.iter())
+        .chain(batch_files.iter())
+        .cloned()
+        .collect::<Vec<_>>();
+    write_mod_rs(&out_dir.join("transport"), &all_transport_files)
         .context("Failed to write transport mod.rs")?;
 
     // After the transport layer generation:
@@ -668,18 +677,18 @@ impl TestConfig {
      //! It is generated from the Bitcoin Core RPC API documentation.\n\n\
      // Core modules\n\
      pub mod config;\n\
-     pub mod transport;\n\
-     pub mod types;\n\
+     pub mod client_trait;\n\
      pub mod node;\n\
      pub mod test_node;\n\
-     pub mod client_trait;\n\n\
+     pub mod transport;\n\
+     pub mod types;\n\n\
      // Re-exports for ergonomic access\n\
-     pub use types::*;\n\
      pub use config::Config;\n\
-     pub use transport::{{DefaultTransport, TransportError}};\n\
+     pub use client_trait::client_trait::BitcoinClientV{};\n\
      pub use node::BitcoinNodeManager;\n\
-     pub use crate::test_node::client::BitcoinTestClient;\n\
-     pub use crate::client_trait::client_trait::BitcoinClientV{};",
+     pub use test_node::client::BitcoinTestClient;\n\
+     pub use types::*;\n\
+     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n",
         version_nodots
     )?;
 
@@ -688,6 +697,22 @@ impl TestConfig {
         .context("ModuleGenerator failed")?;
 
     println!("Generated modules in {:?}", out_dir);
+
+    let batch_transport_src = std::fs::read_to_string("transport/src/batch_transport.rs")
+        .with_context(|| {
+            format!(
+                "Failed to read batch_transport.rs at {:?}",
+                "transport/src/batch_transport.rs"
+            )
+        })?;
+    let dest_path = out_dir.join("transport").join("batch_transport.rs");
+
+    std::fs::create_dir_all(dest_path.parent().unwrap())
+        .with_context(|| format!("Failed to create directory for {:?}", dest_path))?;
+
+    std::fs::write(&dest_path, batch_transport_src)
+        .with_context(|| format!("Failed to write batch_transport.rs at {:?}", dest_path))?;
+
     Ok(())
 }
 
@@ -838,28 +863,48 @@ fn ensure_rpc_client(transport_dir: &Path) -> Result<()> {
     }
     let stub = r#"use anyhow::Result;
 use serde_json::Value;
+use std::sync::Arc;
+use std::fmt;
+use crate::transport::{TransportTrait, TransportError, DefaultTransport, BatchBuilder};
 
-#[derive(Debug, Clone)]
-/// RPC client stub
-pub struct RpcClient { 
-    transport: Box<dyn Transport> 
+/// Thin wrapper around a transport for making RPC calls
+pub struct RpcClient {
+    transport: Arc<dyn TransportTrait>,
+}
+
+impl fmt::Debug for RpcClient {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RpcClient")
+            .field("transport", &"<dyn TransportTrait>")
+            .finish()
+    }
 }
 
 impl RpcClient {
-    pub fn new_with_auth(url: impl Into<String>, user: &str, pass: &str) -> Self {
-        Self { 
-            transport: Box::new(crate::transport::DefaultTransport::new(
-                url,
-                Some((user.to_string(), pass.to_string()))
-            ))
-        }
+    /// Wrap an existing transport (no URL+auth dance)
+    pub fn from_transport(inner: Arc<dyn TransportTrait>) -> Self {
+        Self { transport: inner }
     }
-    
+
+    /// Create a new RPC client with URL and auth
+    pub fn new(url: &str, user: &str, pass: &str) -> Self {
+        let transport = DefaultTransport::new(
+            url.to_string(),
+            Some((user.to_string(), pass.to_string())),
+        );
+        Self { transport: Arc::new(transport) }
+    }
+
+    /// Call a JSON-RPC method
     pub async fn call_method(&self, method: &str, params: &[Value]) -> Result<Value, TransportError> {
         self.transport.send_request(method, params).await
     }
-}
-"#;
+
+    /// Start building a batch of RPC calls
+    pub fn batch(&self) -> BatchBuilder {
+        BatchBuilder::new(self.transport.clone())
+    }
+}"#;
     fs::write(&stub_path, stub)
         .with_context(|| format!("Failed to write rpc_client stub at {:?}", stub_path))?;
     Ok(())
@@ -879,20 +924,32 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
     let mod_rs = dir.join("mod.rs");
     let mut content = String::new();
 
-    // Special-case re-exports for transport core types
+    // Special-case re-exports for transport core types, batch_transport, batch_builder & rpc_client
     if dir.ends_with("transport") {
         writeln!(
             content,
             "pub mod core;\n\
-             pub use core::{{Transport, TransportError, DefaultTransport, TransportExt}};\n"
+             pub use core::{{TransportTrait, TransportError, DefaultTransport, TransportExt}};\n\
+             pub mod batch_transport;\n\
+             pub use batch_transport::BatchTransport;\n\
+             pub mod batch_builder;\n\
+             pub use batch_builder::BatchBuilder;\n\
+             pub mod rpc_client;\n\
+             pub use rpc_client::RpcClient;\n"
         )?;
     }
 
-    // Add module declarations and re-exports
+    // Add module declarations and re-exports for everything else
     for (name, _) in files {
         if name.ends_with(".rs") {
             let module_name = name.trim_end_matches(".rs");
-            if module_name != "mod" {
+            // skip files we special-cased, plus `mod.rs` itself
+            if module_name != "mod"
+                && module_name != "core"
+                && module_name != "batch_transport"
+                && module_name != "batch_builder"
+                && module_name != "rpc_client"
+            {
                 writeln!(content, "pub mod {};", module_name)?;
                 writeln!(content, "pub use {}::*;", module_name)?;
             }

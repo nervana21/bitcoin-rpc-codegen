@@ -223,7 +223,7 @@ fn generate_subclient(
         "use anyhow::Result;
 use std::sync::Arc;
 use crate::transport::core::{{TransportExt, TransportError}};
-use crate::transport::DefaultTransport;
+use crate::transport::{{DefaultTransport}};
 use crate::types::{}_types::*;
 {}",
         version,
@@ -362,6 +362,8 @@ fn generate_combined_client(
     emit_reset_chain(&mut code)?;
     emit_stop_node(&mut code)?;
     emit_node_manager_accessor(&mut code)?;
+    emit_rpc_accessor(&mut code)?;
+    emit_batch_method(&mut code)?;
     emit_delegated_rpc_methods(&mut code, methods)?;
     emit_send_to_address_helpers(&mut code)?;
     emit_impl_block_end(&mut code)?;
@@ -376,7 +378,7 @@ fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
         "use anyhow::Result;
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
-use crate::transport::DefaultTransport;
+use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
 use crate::types::{version}_types::*;
 use serde_json::Value;
 
@@ -415,6 +417,8 @@ fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::Resu
              node_client: BitcoinNodeClient,\n\
              wallet_client: BitcoinWalletClient,\n\
              node_manager: Option<Box<dyn NodeManager>>,\n\
+             /// A thin RPC wrapper around the transport, with batching built in\n\
+             rpc: RpcClient,\n\
          }}\n"
     )
     .unwrap();
@@ -487,13 +491,16 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         // Wait for node to be ready for RPC
         println!(\"[DEBUG] Creating transport with port {{}}\", node_manager.rpc_port());
-        let client = Arc::new(DefaultTransport::new(\n\
+        let transport = Arc::new(DefaultTransport::new(\n\
             &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),
         ));
         
+        // Create RPC client for batching support
+        let rpc = RpcClient::from_transport(transport.clone());
+        
         // Create node and wallet clients
-        let node_client = BitcoinNodeClient::new(client.clone());
+        let node_client = BitcoinNodeClient::new(transport.clone());
         
         // Wait for node to be ready for RPC
         // Core initialization states that require waiting:
@@ -531,8 +538,9 @@ fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         Ok(Self {{
             node_client,
-            wallet_client: BitcoinWalletClient::new(client.clone()),
+            wallet_client: BitcoinWalletClient::new(transport.clone()),
             node_manager: Some(Box::new(node_manager)),
+            rpc,
         }})
     }}"
     ).unwrap();
@@ -724,6 +732,26 @@ fn emit_node_manager_accessor(code: &mut String) -> std::io::Result<()> {
          }}\n"
     )
     .unwrap();
+    Ok(())
+}
+
+fn emit_rpc_accessor(code: &mut String) -> std::io::Result<()> {
+    writeln!(
+        code,
+        "    /// Give callers the full RPC client (incl. `.batch()`)\n\
+         pub fn rpc(&self) -> &RpcClient {{\n\
+             &self.rpc\n\
+         }}\n"
+    )
+    .unwrap();
+    Ok(())
+}
+
+fn emit_batch_method(code: &mut String) -> std::io::Result<()> {
+    writeln!(
+        code,
+        "    /// Begin a JSON-RPC batch against this test node\n    pub fn batch(&self) -> BatchBuilder {{\n        self.rpc.batch()\n    }}\n"
+    ).unwrap();
     Ok(())
 }
 

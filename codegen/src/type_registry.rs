@@ -33,7 +33,7 @@ const RULES: &[Rule] = &[
         is_optional: false,
     },
     // 2. Numbers & amounts (patterned first)
-    // Amount-like patterns
+    // Amount-like patterns (BTC amounts, satoshis, etc.)
     Rule {
         rpc_type: "number",
         pattern: Some("amount"),
@@ -46,19 +46,46 @@ const RULES: &[Rule] = &[
         rust_type: "bitcoin::Amount",
         is_optional: false,
     },
+    // Fee fields → floating-point BTC amounts
     Rule {
         rpc_type: "number",
         pattern: Some("fee"),
-        rust_type: "bitcoin::Amount",
+        rust_type: "f64",
         is_optional: false,
     },
     Rule {
         rpc_type: "number",
         pattern: Some("rate"),
-        rust_type: "bitcoin::Amount",
+        rust_type: "f64",
+        is_optional: false,
+    },
+    // Specific fee-related overrides to float
+    Rule {
+        rpc_type: "number",
+        pattern: Some("relayfee"),
+        rust_type: "f64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("incrementalfee"),
+        rust_type: "f64",
+        is_optional: false,
+    },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("incrementalrelayfee"),
+        rust_type: "f64",
         is_optional: false,
     },
     // Integer patterns (u64)
+    // Block count
+    Rule {
+        rpc_type: "number",
+        pattern: Some("blocks"),
+        rust_type: "u64",
+        is_optional: false,
+    },
     Rule {
         rpc_type: "number",
         pattern: Some("nblocks"),
@@ -101,6 +128,12 @@ const RULES: &[Rule] = &[
         rust_type: "u64",
         is_optional: false,
     },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("conf_target"),
+        rust_type: "u64",
+        is_optional: false,
+    },
     // Integer patterns (u32)
     Rule {
         rpc_type: "number",
@@ -139,11 +172,11 @@ const RULES: &[Rule] = &[
         rust_type: "f64",
         is_optional: false,
     },
-    // fallback number - use u64 instead of serde_json::Value
+    // fallback number → default to floating-point
     Rule {
         rpc_type: "number",
         pattern: None,
-        rust_type: "u64",
+        rust_type: "f64",
         is_optional: false,
     },
     // 3. Hex blobs
@@ -196,12 +229,6 @@ const RULES: &[Rule] = &[
         rpc_type: "*",
         pattern: None,
         rust_type: "serde_json::Value",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("conf_target"),
-        rust_type: "u64",
         is_optional: false,
     },
 ];

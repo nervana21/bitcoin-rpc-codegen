@@ -15,6 +15,18 @@ pub enum TransportError {
 pub trait Transport: Send + Sync {
     /// Send a JSON-RPC request and return the result
     fn send_request<'a>(&'a self, method: &'a str, params: &'a [Value]) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Value, TransportError>> + Send + 'a>>;
+    
+    /// Send a **batch** of raw JSON-RPC objects in one HTTP call.
+    ///
+    /// The `bodies` slice is already serializable JSON-RPC-2.0 frames:
+    ///   [ { "jsonrpc":"2.0", "id":0, "method":"foo", "params": [...] }, … ]
+    fn send_batch<'a>(
+        &'a self,
+        bodies: &'a [Value],
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<Value>, TransportError>> + Send + 'a>>;
+    
+    /// Get the URL for this transport
+    fn url(&self) -> &str;
 }
 
 /// Extension trait for Transport that provides convenience methods
@@ -68,5 +80,36 @@ impl Transport for DefaultTransport {
 
             Ok(json["result"].clone())
         })
+    }
+
+    fn send_batch<'a>(
+        &'a self,
+        bodies: &'a [Value],
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<Value>, TransportError>> + Send + 'a>> {
+        let url = self.url.clone();
+        let user = self.user.clone();
+        let pass = self.pass.clone();
+        
+        Box::pin(async move {
+            let client = reqwest::Client::new();
+            let req = client
+                .post(&url)
+                .basic_auth(&user, Some(&pass))
+                .json(bodies);
+            
+            let resp = req
+                .send()
+                .await?;
+            
+            let v = resp
+                .json::<Vec<Value>>()
+                .await?;
+            
+            Ok(v)
+        })
+    }
+
+    fn url(&self) -> &str {
+        &self.url
     }
 }

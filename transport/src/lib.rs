@@ -8,6 +8,7 @@
 //! - Low‑level `send_request` returning raw `serde_json::Value` for maximum flexibility
 //! - High‑level `call` with automatic serialization/deserialization to Rust types
 //! - Unified error handling through the `TransportError` enum, covering HTTP, RPC, and JSON errors
+//! - Batch support for sending multiple RPC calls in a single HTTP request
 
 use base64::Engine;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
@@ -41,7 +42,7 @@ pub enum TransportError {
 
     /// The JSON‑RPC response contained an error object.
     #[error("RPC error: {0}")]
-    Rpc(Value),
+    Rpc(String),
 
     /// Failed to parse JSON response.
     #[error("Invalid JSON: {0}")]
@@ -87,8 +88,7 @@ impl Transport {
     /// Panics if default headers cannot be constructed.
     pub fn new_with_auth<U: Into<String>>(url: U, rpcuser: &str, rpcpass: &str) -> Self {
         let mut headers = HeaderMap::new();
-        let auth =
-            base64::engine::general_purpose::STANDARD.encode(format!("{rpcuser}:{rpcpass}"));
+        let auth = base64::engine::general_purpose::STANDARD.encode(format!("{rpcuser}:{rpcpass}"));
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Basic {auth}")).unwrap(),
@@ -136,12 +136,35 @@ impl Transport {
             .await?;
 
         if let Some(err) = resp.get("error") {
-            Err(TransportError::Rpc(err.clone()))
+            Err(TransportError::Rpc(err.to_string()))
         } else if !resp.is_object() || resp.get("result").is_none() {
             Err(TransportError::MissingResult)
         } else {
             Ok(resp["result"].clone())
         }
+    }
+
+    /// Send a **batch** of raw JSON-RPC objects in one HTTP call.
+    ///
+    /// The `bodies` slice is already serializable JSON-RPC-2.0 frames:
+    ///   [ { "jsonrpc":"2.0", "id":0, "method":"foo", "params": [...] }, … ]
+    ///
+    /// # Parameters
+    /// - `bodies`: A slice of JSON-RPC request objects to send in a single HTTP request.
+    ///
+    /// # Errors
+    /// Returns `TransportError` if the HTTP request fails or the response cannot be parsed.
+    pub async fn send_batch(&self, bodies: &[Value]) -> Result<Vec<Value>, TransportError> {
+        let resp: Vec<Value> = self
+            .client
+            .post(&self.url)
+            .json(bodies)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(resp)
     }
 
     /// Send a JSON‑RPC request with given `method` and `params`, deserializing the `result` into `R`.
@@ -165,3 +188,61 @@ impl Transport {
         Ok(serde_json::from_value(response)?)
     }
 }
+
+/// Trait for transport implementations
+pub trait TransportTrait: Send + Sync {
+    /// Send a JSON‑RPC request with given `method` and `params`, returning the raw `result` field.
+    fn send_request<'a>(
+        &'a self,
+        method: &'a str,
+        params: &'a [Value],
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Value, TransportError>> + Send + 'a>,
+    >;
+
+    /// Send a **batch** of raw JSON-RPC objects in one HTTP call.
+    ///
+    /// The `bodies` slice is already serializable JSON-RPC-2.0 frames:
+    ///   [ { "jsonrpc":"2.0", "id":0, "method":"foo", "params": [...] }, … ]
+    fn send_batch<'a>(
+        &'a self,
+        bodies: &'a [Value],
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Vec<Value>, TransportError>> + Send + 'a>,
+    >;
+
+    /// Get the URL for this transport
+    fn url(&self) -> &str;
+}
+
+impl TransportTrait for Transport {
+    fn send_request<'a>(
+        &'a self,
+        method: &'a str,
+        params: &'a [Value],
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Value, TransportError>> + Send + 'a>,
+    > {
+        Box::pin(async move {
+            let params_serialized: Vec<Value> = params.iter().cloned().collect();
+            self.send_request(method, &params_serialized).await
+        })
+    }
+
+    fn send_batch<'a>(
+        &'a self,
+        bodies: &'a [Value],
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Vec<Value>, TransportError>> + Send + 'a>,
+    > {
+        Box::pin(self.send_batch(bodies))
+    }
+
+    fn url(&self) -> &str {
+        &self.url
+    }
+}
+
+/// Batch transport
+pub mod batch_transport;
+pub use batch_transport::{BatchError, BatchTransport};
