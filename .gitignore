@@ -20,3 +20,4 @@ target/tmp/
 # Project-specific
 /feedback/
 .DS_Store
+/scripts/
