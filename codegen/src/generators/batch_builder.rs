@@ -1,6 +1,6 @@
 // codegen/src/generators/batch_builder.rs
 
-use crate::{CodeGenerator, TYPE_REGISTRY};
+use crate::{utils::capitalize, CodeGenerator, TYPE_REGISTRY};
 use rpc_api::ApiMethod;
 
 use std::fmt::Write;
@@ -221,14 +221,5 @@ pub struct BatchBuilder {{
         .unwrap();
 
         vec![("batch_builder.rs".to_string(), code)]
-    }
-}
-
-// Helper function to capitalize first letter
-fn capitalize(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
     }
 }
