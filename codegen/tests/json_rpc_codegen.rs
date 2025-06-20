@@ -18,8 +18,8 @@ fn test_json_rpc_codegen_transport() {
     let (mod_name, src) = &files[0];
     assert_eq!(mod_name, "foo");
 
-    // now should reference Transport
-    assert!(src.contains("use transport::{Transport, TransportError};"));
+    // now should reference TransportTrait
+    assert!(src.contains("use transport::{TransportTrait, TransportError};"));
     assert!(src.contains("transport.send_request(\"foo\""));
     assert!(src.contains("pub async fn foo"));
 }
@@ -53,7 +53,7 @@ fn transport_codegen_with_args() {
     let (_mod, src) = &files[0];
     // 1) signature includes both args
     assert!(src.contains(
-        "pub async fn foo(transport: &dyn Transport, arg1: serde_json::Value, arg2: serde_json::Value)"
+        "pub async fn foo(transport: &dyn TransportTrait, arg1: serde_json::Value, arg2: serde_json::Value)"
     ));
     // 2) params vec serializes them in order
     assert!(src.contains("let params = vec![json!(arg1), json!(arg2)];"));
@@ -101,7 +101,7 @@ fn transport_codegen_imports() {
         "Missing serde_json imports"
     );
     assert!(
-        src.contains("use transport::{Transport, TransportError};"),
+        src.contains("use transport::{TransportTrait, TransportError};"),
         "Missing transport imports"
     );
 }
