@@ -27,10 +27,18 @@ pub enum BatchError {
     Rpc(Value),
 }
 
-/// A transport wrapper that supports batching multiple RPC calls into a single request
+/// A transport wrapper that supports batching multiple RPC calls into a single request.
+///
+/// # Usage
+/// 1. Call [`begin_batch`] to start collecting requests.
+/// 2. Use [`send_request`] to queue each RPC call (these will not be sent immediately).
+/// 3. Call [`end_batch`] to send all queued requests as a single JSON-RPC batch and receive results.
+///
+/// This struct is thread-safe and can be shared between threads. Each batch is associated with a unique set of request IDs.
 pub struct BatchTransport {
     inner: Arc<dyn TransportTrait>,
     batch: Arc<Mutex<Option<Vec<BatchRequest>>>>,
+    /// Used to generate unique IDs for each request in a batch.
     next_id: AtomicU64,
 }
 
@@ -56,23 +64,24 @@ impl BatchTransport {
         }
     }
 
-    /// Begin collecting requests into a batch
+    /// Begin collecting requests into a batch.
     ///
-    /// Any subsequent calls to `send_request` will be queued until `end_batch` is called.
+    /// Any subsequent calls to [`send_request`] will be queued until [`end_batch`] is called.
+    /// If a batch is already in progress, it will be replaced (and any queued requests will be lost).
     pub fn begin_batch(&self) {
         let mut batch = self.batch.lock().unwrap();
         *batch = Some(Vec::new());
     }
 
-    /// End the current batch and send all collected requests
+    /// End the current batch and send all collected requests as a single JSON-RPC batch.
     ///
     /// Returns a vector of results in the same order as the requests were queued.
     /// If any request in the batch fails, the entire batch fails.
     ///
     /// # Errors
-    /// - Returns `BatchError::NoBatchInProgress` if no batch was started
-    /// - Returns `BatchError::Transport` if the underlying transport fails
-    /// - Returns `BatchError::Rpc` if any RPC call in the batch returns an error
+    /// - Returns [`BatchError::NoBatchInProgress`] if no batch was started.
+    /// - Returns [`BatchError::Transport`] if the underlying transport fails.
+    /// - Returns [`BatchError::Rpc`] if any RPC call in the batch returns an error.
     pub async fn end_batch(&self) -> Result<Vec<Value>, BatchError> {
         // 1) Take the queued calls
         let requests = {
@@ -119,13 +128,18 @@ impl BatchTransport {
         Ok(results)
     }
 
-    /// Check if a batch is currently in progress
+    /// Check if a batch is currently in progress.
     pub fn is_batching(&self) -> bool {
         self.batch.lock().unwrap().is_some()
     }
 }
 
 impl TransportTrait for BatchTransport {
+    /// Queue a request if batching, or send immediately if not batching.
+    ///
+    /// # Returns
+    /// - If batching, always returns an error future, since results are only available after [`end_batch`].
+    /// - If not batching, delegates to the inner transport and returns the result.
     fn send_request<'a>(
         &'a self,
         method: &'a str,
@@ -150,6 +164,7 @@ impl TransportTrait for BatchTransport {
         });
 
         // Return a future that immediately returns an error since we can't wait for the batch
+        // This is by design: end_batch() must be called to get results for all queued requests.
         Box::pin(async move {
             Err(TransportError::Rpc(
                 "Cannot wait for individual request result in batch mode. Use end_batch() to get all results.".to_string()
