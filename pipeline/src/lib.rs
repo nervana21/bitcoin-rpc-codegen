@@ -715,7 +715,7 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
 publish = true
 
 name = "bitcoin-rpc-midas"
-version = "{CRATE_VERSION}"
+version = "{}"
 edition = "2021"
 authors = ["Bitcoin RPC Codegen Core Developers"]
 license = "MIT OR Apache-2.0"
@@ -743,7 +743,8 @@ tokio = {{ version = "1.0", features = ["time", "process", "io-util"] }}
 tracing = "0.1"
 
 [workspace]
-"#
+"#,
+        CRATE_VERSION
     );
 
     fs::write(root.join("Cargo.toml"), toml)
@@ -765,7 +766,8 @@ fn write_readme(root: &Path) -> Result<()> {
         "[diagnostic] writing README.md at {:?}",
         root.join("README.md")
     );
-    let readme = r#"# Bitcoin-RPC-Midas
+    let readme = format!(
+        r#"# Bitcoin-RPC-Midas
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
@@ -803,7 +805,7 @@ use anyhow::Result;
 use bitcoin_rpc_midas::**;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<()> {{
     // Creates and manages a regtest node automatically
     let client = BitcoinTestClient::new().await?;
     
@@ -814,11 +816,11 @@ async fn main() -> Result<()> {
     let blockchain_info = client.getblockchaininfo().await?;
     let wallet_info = client.getwalletinfo().await?;
     
-    println!("Blockchain: {:#?}", blockchain_info);
-    println!("Wallet: {:#?}", wallet_info);
+    println!("Blockchain: {{:#?}}", blockchain_info);
+    println!("Wallet: {{:#?}}", wallet_info);
     
     Ok(())
-}
+}}
 ```
 
 ## Installation
@@ -827,7 +829,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "{CRATE_VERSION}"
+bitcoin-rpc-midas = "{}"
 ```
 
 ## About
@@ -846,7 +848,9 @@ Bitcoin RPC Code Generator is released under the terms of the MIT license. See [
 
 This library communicates directly with `bitcoind`.
 **For mainnet use,** audit the code carefully, restrict RPC access to trusted hosts, and avoid exposing RPC endpoints to untrusted networks.
-"#;
+"#,
+        CRATE_VERSION
+    );
 
     fs::write(root.join("README.md"), readme)
         .with_context(|| format!("Failed to write README.md at {root:?}"))?;
