@@ -39,7 +39,7 @@ pub const CRATE_VERSION: &str = "0.1.1";
 /// # Arguments
 ///
 /// * `input_path` - Optional path to the input file containing JSON API spec.
-///                  If None, defaults to "api.json" in the project root.
+///   If None, defaults to "api.json" in the project root.
 ///
 /// # Returns
 ///
@@ -47,7 +47,7 @@ pub const CRATE_VERSION: &str = "0.1.1";
 pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     // Find project root by looking for Cargo.toml
     let project_root = find_project_root()?;
-    println!("[diagnostic] project root directory: {:?}", project_root);
+    println!("[diagnostic] project root directory: {project_root:?}");
 
     // Use default api.json in project root if no input path provided
     let input_path = match input_path {
@@ -60,7 +60,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         }
         None => project_root.join("api.json"),
     };
-    println!("[diagnostic] resolved input path: {:?}", input_path);
+    println!("[diagnostic] resolved input path: {input_path:?}");
 
     // Verify input file exists before proceeding
     if !input_path.exists() {
@@ -73,61 +73,52 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     }
 
     let crate_root = project_root.join("bitcoin-rpc-midas");
-    println!("[diagnostic] target crate path: {:?}", crate_root);
+    println!("[diagnostic] target crate path: {crate_root:?}");
 
     if crate_root.exists() {
         println!("[diagnostic] removing existing bitcoin-rpc-midas directory");
         fs::remove_dir_all(&crate_root).with_context(|| {
-            format!(
-                "Failed to remove existing bitcoin-rpc-midas directory: {:?}",
-                crate_root
-            )
+            format!("Failed to remove existing bitcoin-rpc-midas directory: {crate_root:?}")
         })?;
     }
 
     // Prepare crate structure: Cargo.toml + src/
     let src_dir = crate_root.join("src");
-    println!("[diagnostic] creating directory: {:?}", src_dir);
+    println!("[diagnostic] creating directory: {src_dir:?}");
     fs::create_dir_all(&src_dir)
-        .with_context(|| format!("Failed to create src directory: {:?}", src_dir))?;
+        .with_context(|| format!("Failed to create src directory: {src_dir:?}"))?;
 
     println!("[diagnostic] copying template files to src directory");
     copy_templates_to(&src_dir)
-        .with_context(|| format!("Failed to copy template files to {:?}", src_dir))?;
+        .with_context(|| format!("Failed to copy template files to {src_dir:?}"))?;
 
     write_cargo_toml(&crate_root)
-        .with_context(|| format!("Failed to write Cargo.toml in: {:?}", crate_root))?;
+        .with_context(|| format!("Failed to write Cargo.toml in: {crate_root:?}"))?;
 
     // Write .gitignore with minimal exclusions
     let gitignore_path = crate_root.join(".gitignore");
-    println!("[diagnostic] writing .gitignore at {:?}", gitignore_path);
+    println!("[diagnostic] writing .gitignore at {gitignore_path:?}");
     fs::write(&gitignore_path, "/target\n/Cargo.lock\n")
-        .with_context(|| format!("Failed to write .gitignore at {:?}", gitignore_path))?;
+        .with_context(|| format!("Failed to write .gitignore at {gitignore_path:?}"))?;
 
     // Write README.md
     write_readme(&crate_root)
-        .with_context(|| format!("Failed to write README.md in: {:?}", crate_root))?;
+        .with_context(|| format!("Failed to write README.md in: {crate_root:?}"))?;
 
-    println!("[diagnostic] starting code generation into: {:?}", src_dir);
+    println!("[diagnostic] starting code generation into: {src_dir:?}");
     generate_into(&src_dir, &input_path)
-        .with_context(|| format!("generate_into failed for src_dir {:?}", src_dir))?;
+        .with_context(|| format!("generate_into failed for src_dir {src_dir:?}"))?;
 
     // List resulting crate contents for verification
     println!("[diagnostic] contents of bitcoin-rpc-midas/src:");
-    for entry in fs::read_dir(&src_dir).with_context(|| {
-        format!(
-            "Failed to read bitcoin-rpc-midas/src directory: {:?}",
-            src_dir
-        )
-    })? {
+    for entry in fs::read_dir(&src_dir)
+        .with_context(|| format!("Failed to read bitcoin-rpc-midas/src directory: {src_dir:?}"))?
+    {
         let entry = entry?;
         println!("  - {:?}", entry.path());
     }
 
-    println!(
-        "Completed generation of `bitcoin-rpc-midas` crate at {:?}",
-        crate_root
-    );
+    println!("Completed generation of `bitcoin-rpc-midas` crate at {crate_root:?}");
     Ok(())
 }
 
@@ -166,25 +157,24 @@ fn find_project_root() -> Result<PathBuf> {
 /// Returns `Result<()>` indicating success or failure of the generation process
 fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
     println!(
-        "[diagnostic] generate_into received out_dir: {:?}, input_path: {:?}",
-        out_dir, input_path
+        "[diagnostic] generate_into received out_dir: {out_dir:?}, input_path: {input_path:?}"
     );
 
     // 1) Prepare module directories
     let subdirs = ["transport", "types", "node", "client_trait"];
     for sub in &subdirs {
         let module_dir = out_dir.join(sub);
-        println!("[diagnostic] creating module directory: {:?}", module_dir);
+        println!("[diagnostic] creating module directory: {module_dir:?}");
         fs::create_dir_all(&module_dir)
-            .with_context(|| format!("Failed to create module directory: {:?}", module_dir))?;
+            .with_context(|| format!("Failed to create module directory: {module_dir:?}"))?;
 
         // Skip creating mod.rs for node directory since we'll handle it separately
         if *sub != "node" {
             let mod_rs = module_dir.join("mod.rs");
             if !mod_rs.exists() {
-                println!("[diagnostic] writing mod.rs for module: {}", sub);
-                fs::write(&mod_rs, format!("// Auto-generated `{}` module\n", sub))
-                    .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
+                println!("[diagnostic] writing mod.rs for module: {sub}");
+                fs::write(&mod_rs, format!("// Auto-generated `{sub}` module\n"))
+                    .with_context(|| format!("Failed to write mod.rs at {mod_rs:?}"))?;
             }
         }
     }
@@ -210,7 +200,7 @@ pub use bitcoin_node_manager::BitcoinNodeManager;
 pub use test_config::TestConfig;
 "#,
         )
-        .with_context(|| format!("Failed to write node/mod.rs at {:?}", node_mod_rs))?;
+        .with_context(|| format!("Failed to write node/mod.rs at {node_mod_rs:?}"))?;
     }
 
     // Create node implementation files
@@ -498,10 +488,7 @@ impl Default for BitcoinNodeManager {
 }"#,
     )
     .with_context(|| {
-        format!(
-            "Failed to write bitcoin_node_manager.rs at {:?}",
-            bitcoin_node_manager_rs
-        )
+        format!("Failed to write bitcoin_node_manager.rs at {bitcoin_node_manager_rs:?}")
     })?;
 
     // Create test_config.rs
@@ -562,38 +549,32 @@ impl TestConfig {
     }
 }"#,
     )
-    .with_context(|| format!("Failed to write test_config.rs at {:?}", test_config_rs))?;
+    .with_context(|| format!("Failed to write test_config.rs at {test_config_rs:?}"))?;
 
     // Create test_node directory without writing mod.rs
     let test_node_dir = out_dir.join("test_node");
-    println!(
-        "[diagnostic] creating test_node directory: {:?}",
-        test_node_dir
-    );
+    println!("[diagnostic] creating test_node directory: {test_node_dir:?}");
     fs::create_dir_all(&test_node_dir)
-        .with_context(|| format!("Failed to create test_node directory: {:?}", test_node_dir))?;
+        .with_context(|| format!("Failed to create test_node directory: {test_node_dir:?}"))?;
 
     // 2) Parse & normalize schema
-    println!(
-        "[diagnostic] detecting input file type for {:?}",
-        input_path
-    );
+    println!("[diagnostic] detecting input file type for {input_path:?}");
     let (norm, src_desc) = if input_path
         .extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| e.eq_ignore_ascii_case("json"))
     {
-        println!("[diagnostic] parsing JSON at {:?}", input_path);
+        println!("[diagnostic] parsing JSON at {input_path:?}");
         let json = fs::read_to_string(input_path)
-            .with_context(|| format!("Failed to read JSON file: {:?}", input_path))?;
+            .with_context(|| format!("Failed to read JSON file: {input_path:?}"))?;
         (
             parse_api_json(&json).context("Failed to parse API JSON")?,
             "structured JSON",
         )
     } else {
-        println!("[diagnostic] parsing help text at {:?}", input_path);
+        println!("[diagnostic] parsing help text at {input_path:?}");
         let help = fs::read_to_string(input_path)
-            .with_context(|| format!("Failed to read help dump file: {:?}", input_path))?;
+            .with_context(|| format!("Failed to read help dump file: {input_path:?}"))?;
         let raw = DefaultHelpParser
             .parse(&help)
             .context("HelpParser failed to parse help text")?;
@@ -663,9 +644,9 @@ impl TestConfig {
 
     // Update lib.rs to include the client trait module
     let lib_rs = out_dir.join("lib.rs");
-    println!("[diagnostic] writing root lib.rs at {:?}", lib_rs);
-    let mut file = File::create(&lib_rs)
-        .with_context(|| format!("Failed to create lib.rs at {:?}", lib_rs))?;
+    println!("[diagnostic] writing root lib.rs at {lib_rs:?}");
+    let mut file =
+        File::create(&lib_rs).with_context(|| format!("Failed to create lib.rs at {lib_rs:?}"))?;
 
     let version_nodots = CRATE_VERSION.replace('.', "");
 
@@ -684,19 +665,18 @@ impl TestConfig {
      pub mod types;\n\n\
      // Re-exports for ergonomic access\n\
      pub use config::Config;\n\
-     pub use client_trait::client_trait::BitcoinClientV{};\n\
+     pub use client_trait::client_trait::BitcoinClientV{version_nodots};\n\
      pub use node::BitcoinNodeManager;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use types::*;\n\
-     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n",
-        version_nodots
+     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
     )?;
 
     ModuleGenerator::new(vec![DEFAULT_VERSION], out_dir.to_path_buf())
         .generate_all()
         .context("ModuleGenerator failed")?;
 
-    println!("Generated modules in {:?}", out_dir);
+    println!("Generated modules in {out_dir:?}");
 
     let batch_transport_src = std::fs::read_to_string("transport/src/batch_transport.rs")
         .with_context(|| {
@@ -708,10 +688,10 @@ impl TestConfig {
     let dest_path = out_dir.join("transport").join("batch_transport.rs");
 
     std::fs::create_dir_all(dest_path.parent().unwrap())
-        .with_context(|| format!("Failed to create directory for {:?}", dest_path))?;
+        .with_context(|| format!("Failed to create directory for {dest_path:?}"))?;
 
     std::fs::write(&dest_path, batch_transport_src)
-        .with_context(|| format!("Failed to write batch_transport.rs at {:?}", dest_path))?;
+        .with_context(|| format!("Failed to write batch_transport.rs at {dest_path:?}"))?;
 
     Ok(())
 }
@@ -735,7 +715,7 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
 publish = true
 
 name = "bitcoin-rpc-midas"
-version = "{}"
+version = "{CRATE_VERSION}"
 edition = "2021"
 authors = ["Bitcoin RPC Codegen Core Developers"]
 license = "MIT OR Apache-2.0"
@@ -763,12 +743,11 @@ tokio = {{ version = "1.0", features = ["time", "process", "io-util"] }}
 tracing = "0.1"
 
 [workspace]
-"#,
-        CRATE_VERSION
+"#
     );
 
     fs::write(root.join("Cargo.toml"), toml)
-        .with_context(|| format!("Failed to write bitcoin-rpc-midas Cargo.toml at {:?}", root))?;
+        .with_context(|| format!("Failed to write bitcoin-rpc-midas Cargo.toml at {root:?}"))?;
     Ok(())
 }
 
@@ -841,7 +820,7 @@ Contributions welcome.
 "#;
 
     fs::write(root.join("README.md"), readme)
-        .with_context(|| format!("Failed to write README.md at {:?}", root))?;
+        .with_context(|| format!("Failed to write README.md at {root:?}"))?;
     Ok(())
 }
 
@@ -856,7 +835,7 @@ Contributions welcome.
 /// Returns `Result<()>` indicating success or failure of ensuring the RPC client stub
 fn ensure_rpc_client(transport_dir: &Path) -> Result<()> {
     let stub_path = transport_dir.join("rpc_client.rs");
-    println!("[diagnostic] ensuring rpc_client stub at {:?}", stub_path);
+    println!("[diagnostic] ensuring rpc_client stub at {stub_path:?}");
     if stub_path.exists() {
         println!("[diagnostic] rpc_client stub already exists, skipping");
         return Ok(());
@@ -906,7 +885,7 @@ impl RpcClient {
     }
 }"#;
     fs::write(&stub_path, stub)
-        .with_context(|| format!("Failed to write rpc_client stub at {:?}", stub_path))?;
+        .with_context(|| format!("Failed to write rpc_client stub at {stub_path:?}"))?;
     Ok(())
 }
 
@@ -950,14 +929,13 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
                 && module_name != "batch_builder"
                 && module_name != "rpc_client"
             {
-                writeln!(content, "pub mod {};", module_name)?;
-                writeln!(content, "pub use {}::*;", module_name)?;
+                writeln!(content, "pub mod {module_name};")?;
+                writeln!(content, "pub use {module_name}::*;")?;
             }
         }
     }
 
-    fs::write(&mod_rs, content)
-        .with_context(|| format!("Failed to write mod.rs at {:?}", mod_rs))?;
+    fs::write(&mod_rs, content).with_context(|| format!("Failed to write mod.rs at {mod_rs:?}"))?;
     Ok(())
 }
 
@@ -976,12 +954,9 @@ fn copy_templates_to(dst_dir: &Path) -> Result<()> {
     for filename in TEMPLATE_FILES {
         let src_path = src_dir.join(filename);
         let dst_path = dst_dir.join(filename);
-        println!(
-            "[diagnostic] copying template: {:?} -> {:?}",
-            src_path, dst_path
-        );
+        println!("[diagnostic] copying template: {src_path:?} -> {dst_path:?}");
         fs::copy(&src_path, &dst_path)
-            .with_context(|| format!("Failed to copy template file: {:?}", filename))?;
+            .with_context(|| format!("Failed to copy template file: {filename:?}"))?;
     }
 
     Ok(())
