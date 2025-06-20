@@ -153,7 +153,6 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
     let struct_name = response_struct_name(method);
     let mut buf = String::new();
 
-    // TODO: Replace ad-hoc string building with a lightweight template
     let doc = sanitize_doc_comment(&method.description);
     writeln!(&mut buf, "/// {doc}")?;
     writeln!(&mut buf, "#[derive(Debug, Deserialize, Serialize)]")?;
