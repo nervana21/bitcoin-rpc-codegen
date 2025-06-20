@@ -1,16 +1,16 @@
-# Semantic Compression and the Generative Complexity of Protocol Interfaces
+# Semantic Compression and Protocol Interface Complexity
 
-This document formalizes the theoretical foundation behind [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen). It introduces **semantic compression**, a framework for evaluating how compactly a generator can produce correct implementations of a protocol interface based on its semantic specification.
+This document explains the theory behind [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen), introducing **semantic compression**: a way to measure how compactly a generator can produce correct protocol implementations from a semantic specification.
 
 ## Core Idea
 
-Inspired by **Kolmogorov Complexity**—which measures the length of the shortest program that outputs a given string—**semantic compression** asks:
+Inspired by **Kolmogorov Complexity**—the length of the shortest program that outputs a string—**semantic compression** asks:
 
-> _What is the smallest generator that produces implementations satisfying a given semantic specification?_
+> _What is the smallest generator that produces implementations matching a given specification?_
 
-The smaller the generator, the more efficiently it expresses the interface's semantics.
+A smaller generator means a more efficient expression of the interface.
 
-We define the **Generative Complexity** of a protocol interface $\mathcal{S}$ as the size of the smallest generator $\Gamma$ that, given a structured description $\Delta$ of its semantic specification, produces a correct implementation $\mathcal{I}$:
+We define the **Generative Complexity** of a protocol interface $\mathcal{S}$ as the size of the smallest generator $\Gamma$ that, given a structured description $\Delta$, produces a correct implementation $\mathcal{I}$:
 
 ```math
 \text{GC}(\mathcal{S}) = \min_{\Gamma : \Gamma(\Delta) \to \mathcal{I} \models \mathcal{S}} \; \|\Gamma\|
@@ -18,48 +18,42 @@ We define the **Generative Complexity** of a protocol interface $\mathcal{S}$ as
 
 Where:
 
-- $|\Gamma|$ is the size of the generator (measured in tokens, bytes, or AST nodes)
-- $\mathcal{I} \models \mathcal{S}$ means the implementation conforms to the semantic specification
+- $\|\Gamma\|$ = size of the generator (tokens, bytes, or AST nodes)
+- $\mathcal{I} \models \mathcal{S}$ = implementation matches the specification
 
-## Beyond One Version: Interface Families
+## Interface Families
 
-The approach extends naturally to **versioned families** of protocol interfaces. Rather than targeting a single $\mathcal{S}$, the generator supports a set $\{\mathcal{S}_v\}$ corresponding to successive Bitcoin Core versions:
+This approach extends to **versioned families** of interfaces. Instead of one $\mathcal{S}$, the generator supports a set $\{\mathcal{S}_v\}$ for different Bitcoin Core versions:
 
 - $\{\Delta_v\}$ = Structured descriptions for each version (e.g., `api_v27.json`, `api_v28.json`, …)
-- $\Gamma(\Delta_v) = \mathcal{I}_v$, such that $\mathcal{I}_v \models \mathcal{S}_v$ for all $v$
+- $\Gamma(\Delta_v) = \mathcal{I}_v$, with $\mathcal{I}_v \models \mathcal{S}_v$ for all $v$
 
 ```math
 \text{GC}(\{\mathcal{S}_v\}) = \min_{\Gamma : \forall v, \Gamma(\Delta_v) \to \mathcal{I}_v \models \mathcal{S}_v} \; \|\Gamma\|
 ```
 
-The generator now compresses not just one specification, but an **evolving interface family**.
+The generator now compresses an **evolving interface family**.
 
-The approach scales:
+This scales from a single interface, to versioned families, to other structured Bitcoin Core components (indexing, wallet, mempool policy). A future generator could span much of Bitcoin Core's non-[consensus-critical](https://github.com/rust-bitcoin/rust-bitcoin?tab=readme-ov-file#consensus) logic. Consensus code must remain implementation-defined, but structured modeling can still help its safety and evolution.
 
-- From a single interface $\mathcal{S}$
-- To versioned families $\{\mathcal{S}_v\}$
-- To additional structured components of Bitcoin Core, including indexing, wallet logic, and mempool policy
+## Bitcoin Core RPC Example
 
-A future generator $\Gamma$ capable of spanning these domains would enable much of Bitcoin Core's non-[consensus-critical](https://github.com/rust-bitcoin/rust-bitcoin?tab=readme-ov-file#consensus) logic to be described, reviewed, and reused with confidence. While consensus code must remain implementation-defined, structured modeling may still support its safety and evolution.
+In this project:
 
-## Application to Bitcoin Core RPC
-
-This project applies semantic compression to the Bitcoin Core RPC interface:
-
-- `S` = The semantic specification of Bitcoin Core RPC version 28
-- `Δ` = A structured schema describing `S` (e.g., `api_v28.json`)
+- `S` = Bitcoin Core RPC v28 specification
+- `Δ` = Structured schema (e.g., `api_v28.json`)
 - `Γ` = [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen)
 - `I` = [`bitcoin-rpc-midas`](https://github.com/nervana21/bitcoin-rpc-midas`), the generated Rust client
 
-The generator `Γ` reads `Δ` and emits a complete implementation `I`—a type-safe client library that satisfies the specification `S`. The goal is to minimize the size of `Γ` while ensuring that `I` correctly implements `S`.
+The generator `Γ` reads `Δ` and emits a type-safe client `I` that matches `S`. The goal: minimize `Γ`'s size while ensuring `I` is correct.
 
-This mirrors the architectural goals of the [Bitcoin Core multiprocess project](https://github.com/bitcoin/bitcoin/pull/28722), which uses `.capnp` files and the `mpgen` tool to define and generate C++ interfaces between components like `bitcoin-node` and `bitcoin-wallet`. In this project, `api.json` plays the same role: it is a structured, machine-generated schema that captures the behavior and structure of the RPC interface used to generate Rust clients.
+This mirrors the [Bitcoin Core multiprocess project](https://github.com/bitcoin/bitcoin/pull/28722), which uses `.capnp` files and `mpgen` to generate C++ interfaces. Here, `api.json` plays the same role: a machine-generated schema for generating Rust clients.
 
-There is, both in principle and in practice, a one-to-one mapping between `.capnp` and `api.json`. Both formats serve as formal interface descriptions. If the multiprocess project formalizes `.capnp` as the canonical source of truth, this project will adopt it directly and derive `api.json` from it. Until then, `api.json` may serve as a reference description—a practical and extensible foundation that other tools and implementations can build on.
+There is a one-to-one mapping between `.capnp` and `api.json`. If `.capnp` becomes canonical, this project will adopt it and derive `api.json` from it. Until then, `api.json` is a practical, extensible reference.
 
 ## Compression Ratio
 
-To quantify efficiency, we define the **Semantic Compression Ratio (SCR)**:
+To measure efficiency, define the **Semantic Compression Ratio (SCR)**:
 
 - For a single specification:
 
@@ -73,24 +67,22 @@ To quantify efficiency, we define the **Semantic Compression Ratio (SCR)**:
 \text{SCR}(\{\mathcal{S}_v\}, \Gamma) = \frac{\sum_v |\mathcal{I}_v|}{\|\Gamma\|}
 ```
 
-This gives a measure of **semantic density**—the total size of all generated implementations, divided by the size of the generator. It reflects how much correct behavior is produced across all supported versions per unit of generator logic.
+This measures **semantic density**: total size of all generated implementations, divided by generator size. It shows how much correct behavior is produced per unit of generator logic.
 
 ## Practical Implications
 
-- A smaller $\|\Gamma\|$ means the interface is being captured more compactly
-- Supporting more $\{\mathcal{S}_v\}$ without increasing $\|\Gamma\|$ shows better generalization
-- Comparing different generators for the same $\mathcal{S}$ gives a principled way to evaluate design efficiency
+- Smaller $\|\Gamma\|$ = more compact interface capture
+- Supporting more $\{\mathcal{S}_v\}$ without growing $\|\Gamma\|$ = better generalization
+- Comparing generators for the same $\mathcal{S}$ = principled design efficiency
 
-Together, these tools support maintainability and long-term evolution without code duplication.
+These tools support maintainability and long-term evolution without code duplication.
 
 ## Summary
 
-Semantic compression reframes code generation as the search for the smallest generator that produces correct, version-aware implementations of a protocol. In `bitcoin-rpc-codegen`, this idea becomes practical: a way to simplify and stabilize the developer surface without losing precision.
+Semantic compression reframes code generation as finding the smallest generator for correct, version-aware protocol implementations. In `bitcoin-rpc-codegen`, this means:
 
-By capturing Bitcoin Core’s RPC interface in a compact, generative form, the project:
+- Easier verification and safer behavior
+- Systematic tracking of version changes
+- Consistent, type-safe clients with minimal duplication
 
-- Makes behavior easier to verify and harder to misuse
-- Tracks changes across versions systematically
-- Produces consistent, type-safe clients with minimal duplication
-
-This foundation guides the project’s design, extensions, and tooling. The goal is to reduce the operational complexity of working with Bitcoin—making the protocol more accessible, stable, and easier to extend.
+This foundation guides the project's design and tooling, aiming to make Bitcoin more accessible, stable, and extensible.
