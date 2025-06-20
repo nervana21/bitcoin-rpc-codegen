@@ -90,7 +90,8 @@ impl Config {
     pub fn default_output_dir() -> PathBuf {
         std::env::var("OUT_DIR")
             .map(PathBuf::from)
-            .expect("OUT_DIR must be set for code generation")
+            // If OUT_DIR is missing, just use the current working directory
+            .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
     }
 }
 
