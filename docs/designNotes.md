@@ -1,44 +1,18 @@
 // Important design decisions will be explained here
 
-The crate is named `rpc-api` due to name clashing with the name `core`
+## Crate Naming
 
-The crate is named `rpc-metrics` due to name clashing with other crates named `metrics`
+The crate is named `rpc-api` due to name clashing with the name `core`.
 
 ## Port Selection in BitcoinNodeManager
 
-### Problem
+### Context
 
-When running tests or multiple instances of Bitcoin nodes, port conflicts are a common source of issues. The default behavior of using port 0 (which bitcoind rejects) or fixed ports (which can conflict) leads to frequent test failures and user frustration.
+When running tests or multiple Bitcoin node instances, port conflicts are a common issue. Using port 0 (which bitcoind rejects) or fixed ports (which can conflict) both have drawbacks. There's no universally "correct" answer—each approach has trade-offs.
 
-### Solution
+### Current Approach
 
-The `BitcoinNodeManager` implements automatic port selection when `rpc_port` is set to 0 in the `TestConfig`. This is achieved by:
-
-1. Detecting when port 0 is specified
-2. Using the OS's port allocation mechanism to find an available port
-3. Using that port for the Bitcoin node
-
-### Trade-offs
-
-We chose to prioritize test reliability over flexibility:
-
-#### Advantages
-
-- Eliminates most port-related test failures
-- Makes tests more reliable and deterministic
-- Reduces user frustration with port conflicts
-- Simplifies test setup code
-
-#### Disadvantages
-
-- Adds complexity to the port selection logic
-- Introduces a small race condition window
-- Makes port selection behavior implicit rather than explicit
-- May use more system resources due to port checking
-
-### Implementation Details
-
-The port selection is implemented in `BitcoinNodeManager::new_with_config`:
+We use automatic port selection when `rpc_port` is set to 0 in `TestConfig`, letting the OS allocate an available port for the Bitcoin node:
 
 ```rust
 let rpc_port = if config.rpc_port == 0 {
@@ -49,22 +23,23 @@ let rpc_port = if config.rpc_port == 0 {
 };
 ```
 
-### Testing
+This logic is modular and can be adapted if a better solution emerges.
 
-The behavior is verified through the `test_auto_port_selection` test, which ensures:
+### Why This Design?
 
-1. A non-zero port is selected when port 0 is specified
-2. The selected port is actually available for use
-3. The port selection mechanism works reliably
+- Both fixed and dynamic port selection have pros and cons. Dynamic selection reduces test flakiness and user friction, which is valuable for our main use case.
+- The implementation keeps things simple for most users, while still allowing for future changes if needed.
 
-### Future Considerations
+### Trade-offs
 
-While the current implementation prioritizes simplicity and reliability, we acknowledge that some users might need more control over port selection. However, we maintain a strict policy of only adding complexity when it's significantly outweighed by usability benefits.
+- **Pros:** Reduces port conflicts, improves test reliability, and simplifies setup.
+- **Cons:** Adds a small amount of logic and a potential (but rare) race condition.
 
-If we do extend the functionality, it would likely be through a simple flag or environment variable, such as:
+### Future Evolution
+
+If user needs or new constraints arise, this logic can be easily adapted. For example, a flag or environment variable could allow users to force a specific port or opt into different selection strategies:
 
 ```rust
-// Example of potential future extension
 pub struct TestConfig {
     pub rpc_port: u16,
     pub force_port: bool,  // If true, use rpc_port even if 0
@@ -72,17 +47,43 @@ pub struct TestConfig {
 }
 ```
 
-This would allow users to:
+## RPC Batching
 
-1. Use automatic port selection (default behavior)
-2. Force a specific port (including 0) when needed
-3. Maintain backward compatibility
+### Context
 
-However, we would only implement such an extension if:
+Sequential RPC calls can introduce unnecessary latency due to repeated network roundtrips. There are multiple ways to address this, each with its own trade-offs.
 
-1. There's clear evidence of user need
-2. The complexity cost is minimal
-3. The usability benefit is significant
-4. It doesn't compromise the reliability of the default behavior
+### Current Approach
 
-The current implementation serves the most common use case (testing) while keeping the codebase simple and maintainable.
+We provide built-in RPC batching, allowing multiple RPC calls to be combined into a single network request. This is implemented via a fluent interface in the transport layer:
+
+```rust
+let results = client
+    .batch()
+    .getblockcount()
+    .getnetworkinfo()
+    .getdifficulty()
+    .execute()
+    .await?;
+```
+
+Partial failures within a batch are returned as individual errors in the results array, so users can handle them as needed.
+
+### Why This Design?
+
+- Batching reduces network roundtrips and improves performance for latency-sensitive or RPC-heavy workloads.
+- The fluent interface is ergonomic and keeps batching logic out of user code.
+
+### Trade-offs
+
+- **Pros:** Fewer network roundtrips, improved performance, more efficient resource usage.
+- **Cons:** Slightly increased complexity in the transport layer, and users must handle partial failures within batches.
+
+### Future Evolution
+
+The batching implementation can be improved or replaced as needed. Potential future enhancements include:
+
+- Improved error reporting and partial batch response handling
+- Automatic batching optimizations based on request frequency or patterns
+
+The current design provides immediate performance benefits while keeping future options open.
