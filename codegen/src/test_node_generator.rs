@@ -95,7 +95,7 @@ impl CodeGenerator for TestNodeGenerator {
             ("node.rs".to_string(), node_code),
             ("client.rs".to_string(), client_code),
             ("params.rs".to_string(), params_code),
-            ("result.rs".to_string(), result_code),
+            ("response.rs".to_string(), result_code),
             ("mod.rs".to_string(), mod_rs_code),
         ]
     }
@@ -156,7 +156,7 @@ fn generate_mod_rs() -> String {
         "//! Test node module for Bitcoin RPC testing
 #[cfg(test)]
 pub mod params;
-pub mod result;
+pub mod response;
 pub mod wallet;
 pub mod node;
 pub mod client;
