@@ -1,5 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/bitcoin-rpc-midas)](https://crates.io/crates/bitcoin-rpc-midas)
+[![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
 
 # Bitcoin RPC Code Generator
 
@@ -14,6 +15,7 @@ Compared to hand-rolled RPC clients, this toolchain provides:
 - More compile-time guarantees
 - Easier local testing with embedded regtest
 - Better isolation from flaky environments and port conflicts
+- Built-in RPC batching for fewer network roundtrips
 
 Each improvement is aimed at making Bitcoin Core RPCs easier to integrate, test, and depend on in a modern Rust codebase. The result is a type-safe client that just works — aligned with upstream, resilient to changes, and ready for production use.
 
