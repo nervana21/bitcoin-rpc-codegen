@@ -160,12 +160,6 @@ impl TypeRegistry {
                 }
             }
         }
-
-        println!(
-            "[categorize] rpc_type={}, field='{}' → {:?}",
-            rpc_type, field, best_match
-        );
-
         best_match
     }
 
@@ -179,10 +173,6 @@ impl TypeRegistry {
     pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
         // Special case: ALL result fields of "amount" type should be Float
         if result.type_ == "amount" {
-            println!(
-                "[map_result_type] key='{}', type='{}' → 'f64' (amount result)",
-                result.key_name, result.type_
-            );
             return ("f64", result.optional);
         }
 
@@ -201,10 +191,6 @@ impl TypeRegistry {
         // Always use the first name - no special handling for unnamed fields in arguments
         let field = &arg.names[0];
         let (ty, is_opt) = self.map(&arg.type_, field);
-        println!(
-            "[map_argument_type] field='{}', type='{}' → '{}'",
-            field, arg.type_, ty
-        );
         (ty, is_opt || arg.optional)
     }
 
@@ -239,7 +225,7 @@ struct CategoryRule {
 }
 
 const CATEGORY_RULES: &[CategoryRule] = &[
-    // 1. Primitives (no pattern needed)
+    // Primitives (no pattern needed)
     CategoryRule {
         rpc_type: "string",
         pattern: None,
@@ -255,7 +241,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: None,
         category: RpcCategory::Null,
     },
-    // 2. Bitcoin-specific string types
+    // Bitcoin-specific string types
     CategoryRule {
         rpc_type: "string",
         pattern: Some("txid"),
@@ -266,7 +252,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: Some("blockhash"),
         category: RpcCategory::BitcoinBlockHash,
     },
-    // 3. Bitcoin amounts (monetary values)
+    // Bitcoin amounts (monetary values)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("amount"),
@@ -277,7 +263,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: Some("balance"),
         category: RpcCategory::BitcoinAmount,
     },
-    // NEW: Handle "type": "amount" fields - specific patterns first
+    // Handle "type": "amount" fields - specific patterns first
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("balance"), // Explicit balance fields
@@ -324,7 +310,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: None,
         category: RpcCategory::BitcoinAmount,
     },
-    // 4. Fee and rate fields (floating point)
+    // Fee and rate fields (floating point)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("fee"),
@@ -385,13 +371,13 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: Some("fee_rate"),
         category: RpcCategory::Float,
     },
-    // 5. Port numbers
+    // Port numbers
     CategoryRule {
         rpc_type: "number",
         pattern: Some("port"),
         category: RpcCategory::Port,
     },
-    // 6. Small integers (u32)
+    // Small integers (u32)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("nrequired"),
@@ -405,7 +391,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     CategoryRule {
         rpc_type: "number",
         pattern: Some("maxconf"),
-        category: RpcCategory::SmallInteger, // NEW: Should match minconf
+        category: RpcCategory::SmallInteger,
     },
     CategoryRule {
         rpc_type: "number",
@@ -425,7 +411,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     CategoryRule {
         rpc_type: "number",
         pattern: Some("checklevel"),
-        category: RpcCategory::SmallInteger, // NEW: verifychain checklevel (0-4)
+        category: RpcCategory::SmallInteger,
     },
     CategoryRule {
         rpc_type: "number",
@@ -481,24 +467,24 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     CategoryRule {
         rpc_type: "number",
         pattern: Some("skip"),
-        category: RpcCategory::LargeInteger, // NEW: listtransactions skip
+        category: RpcCategory::LargeInteger,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("nodeid"),
-        category: RpcCategory::LargeInteger, // NEW: disconnectnode nodeid
+        category: RpcCategory::LargeInteger,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("peer_id"),
-        category: RpcCategory::LargeInteger, // NEW: getblockfrompeer peer_id
+        category: RpcCategory::LargeInteger,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("wait"),
-        category: RpcCategory::LargeInteger, // NEW: stop wait parameter
+        category: RpcCategory::LargeInteger,
     },
-    // 8. Hex types
+    // Hex types
     CategoryRule {
         rpc_type: "hex",
         pattern: Some("txid"),
@@ -514,7 +500,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: None,
         category: RpcCategory::String,
     },
-    // 9. Array types
+    // Array types
     CategoryRule {
         rpc_type: "array",
         pattern: Some("keys"),
@@ -540,7 +526,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: None,
         category: RpcCategory::GenericArray,
     },
-    // 10. Object types - specific patterns first
+    // Object types - specific patterns first
     CategoryRule {
         rpc_type: "object",
         pattern: Some("options"),
@@ -559,9 +545,9 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     CategoryRule {
         rpc_type: "number",
         pattern: None,
-        category: RpcCategory::LargeInteger, // ✅ Safe default for height, counts, etc.
+        category: RpcCategory::LargeInteger,
     },
-    // 11. Dummy fields (for testing)
+    // Dummy fields (for testing)
     CategoryRule {
         rpc_type: "string",
         pattern: Some("dummy"),
@@ -572,7 +558,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         pattern: Some("dummy"),
         category: RpcCategory::Dummy,
     },
-    // 12. Fallback for unknown types
+    // Fallback for unknown types
     CategoryRule {
         rpc_type: "*",
         pattern: None,
