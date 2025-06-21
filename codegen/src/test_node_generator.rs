@@ -24,7 +24,7 @@ Benefits:
 use crate::utils::camel_to_snake_case;
 use crate::wallet_methods::WALLET_METHODS;
 use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
-use rpc_api::{ApiArgument, ApiMethod};
+use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
 /// A code generator that creates a type-safe Rust client library for Bitcoin Core test environments.
@@ -121,7 +121,7 @@ fn generate_params_code(methods: &[ApiMethod]) -> String {
             } else {
                 &camel_to_snake_case(&p.names[0])
             };
-            let ty = rust_type_for(&p.names[0], &p.type_);
+            let ty = rust_type_for_argument(&p.names[0], &p.type_);
             writeln!(code, "    pub {field}: {ty},").unwrap();
         }
         writeln!(code, "}}\n").unwrap();
@@ -137,7 +137,7 @@ fn generate_result_code(methods: &[ApiMethod]) -> String {
             continue;
         }
         let r = &m.results[0];
-        let ty = rust_type_for(&r.key_name, &r.type_);
+        let ty = rust_type_for_result(r);
         writeln!(
             code,
             "#[derive(Debug, Deserialize)]\n#[serde(transparent)]\npub struct {}Response(pub {});\n",
@@ -171,13 +171,22 @@ pub use node::BitcoinNodeClient;
     code
 }
 
-fn rust_type_for(param_name: &str, api_ty: &str) -> String {
+fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
     let (base_ty, is_option) = TYPE_REGISTRY.map_argument_type(&ApiArgument {
         type_: api_ty.to_string(),
         names: vec![param_name.to_string()],
         optional: false,
         description: String::new(),
     });
+    if is_option {
+        format!("Option<{base_ty}>")
+    } else {
+        base_ty.to_string()
+    }
+}
+
+fn rust_type_for_result(result: &ApiResult) -> String {
+    let (base_ty, is_option) = TYPE_REGISTRY.map_result_type(result);
     if is_option {
         format!("Option<{base_ty}>")
     } else {
@@ -283,7 +292,7 @@ impl {client_name} {{
                     } else {
                         camel_to_snake_case(&arg.names[0])
                     };
-                    let ty = rust_type_for(&arg.names[0], &arg.type_);
+                    let ty = rust_type_for_argument(&arg.names[0], &arg.type_);
                     format!("{name}: {ty}")
                 })
                 .collect::<Vec<_>>()
@@ -784,7 +793,7 @@ fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> std::
                     } else {
                         &camel_to_snake_case(&arg.names[0])
                     };
-                    let ty = rust_type_for(&arg.names[0], &arg.type_);
+                    let ty = rust_type_for_argument(&arg.names[0], &arg.type_);
                     format!("{name}: {ty}")
                 })
                 .collect::<Vec<_>>()
@@ -844,7 +853,7 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
      ) -> Result<Value, TransportError> {{\n\
          Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
              address,\n\
-             serde_json::to_value(amount.to_btc().to_string())?,\n\
+             amount,\n\
              \"\".to_string(),\n\
              \"\".to_string(),\n\
              false,\n\
@@ -852,7 +861,7 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
              conf_target,\n\
              estimate_mode,\n\
              false,\n\
-             serde_json::Value::Null,\n\
+             0.0,\n\
              false,\n\
          ).await?)?)\n\
      }}\n\
@@ -861,11 +870,11 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
      &self,\n\
      address: String,\n\
      amount: Amount,\n\
-     fee_rate: Amount,\n\
+     fee_rate: f64,\n\
  ) -> Result<Value, TransportError> {{\n\
      Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
          address,\n\
-         serde_json::to_value(amount.to_btc().to_string())?,\n\
+         amount,\n\
          \"\".to_string(),\n\
          \"\".to_string(),\n\
          false,\n\
@@ -873,7 +882,7 @@ fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
          0u64,\n\
          \"unset\".to_string(),\n\
          false,\n\
-         serde_json::to_value(fee_rate.to_btc().to_string())?,\n\
+         fee_rate,\n\
          false,\n\
      ).await?)?)\n\
  }}\n"
