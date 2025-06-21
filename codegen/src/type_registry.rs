@@ -148,7 +148,9 @@ impl TypeRegistry {
             if rule.rpc_type == "*" || rule.rpc_type == rpc_type {
                 if let Some(pat) = rule.pattern {
                     let pat_norm = normalize(pat);
-                    if field_norm.contains(&pat_norm) {
+                    let is_exact = rule.exact && field_norm == pat_norm;
+                    let is_contains = !rule.exact && field_norm.contains(&pat_norm);
+                    if is_exact || is_contains {
                         let pattern_len = pat_norm.len();
                         if pattern_len > best_pattern_len {
                             best_pattern_len = pattern_len;
@@ -222,6 +224,7 @@ struct CategoryRule {
     rpc_type: &'static str,
     pattern: Option<&'static str>,
     category: RpcCategory,
+    exact: bool,
 }
 
 const CATEGORY_RULES: &[CategoryRule] = &[
@@ -230,338 +233,403 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         rpc_type: "string",
         pattern: None,
         category: RpcCategory::String,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "boolean",
         pattern: None,
         category: RpcCategory::Boolean,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "null",
         pattern: None,
         category: RpcCategory::Null,
+        exact: false,
     },
     // Bitcoin-specific string types
     CategoryRule {
         rpc_type: "string",
         pattern: Some("txid"),
         category: RpcCategory::BitcoinTxid,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "string",
         pattern: Some("blockhash"),
         category: RpcCategory::BitcoinBlockHash,
+        exact: false,
     },
     // Bitcoin amounts (monetary values)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("amount"),
         category: RpcCategory::BitcoinAmount,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("balance"),
         category: RpcCategory::BitcoinAmount,
+        exact: false,
     },
     // Handle "type": "amount" fields - specific patterns first
     CategoryRule {
         rpc_type: "amount",
-        pattern: Some("balance"), // Explicit balance fields
+        pattern: Some("balance"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("fee_rate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("estimated_feerate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("maxfeerate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("maxburnamount"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("relayfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("incrementalfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "amount",
         pattern: Some("incrementalrelayfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     // Fallback rule for other "type": "amount" fields (like result amounts)
     CategoryRule {
         rpc_type: "amount",
         pattern: None,
         category: RpcCategory::BitcoinAmount,
+        exact: false,
     },
     // Fee and rate fields (floating point)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("fee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("rate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("feerate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("maxfeerate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("maxburnamount"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("relayfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("incrementalfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("incrementalrelayfee"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("difficulty"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("probability"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("percentage"),
         category: RpcCategory::Float,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("fee_rate"),
         category: RpcCategory::Float,
+        exact: false,
     },
     // Port numbers
     CategoryRule {
         rpc_type: "number",
         pattern: Some("port"),
         category: RpcCategory::Port,
+        exact: false,
     },
     // Small integers (u32)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("nrequired"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("minconf"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("maxconf"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("locktime"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("version"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("verbosity"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("checklevel"),
         category: RpcCategory::SmallInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("n"),
-        category: RpcCategory::SmallInteger, // NEW: gettxout output index
+        category: RpcCategory::SmallInteger,
+        exact: true,
     },
     // 7. Large integers (u64)
     CategoryRule {
         rpc_type: "number",
         pattern: Some("blocks"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("nblocks"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("maxtries"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("height"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("count"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("index"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("size"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("time"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("conf_target"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("skip"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("nodeid"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("peer_id"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("wait"),
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     // Hex types
     CategoryRule {
         rpc_type: "hex",
         pattern: Some("txid"),
         category: RpcCategory::BitcoinTxid,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "hex",
         pattern: Some("blockhash"),
         category: RpcCategory::BitcoinBlockHash,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "hex",
         pattern: None,
         category: RpcCategory::String,
+        exact: false,
     },
     // Array types
     CategoryRule {
         rpc_type: "array",
         pattern: Some("keys"),
         category: RpcCategory::StringArray,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "array",
         pattern: Some("addresses"),
         category: RpcCategory::StringArray,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "array",
         pattern: Some("wallets"),
         category: RpcCategory::StringArray,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "array",
         pattern: Some("txids"),
-        category: RpcCategory::BitcoinArray, // NEW: Vec<bitcoin::Txid>
+        category: RpcCategory::BitcoinArray,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "array",
         pattern: None,
         category: RpcCategory::GenericArray,
+        exact: false,
     },
     // Object types - specific patterns first
     CategoryRule {
         rpc_type: "object",
         pattern: Some("options"),
         category: RpcCategory::GenericObject,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "object",
         pattern: Some("query_options"),
         category: RpcCategory::GenericObject,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "object",
         pattern: None,
         category: RpcCategory::GenericObject,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: None,
         category: RpcCategory::LargeInteger,
+        exact: false,
     },
     // Dummy fields (for testing)
     CategoryRule {
         rpc_type: "string",
         pattern: Some("dummy"),
         category: RpcCategory::Dummy,
+        exact: false,
     },
     CategoryRule {
         rpc_type: "number",
         pattern: Some("dummy"),
         category: RpcCategory::Dummy,
+        exact: false,
     },
     // Fallback for unknown types
     CategoryRule {
         rpc_type: "*",
         pattern: None,
         category: RpcCategory::Unknown,
+        exact: false,
     },
 ];
