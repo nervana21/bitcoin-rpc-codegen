@@ -396,7 +396,6 @@ use crate::node::{{BitcoinNodeManager, TestConfig}};
 use super::node::BitcoinNodeClient;
 use super::wallet::BitcoinWalletClient;
 
-use std::str::FromStr;
 use bitcoin::Amount;"
     )
     .unwrap();
