@@ -45,11 +45,9 @@ pub const CRATE_VERSION: &str = "0.1.1";
 ///
 /// Returns `Result<()>` indicating success or failure of the generation process
 pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
-    // Find project root by looking for Cargo.toml
     let project_root = find_project_root()?;
     println!("[diagnostic] project root directory: {project_root:?}");
 
-    // Use default api.json in project root if no input path provided
     let input_path = match input_path {
         Some(path) => {
             if path.is_absolute() {
@@ -62,7 +60,6 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     };
     println!("[diagnostic] resolved input path: {input_path:?}");
 
-    // Verify input file exists before proceeding
     if !input_path.exists() {
         return Err(anyhow::anyhow!(
             "Input file not found: {:?}. Please either:\n\
@@ -82,7 +79,6 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         })?;
     }
 
-    // Prepare crate structure: Cargo.toml + src/
     let src_dir = crate_root.join("src");
     println!("[diagnostic] creating directory: {src_dir:?}");
     fs::create_dir_all(&src_dir)
@@ -95,13 +91,11 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     write_cargo_toml(&crate_root)
         .with_context(|| format!("Failed to write Cargo.toml in: {crate_root:?}"))?;
 
-    // Write .gitignore with minimal exclusions
     let gitignore_path = crate_root.join(".gitignore");
     println!("[diagnostic] writing .gitignore at {gitignore_path:?}");
     fs::write(&gitignore_path, "/target\n/Cargo.lock\n")
         .with_context(|| format!("Failed to write .gitignore at {gitignore_path:?}"))?;
 
-    // Write README.md
     write_readme(&crate_root)
         .with_context(|| format!("Failed to write README.md in: {crate_root:?}"))?;
 
@@ -109,7 +103,6 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     generate_into(&src_dir, &input_path)
         .with_context(|| format!("generate_into failed for src_dir {src_dir:?}"))?;
 
-    // List resulting crate contents for verification
     println!("[diagnostic] contents of bitcoin-rpc-midas/src:");
     for entry in fs::read_dir(&src_dir)
         .with_context(|| format!("Failed to read bitcoin-rpc-midas/src directory: {src_dir:?}"))?
