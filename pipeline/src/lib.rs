@@ -792,11 +792,11 @@ These features are intended to make Bitcoin Core RPCs easier to integrate, test,
 
 The crate is organized into focused modules:
 
-- `transport/`: Async RPC transport with error handling and batching
-- `types/`: Generated type definitions for all RPC responses
 - `client_trait/`: Trait definitions for type-safe RPC method calls
 - `node/`: Regtest node management and test configuration
 - `test_node/`: Integration testing helpers with embedded Bitcoin nodes
+- `transport/`: Async RPC transport with error handling and batching
+- `types/`: Generated type definitions for all RPC responses
 
 ## Quick Start
 
