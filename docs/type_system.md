@@ -1,96 +1,83 @@
 # Bitcoin RPC Type System
 
-This document describes how JSON-RPC return values from Bitcoin Core are mapped into Rust types. Each field is assigned one of several categories based on its intended use and precision requirements.
+This document describes how JSON-RPC fields in Bitcoin Core are categorized and mapped into Rust types.
+
+The system is powered by a centralized `RpcCategory` enum and a pattern-matching registry (`CategoryRule`), which assigns every RPC field a semantic category based on its type and name. This allows us to generate consistent, correct Rust types across all methods.
 
 ---
 
-## Integer Values (`u64`)
+## Semantic Categories
 
-These are exact, nonnegative whole-number values:
+Each RPC field is assigned one of the following categories:
 
-- Block heights
-- Transaction counts
-- Version numbers
-- Confirmation counts
-- Block counts
-- Header counts
-- Index values
-- Size values (bytes)
-- Time values (timestamps)
+### Primitive Types
 
-## Small Integers (`u32`)
+| Category       | Rust Type | Description                        |
+| -------------- | --------- | ---------------------------------- |
+| `String`       | `String`  | Generic string values              |
+| `Boolean`      | `bool`    | `true` or `false`                  |
+| `Null`         | `()`      | JSON null                          |
+| `Float`        | `f64`     | Rates, probabilities, percentages  |
+| `Port`         | `u16`     | Network port numbers               |
+| `SmallInteger` | `u32`     | Bounded integers (e.g. minconf)    |
+| `LargeInteger` | `u64`     | Heights, sizes, timestamps, counts |
 
-Used when the domain is known to be bounded and smaller:
+### Bitcoin Types
 
-- Confirmation targets
-- Minimum confirmations
+| Category           | Rust Type            | Description                            |
+| ------------------ | -------------------- | -------------------------------------- |
+| `BitcoinAmount`    | `bitcoin::Amount`    | Monetary values (fees, balances, etc.) |
+| `BitcoinTxid`      | `bitcoin::Txid`      | Transaction IDs                        |
+| `BitcoinBlockHash` | `bitcoin::BlockHash` | Block hashes                           |
+| `BitcoinAddress`   | `bitcoin::Address`   | Bech32 or legacy addresses             |
 
-## Floating Point Values (`f64`)
+### Collection Types
 
-For values requiring fractional precision:
+| Category       | Rust Type                | Description                      |
+| -------------- | ------------------------ | -------------------------------- |
+| `StringArray`  | `Vec<String>`            | Lists of addresses, labels, keys |
+| `BitcoinArray` | `Vec<bitcoin::Txid>`     | Lists of Bitcoin-native types    |
+| `GenericArray` | `Vec<serde_json::Value>` | Catch-all for arbitrary arrays   |
 
-- Mining difficulty
-- Fee rates (BTC/kB)
-- Probabilities
-- Percentages
-- General rates (e.g. mempool growth)
+### Object Types
 
-## Bitcoin Amounts (`bitcoin::Amount`)
+| Category        | Rust Type           | Description                          |
+| --------------- | ------------------- | ------------------------------------ |
+| `BitcoinObject` | `serde_json::Value` | Reserved for future structured types |
+| `GenericObject` | `serde_json::Value` | Dynamic key-value pairs              |
 
-Monetary values with satoshi precision:
+### Special Cases
 
-- Transaction amounts
-- Fees
-- Balances
-- Minimum/maximum transaction amounts
-- Maximum fee rates
-- Total burned amounts
-
-## Large Numbers (`u128`)
-
-Values that can exceed 2<sup>64</sup> yet remain integer:
-
-- Difficulty targets (raw bits)
-- Hash rates (H/s)
-- Block “bits” field
-
-## Hex Values
-
-Encoded as hex strings in JSON, but mapped to typed wrappers:
-
-- Transaction IDs (`bitcoin::Txid`)
-- Block hashes (`bitcoin::BlockHash`)
-- Scripts (`bitcoin::ScriptBuf`)
-- Public keys (`bitcoin::PublicKey`)
-- Raw hex blobs (`String`)
-
-## Arrays
-
-Lists of items; element type depends on context:
-
-- Address lists (`Vec<bitcoin::Address>`)
-- Block hash lists (`Vec<bitcoin::BlockHash>`)
-- Script lists (`Vec<bitcoin::ScriptBuf>`)
-- Transaction ID lists (`Vec<bitcoin::Txid>`)
-- Error/warning lists (`Vec<String>`)
-- Generic arrays (`Vec<serde_json::Value>`)
-
-## Objects
-
-Nested JSON objects, mapped to rich Rust types or generic values:
-
-- Transactions (`bitcoin::Transaction`)
-- Blocks (`bitcoin::Block`)
-- Wallet info (`GetWalletInfo`)
-- Generic/unknown objects (`serde_json::Value`)
+| Category  | Rust Type           | Description                             |
+| --------- | ------------------- | --------------------------------------- |
+| `Dummy`   | `String` (optional) | Placeholder/testing fields              |
+| `Unknown` | `serde_json::Value` | Fallback for unknown or unmapped fields |
 
 ---
 
-Each mapping is selected by a priority system:
+## Categorization Rules
 
-1. Exact RPC type hint (e.g. `"txid" → Txid`)
-2. JSON schema primitive (`"integer"` vs. `"number"`)
-3. Field name pattern (e.g. `*_amount` → `Amount`)
-4. Fallback to `serde_json::Value`
+Each field is mapped according to a pattern-matching rule set:
 
-> **Next steps TODO**: Introduce a `RpcCategory` enum and wire it through `TypeRegistry` so that both code and docs are generated programmatically.
+1. **Exact type + name match** (e.g. `"amount"` fields of type `"number"` → `BitcoinAmount`)
+2. **Name pattern match only** (e.g. `"feerate"`, `"balance"`, etc.)
+3. **Type-based fallback** (e.g. all `"string"` types default to `String`)
+4. **Wildcard fallback** to `Unknown`
+
+These rules are maintained in the `CATEGORY_RULES` list and interpreted by the `TypeRegistry` engine. The system is designed to be:
+
+- **Deterministic**: all fields deterministically map to one category.
+- **Extensible**: new categories or patterns can be added with no disruption.
+- **Auditable**: each field can be traced to its categorization logic.
+
+---
+
+## Documentation Generation
+
+The canonical list of all categories and rules can be regenerated from code by calling:
+
+```rust
+TYPE_REGISTRY.generate_category_docs();
+```
+
+This method produces a complete reference of all categories organized by RPC type, showing the mapping between JSON schema types and Rust types.

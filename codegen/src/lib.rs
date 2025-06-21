@@ -221,12 +221,15 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
 }
 
 lazy_static! {
-     /// Bitcoin RPC Type System
+    /// Bitcoin RPC Type System
     ///
-    /// See `docs/type_system.md` for the full taxonomy of integer, float, amount,
-    /// large number, hex, array, and object mappings.
+    /// The type system uses a systematic categorization approach with the `RpcCategory` enum
+    /// to map JSON-RPC types to appropriate Rust types. This provides:
+    /// - Consistent type mapping across all RPC methods
+    /// - Semantic categorization of fields (e.g., amounts, ports, counts)
+    /// - Extensible pattern-based matching
+    /// - Auto-generated documentation
     #[doc = include_str!("../../docs/type_system.md")]
-    // TODO: Define a `RpcCategory` enum and wire it into `TypeRegistry` for code-driven docs
     pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
 }
 
