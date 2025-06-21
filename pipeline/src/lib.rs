@@ -743,7 +743,8 @@ tracing = "0.1"
 
 [workspace]
 "#,
-        CRATE_VERSION, CRATE_VERSION
+        CRATE_VERSION,
+        DEFAULT_VERSION.as_number()
     );
 
     fs::write(root.join("Cargo.toml"), toml)
