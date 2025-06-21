@@ -345,7 +345,7 @@ mod tests {
                     },
                     ApiResult {
                         type_: "number".to_string(),
-                        key_name: "field2".to_string(),
+                        key_name: "difficulty".to_string(),
                         ..Default::default()
                     },
                 ],
@@ -355,7 +355,7 @@ mod tests {
         let result = build_return_type(&object_method).unwrap().unwrap();
         assert!(result.contains("pub struct ObjectResponse"));
         assert!(result.contains("pub field1: String"));
-        assert!(result.contains("pub field2: f64"));
+        assert!(result.contains("pub difficulty: f64"));
 
         // Test multi-variant result
         let multi_method = create_test_method(
@@ -376,7 +376,7 @@ mod tests {
                     key_name: "result2".to_string(),
                     inner: vec![ApiResult {
                         type_: "number".to_string(),
-                        key_name: "field2".to_string(),
+                        key_name: "difficulty".to_string(),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -386,6 +386,6 @@ mod tests {
         let result = build_return_type(&multi_method).unwrap().unwrap();
         assert!(result.contains("pub struct MultiResponse"));
         assert!(result.contains("pub field1: Option<String>"));
-        assert!(result.contains("pub field2: Option<f64>"));
+        assert!(result.contains("pub difficulty: Option<f64>"));
     }
 }
