@@ -718,7 +718,7 @@ version = "{}"
 edition = "2021"
 authors = ["Bitcoin RPC Codegen Core Developers"]
 license = "MIT OR Apache-2.0"
-description = "Generated Bitcoin Core RPC clients with async and strong types."
+description = "Generated Bitcoin Core v{} RPC client."
 readme = "README.md"
 keywords = ["bitcoin", "rpc", "codegen", "integration-testing"]
 categories = ["cryptography::cryptocurrencies", "development-tools::testing"]
@@ -743,7 +743,7 @@ tracing = "0.1"
 
 [workspace]
 "#,
-        CRATE_VERSION
+        CRATE_VERSION, CRATE_VERSION
     );
 
     fs::write(root.join("Cargo.toml"), toml)
@@ -772,7 +772,7 @@ fn write_readme(root: &Path) -> Result<()> {
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
 [![crates.io](https://img.shields.io/crates/v/bitcoin-rpc-midas)](https://crates.io/crates/bitcoin-rpc-midas)
 
-A type-safe, async client for Bitcoin Core's JSON-RPC interface. This crate provides strongly-typed access to all Bitcoin Core RPC methods with compile-time guarantees and built-in test node support.
+Type-safe Rust client for Bitcoin Core v28 RPCs, with test node support. Generated from a version-flexible toolchain.
 
 ## Why Use This?
 
@@ -785,7 +785,7 @@ Compared to hand-written RPC clients, this toolchain offers:
 - Improved isolation from environment and port conflicts
 - Built-in RPC batching to reduce network roundtrips
 
-These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The result is a type-safe client that remains aligned with upstream changes and is suitable for production use.
+These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The intended result is a client that remains aligned with upstream changes and is suitable for production use.
 
 ## Architecture
 
@@ -801,7 +801,7 @@ The crate is organized into focused modules:
 
 ```rust
 use anyhow::Result;
-use bitcoin_rpc_midas::**;
+use bitcoin_rpc_midas::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {{
