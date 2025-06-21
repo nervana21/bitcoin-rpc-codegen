@@ -134,6 +134,12 @@ const RULES: &[Rule] = &[
         rust_type: "u64",
         is_optional: false,
     },
+    Rule {
+        rpc_type: "number",
+        pattern: Some("port"),
+        rust_type: "u16",
+        is_optional: false,
+    },
     // Integer patterns (u32)
     Rule {
         rpc_type: "number",
