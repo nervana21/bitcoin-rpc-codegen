@@ -100,7 +100,7 @@ impl Default for Config {
         Self {
             bitcoin: BitcoinConfig {
                 host: "127.0.0.1".to_string(),
-                port: 8332,
+                port: 18443,
                 username: "rpcuser".to_string(),
                 password: "rpcpassword".to_string(),
                 core_version: None,

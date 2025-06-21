@@ -143,7 +143,7 @@ pub fn generate_example_docs(method: &ApiMethod, version: &str) -> String {
     docs.push_str("::");
     docs.push_str(&method.name);
     docs.push_str(";\n///\n");
-    docs.push_str("/// let client = Client::new(\"http://127.0.0.1:8332\", auth);\n");
+    docs.push_str("/// let client = Client::new(\"http://127.0.0.1:18443\", auth);\n");
     docs.push_str("/// let result = client.");
     docs.push_str(&method.name);
     docs.push('(');
@@ -181,7 +181,7 @@ Result:
 
 Examples:
 > bitcoin-cli command arg1 arg2
-> curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}' -H 'content-type: application/json' http://127.0.0.1:8332/"#;
+> curl --user myusername --data-binary '{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}' -H 'content-type: application/json' http://127.0.0.1:18443/"#;
 
         let expected = r#"/// This is a description
 /// with multiple lines
@@ -195,7 +195,7 @@ Examples:
 ///
 /// # Examples
 /// > bitcoin-cli command arg1 arg2
-/// > curl --user myusername --data-binary "{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}" -H "content-type: application/json" http://127.0.0.1:8332/"#;
+/// > curl --user myusername --data-binary "{"jsonrpc": "2.0", "id": "curltest", "method": "command", "params": ["arg1", "arg2"]}" -H "content-type: application/json" http://127.0.0.1:18443/"#;
 
         assert_eq!(format_doc_comment(input), expected);
     }

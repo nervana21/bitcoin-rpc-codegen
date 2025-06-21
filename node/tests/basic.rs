@@ -96,9 +96,9 @@ fn test_port_selection_behavior() {
 
     // Test explicit port selection
     let mut test_config = TestConfig::default();
-    test_config.rpc_port = 8332;
+    test_config.rpc_port = 18443;
     let node_manager = BitcoinNodeManager::new_with_config(&test_config).unwrap();
-    assert_eq!(node_manager.rpc_port(), 8332);
+    assert_eq!(node_manager.rpc_port(), 18443);
 
     // Test port 0 behavior - should select a non-zero available port
     test_config.rpc_port = 0;

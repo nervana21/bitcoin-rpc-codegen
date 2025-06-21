@@ -102,7 +102,7 @@ fn test_default_config() {
     );
 
     assert_eq!(config.bitcoin.host, "127.0.0.1");
-    assert_eq!(config.bitcoin.port, 8332);
+    assert_eq!(config.bitcoin.port, 18443);
     assert_eq!(config.bitcoin.username, "rpcuser");
     assert_eq!(config.bitcoin.password, "rpcpassword");
     assert_eq!(config.bitcoin.core_version, None);
