@@ -171,11 +171,13 @@ impl TypeRegistry {
             return ("f64", result.optional);
         }
 
-        let (ty, is_opt) = self.map(&result.type_, &result.key_name);
-        println!(
-            "[map_result_type] key='{}', type='{}' → '{}'",
-            result.key_name, result.type_, ty
-        );
+        // Use description as fallback when key_name is empty
+        let name = if result.key_name.is_empty() {
+            &result.description
+        } else {
+            &result.key_name
+        };
+        let (ty, is_opt) = self.map(&result.type_, name);
         (ty, is_opt || result.optional)
     }
 
@@ -193,7 +195,13 @@ impl TypeRegistry {
 
     /// Get the category for a result type
     pub fn categorize_result(&self, result: &ApiResult) -> RpcCategory {
-        self.categorize(&result.type_, &result.key_name)
+        // Use description as fallback when key_name is empty
+        let name = if result.key_name.is_empty() {
+            &result.description
+        } else {
+            &result.key_name
+        };
+        self.categorize(&result.type_, name)
     }
 
     /// Get the category for an argument type
