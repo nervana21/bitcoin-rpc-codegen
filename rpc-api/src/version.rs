@@ -26,6 +26,12 @@ impl Version {
 
     /// Convert the version into its string representation like "v27".
     pub fn as_str(&self) -> String {
+        format!("V{}", self.as_number())
+    }
+
+    /// Convert the version into its lowercase string representation like "v28".
+    /// Used specifically for types module names to follow Rust naming conventions.
+    pub fn as_str_lowercase(&self) -> String {
         format!("v{}", self.as_number())
     }
 
@@ -56,7 +62,7 @@ impl Version {
 
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "v{}", self.as_number())
+        write!(f, "V{}", self.as_number())
     }
 }
 
@@ -64,7 +70,7 @@ impl FromStr for Version {
     type Err = VersionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some(num) = s.strip_prefix('v') {
+        if let Some(num) = s.strip_prefix('V') {
             num.parse::<u32>()
                 .map(Version::from_number)
                 .map_err(|_| VersionError::InvalidFormat(s.to_string()))

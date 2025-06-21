@@ -6,9 +6,9 @@ use crate::transport::core::wallet_methods::WALLET_METHODS;
 use serde::de::DeserializeOwned;
 {{IMPORTS}}
 
-#[doc = r#"A versioned client trait for Bitcoin Core v{{VERSION}}"#]
+#[doc = r#"A versioned client trait for Bitcoin Core {{VERSION}}"#]
 #[async_trait]
-pub trait BitcoinClientV{{VERSION_NODOTS}}: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
+pub trait BitcoinClient{{VERSION_NODOTS}}: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
 {{TRAIT_METHODS}}
 }
 
@@ -52,6 +52,6 @@ impl<T: TransportTrait + TransportExt + ?Sized> WalletTransportExt for T {}
 
 // Provide default implementation for any type that implements TransportTrait + TransportExt
 #[async_trait]
-impl<T: TransportTrait + TransportExt + Send + Sync> BitcoinClientV{{VERSION_NODOTS}} for T {
+impl<T: TransportTrait + TransportExt + Send + Sync> BitcoinClient{{VERSION_NODOTS}} for T {
 {{TRAIT_METHODS}}
 }

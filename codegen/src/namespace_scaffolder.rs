@@ -3,7 +3,7 @@
 //! This crate contains **`ModuleGenerator`**, a tiny utility whose sole job is to
 //! _write the `mod.rs` glue files you would otherwise maintain by hand_.
 //!
-//! Given a list of Bitcoin Core RPC schema versions—e.g. `["v28", "v29", "latest"]`—
+//! Given a list of Bitcoin Core RPC schema versions—e.g. `["V28", "V29", "latest"]`—
 //! and an output directory that already holds code‑generated sources like
 //!
 //! ```text
@@ -121,14 +121,22 @@ impl ModuleGenerator {
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub mod {}_types;", version.as_str())
-                .map_err(io::Error::other)?;
+            writeln!(
+                types_mod_rs,
+                "pub mod {}_types;",
+                version.as_str_lowercase()
+            )
+            .map_err(io::Error::other)?;
         }
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub use self::{}_types::*;", version.as_str())
-                .map_err(io::Error::other)?;
+            writeln!(
+                types_mod_rs,
+                "pub use self::{}_types::*;",
+                version.as_str_lowercase()
+            )
+            .map_err(io::Error::other)?;
         }
 
         let types_mod_path = self.out_dir.join("types").join("mod.rs");

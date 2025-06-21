@@ -140,7 +140,7 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
             }
         }
 
-        vec![(format!("{}_types.rs", self.version), out)]
+        vec![(format!("{}_types.rs", self.version.to_lowercase()), out)]
     }
 }
 

@@ -28,9 +28,9 @@ impl CodeGenerator for ClientTraitGenerator {
         // render mod.rs that re-exports the trait
         let version_no = self.version.replace('.', "");
         let mod_rs = format!(
-            "//! Auto-generated module for BitcoinClientV{version_no}\n\
+            "//! Auto-generated module for BitcoinClient{version_no}\n\
              pub mod client_trait;\n\
-             pub use self::client_trait::BitcoinClientV{version_no};\n"
+             pub use self::client_trait::BitcoinClient{version_no};\n"
         );
 
         vec![

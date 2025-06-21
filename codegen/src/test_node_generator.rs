@@ -227,6 +227,9 @@ fn generate_subclient(
             || (m.results.len() == 1 && m.results[0].type_.to_lowercase() != "none")
     });
 
+    // Convert version to lowercase for types module import
+    let version_lowercase = version.to_lowercase();
+
     writeln!(
         code,
         "use anyhow::Result;
@@ -235,7 +238,7 @@ use crate::transport::core::{{TransportExt, TransportError}};
 use crate::transport::{{DefaultTransport}};
 use crate::types::{}_types::*;
 {}",
-        version,
+        version_lowercase,
         if needs_value {
             "#[cfg(test)]\nuse serde_json::Value;\n"
         } else {
@@ -382,13 +385,16 @@ fn generate_combined_client(
 }
 
 fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
+    // Convert the version to lowercase for types module import
+    let version_lowercase = version.to_lowercase();
+
     writeln!(
         code,
         "use anyhow::Result;
 use std::sync::Arc;
 use crate::transport::core::{{TransportError}};
 use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
-use crate::types::{version}_types::*;
+use crate::types::{version_lowercase}_types::*;
 use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
