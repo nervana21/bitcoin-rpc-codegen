@@ -4,33 +4,48 @@ use rpc_api::{ApiArgument, ApiResult};
 /// This enum provides a systematic way to categorize and map JSON-RPC types to Rust types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RpcCategory {
-    // Primitive types
+    /// Generic string values
     String,
+    /// Boolean true/false values
     Boolean,
+    /// Null/empty values
     Null,
 
-    // Bitcoin-specific types
+    /// Bitcoin transaction IDs
     BitcoinTxid,
+    /// Bitcoin block hashes
     BitcoinBlockHash,
+    /// Bitcoin amounts with satoshi precision
     BitcoinAmount,
-    BitcoinAddress, // NEW: bitcoin::Address for address fields
+    /// Bitcoin addresses (P2PKH, P2SH, Bech32, etc.)
+    BitcoinAddress,
 
     // Numeric types with specific domains
-    Port,         // u16: network ports
-    SmallInteger, // u32: bounded integers (minconf, locktime, version, verbosity)
-    LargeInteger, // u64: block heights, counts, sizes, timestamps
-    Float,        // f64: rates, probabilities, percentages, difficulties
+    /// Network port numbers (0-65535)
+    Port,
+    /// Small bounded integers (u32)
+    SmallInteger,
+    /// Large integers for counts, heights, timestamps (u64)
+    LargeInteger,
+    /// Floating-point values for rates, probabilities, percentages, difficulties
+    Float,
 
     // Complex types
-    BitcoinArray,  // Vec<bitcoin::*> for typed Bitcoin arrays
-    StringArray,   // Vec<String> for address lists, keys, etc.
-    GenericArray,  // Vec<serde_json::Value> for complex arrays
-    BitcoinObject, // Specific Bitcoin objects (Transaction, Block, etc.)
-    GenericObject, // serde_json::Value for dynamic objects
+    /// Arrays of Bitcoin-specific types
+    BitcoinArray,
+    /// Arrays of strings (addresses, keys, etc.)
+    StringArray,
+    /// Generic arrays with dynamic content
+    GenericArray,
+    /// Specific Bitcoin objects (Transaction, Block, etc.)
+    BitcoinObject,
+    /// Dynamic JSON objects
+    GenericObject,
 
-    // Special cases
-    Dummy,   // Optional fields for testing
-    Unknown, // Fallback for unrecognized types
+    /// Optional dummy fields for testing
+    Dummy,
+    /// Fallback for unrecognized types
+    Unknown,
 }
 
 impl RpcCategory {
