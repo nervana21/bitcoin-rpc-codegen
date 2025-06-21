@@ -678,14 +678,6 @@ fn emit_block_mining_helpers(code: &mut String) -> std::io::Result<()> {
 }
 
 fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
-    let block_hash_type = TYPE_REGISTRY
-        .map_argument_type(&ApiArgument {
-            type_: "hex".to_string(),
-            names: vec!["blockhash".to_string()],
-            optional: false,
-            description: String::new(),
-        })
-        .0;
     writeln!(
         code,
         "    /// Resets the blockchain to a clean state.\n\
@@ -702,17 +694,17 @@ fn emit_reset_chain(code: &mut String) -> std::io::Result<()> {
              if current_height > 1 {{\n\
                  // Invalidate all blocks except genesis\n\
                  for height in (1..=current_height).rev() {{\n\
-                     let hash_str = self.node_client.getblockhash(height).await?.0;\n\
-                     let block_hash = {block_hash_type}::from_str(&hash_str).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
+                     let block_hash = self.node_client.getblockhash(height).await?.0;\n\
                      self.node_client.invalidateblock(block_hash).await?;\n\
                  }}\n\
                  // Reconsider genesis block\n\
-                 let genesis_hash = {block_hash_type}::from_str(&self.node_client.getblockhash(0).await?.0).map_err(|e| TransportError::Rpc(format!(\"Failed to parse block hash: {{}}\", e)))?;\n\
+                 let genesis_hash = self.node_client.getblockhash(0).await?.0;\n\
                  self.node_client.reconsiderblock(genesis_hash).await?;\n\
              }}\n\
              Ok(())\n\
          }}\n"
-    ).map_err(std::io::Error::other)
+    )
+    .map_err(std::io::Error::other)
 }
 
 fn emit_stop_node(code: &mut String) -> std::io::Result<()> {
