@@ -1,15 +1,219 @@
 use rpc_api::{ApiArgument, ApiResult};
 
+/// Categories for RPC types based on their semantic meaning and usage patterns.
+/// This enum provides a systematic way to categorize and map JSON-RPC types to Rust types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RpcCategory {
+    // Primitive types
+    String,
+    Boolean,
+    Null,
+
+    // Bitcoin-specific types
+    BitcoinTxid,
+    BitcoinBlockHash,
+    BitcoinAmount,
+    BitcoinAddress, // NEW: bitcoin::Address for address fields
+
+    // Numeric types with specific domains
+    Port,         // u16: network ports
+    SmallInteger, // u32: bounded integers (minconf, locktime, version, verbosity)
+    LargeInteger, // u64: block heights, counts, sizes, timestamps
+    Float,        // f64: rates, probabilities, percentages, difficulties
+
+    // Complex types
+    BitcoinArray,  // Vec<bitcoin::*> for typed Bitcoin arrays
+    StringArray,   // Vec<String> for address lists, keys, etc.
+    GenericArray,  // Vec<serde_json::Value> for complex arrays
+    BitcoinObject, // Specific Bitcoin objects (Transaction, Block, etc.)
+    GenericObject, // serde_json::Value for dynamic objects
+
+    // Special cases
+    Dummy,   // Optional fields for testing
+    Unknown, // Fallback for unrecognized types
+}
+
+impl RpcCategory {
+    /// Convert the category to its corresponding Rust type string
+    pub fn to_rust_type(&self) -> &'static str {
+        match self {
+            RpcCategory::String => "String",
+            RpcCategory::Boolean => "bool",
+            RpcCategory::Null => "()",
+            RpcCategory::BitcoinTxid => "bitcoin::Txid",
+            RpcCategory::BitcoinBlockHash => "bitcoin::BlockHash",
+            RpcCategory::BitcoinAmount => "bitcoin::Amount",
+            RpcCategory::BitcoinAddress => "bitcoin::Address",
+            RpcCategory::Port => "u16",
+            RpcCategory::SmallInteger => "u32",
+            RpcCategory::LargeInteger => "u64",
+            RpcCategory::Float => "f64",
+            RpcCategory::BitcoinArray => "Vec<bitcoin::Txid>",
+            RpcCategory::StringArray => "Vec<String>",
+            RpcCategory::GenericArray => "Vec<serde_json::Value>",
+            RpcCategory::BitcoinObject => "serde_json::Value",
+            RpcCategory::GenericObject => "serde_json::Value",
+            RpcCategory::Dummy => "String",
+            RpcCategory::Unknown => "serde_json::Value",
+        }
+    }
+
+    /// Check if this category should be wrapped in Option<T>
+    pub fn is_optional(&self) -> bool {
+        matches!(self, RpcCategory::Dummy)
+    }
+
+    /// Get serde attributes for this category (if any)
+    pub fn serde_attributes(&self) -> Option<&'static str> {
+        match self {
+            RpcCategory::BitcoinAmount => {
+                Some("#[serde(deserialize_with = \"amount_from_btc_float\")]")
+            }
+            _ => None,
+        }
+    }
+
+    /// Get a description of this category for documentation
+    pub fn description(&self) -> &'static str {
+        match self {
+            RpcCategory::String => "Generic string values",
+            RpcCategory::Boolean => "Boolean true/false values",
+            RpcCategory::Null => "Null/empty values",
+            RpcCategory::BitcoinTxid => "Bitcoin transaction IDs",
+            RpcCategory::BitcoinBlockHash => "Bitcoin block hashes",
+            RpcCategory::BitcoinAmount => "Bitcoin amounts with satoshi precision",
+            RpcCategory::BitcoinAddress => "Bitcoin addresses (P2PKH, P2SH, Bech32, etc.)",
+            RpcCategory::Port => "Network port numbers (0-65535)",
+            RpcCategory::SmallInteger => "Small bounded integers (u32)",
+            RpcCategory::LargeInteger => "Large integers for counts, heights, timestamps (u64)",
+            RpcCategory::Float => "Floating-point values for rates and probabilities",
+            RpcCategory::BitcoinArray => "Arrays of Bitcoin-specific types",
+            RpcCategory::StringArray => "Arrays of strings (addresses, keys, etc.)",
+            RpcCategory::GenericArray => "Generic arrays with dynamic content",
+            RpcCategory::BitcoinObject => "Structured Bitcoin objects",
+            RpcCategory::GenericObject => "Dynamic JSON objects",
+            RpcCategory::Dummy => "Optional dummy fields for testing",
+            RpcCategory::Unknown => "Unknown or unrecognized types",
+        }
+    }
+}
+
+/// Normalize names by lowercasing and stripping `_`, `-`, and spaces.
+fn normalize(name: &str) -> String {
+    name.chars()
+        .filter(|c| !matches!(c, '_' | '-' | ' '))
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
+/// A registry of type mappings for JSON RPC types to Rust types.
+///
+/// This registry provides a centralized mapping of JSON RPC type identifiers
+/// (e.g., `"string"`, `"number"`, `"boolean"`, etc.) to their corresponding
+/// Rust type names (`String`, `f64`, `bool`, etc.). It also handles optional
+/// fields and supports wildcard matching for unknown or dynamic types.
+pub struct TypeRegistry;
+
+impl TypeRegistry {
+    /// Creates a new `TypeRegistry` instance.
+    ///
+    /// This constructor is provided for completeness, but the `TypeRegistry`
+    /// is a stateless singleton and does not need to be instantiated.
+    pub fn new() -> Self {
+        TypeRegistry
+    }
+
+    /// Categorize an RPC type based on its JSON schema type and field name
+    pub fn categorize(&self, rpc_type: &str, field: &str) -> RpcCategory {
+        let field_norm = normalize(field);
+        let mut best_match = RpcCategory::Unknown;
+        let mut best_pattern_len = 0;
+
+        for rule in CATEGORY_RULES {
+            if rule.rpc_type == "*" || rule.rpc_type == rpc_type {
+                if let Some(pat) = rule.pattern {
+                    let pat_norm = normalize(pat);
+                    if field_norm.contains(&pat_norm) {
+                        let pattern_len = pat_norm.len();
+                        if pattern_len > best_pattern_len {
+                            best_pattern_len = pattern_len;
+                            best_match = rule.category;
+                        }
+                    }
+                } else if best_match == RpcCategory::Unknown {
+                    best_match = rule.category;
+                }
+            }
+        }
+
+        println!(
+            "[categorize] rpc_type={}, field='{}' → {:?}",
+            rpc_type, field, best_match
+        );
+
+        best_match
+    }
+
 /// A single mapping rule:
 /// - `rpc_type`: the JSON schema type
 /// - `pattern`: an optional substring to match on the (normalized) field/key name
 /// - `rust_type`: the Rust type to use
 /// - `is_optional`: wrap in `Option<T>`?
 struct Rule {
+    /// Get the category for a result type
+    pub fn categorize_result(&self, result: &ApiResult) -> RpcCategory {
+        self.categorize(&result.type_, &result.key_name)
+    }
+
+    /// Get the category for an argument type
+    pub fn categorize_argument(&self, arg: &ApiArgument) -> RpcCategory {
+        self.categorize(&arg.type_, &arg.names[0])
+    }
+
+    /// Generate documentation for all categories
+    pub fn generate_category_docs(&self) -> String {
+        let mut docs = String::new();
+        docs.push_str("# Bitcoin RPC Type Categories\n\n");
+        docs.push_str("This document describes the systematic categorization of JSON-RPC types into Rust types.\n\n");
+
+        let mut categories_by_type = std::collections::HashMap::new();
+        for rule in CATEGORY_RULES {
+            if rule.rpc_type != "*" {
+                categories_by_type
+                    .entry(rule.rpc_type)
+                    .or_insert_with(Vec::new)
+                    .push(rule.category);
+            }
+        }
+
+        for (rpc_type, categories) in categories_by_type {
+            docs.push_str(&format!("## {} Types\n\n", rpc_type.to_uppercase()));
+            for category in categories {
+                docs.push_str(&format!(
+                    "- **{}** (`{}`): {}\n",
+                    format!("{:?}", category),
+                    category.to_rust_type(),
+                    category.description()
+                ));
+            }
+            docs.push_str("\n");
+        }
+
+        docs
+    }
+}
+
+impl Default for TypeRegistry {
+    fn default() -> Self {
+        TypeRegistry::new()
+    }
+}
+
+/// A mapping rule that categorizes RPC types based on their JSON schema type and field name patterns
+struct CategoryRule {
     rpc_type: &'static str,
     pattern: Option<&'static str>,
-    rust_type: &'static str,
-    is_optional: bool,
+    category: RpcCategory,
 }
 
 const RULES: &[Rule] = &[
