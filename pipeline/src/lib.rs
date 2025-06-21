@@ -102,6 +102,9 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     write_contributing(&crate_root)
         .with_context(|| format!("Failed to write CONTRIBUTING.md in: {crate_root:?}"))?;
 
+    write_license(&crate_root)
+        .with_context(|| format!("Failed to write LICENSE.md in: {crate_root:?}"))?;
+
     println!("[diagnostic] starting code generation into: {src_dir:?}");
     generate_into(&src_dir, &input_path)
         .with_context(|| format!("generate_into failed for src_dir {src_dir:?}"))?;
@@ -968,6 +971,38 @@ Thank you for contributing to the Bitcoin RPC Code Generator!
     Ok(())
 }
 
+/// Write the LICENSE.md file for the generated crate
+fn write_license(root: &Path) -> Result<()> {
+    println!(
+        "[diagnostic] writing LICENSE.md at {:?}",
+        root.join("LICENSE.md")
+    );
+    let license = r#"MIT License
+
+Copyright (c) 2025 Bitcoin RPC Code Generator
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."#;
+
+    fs::write(root.join("LICENSE.md"), license)
+        .with_context(|| format!("Failed to write LICENSE.md at {root:?}"))?;
+    Ok(())
+}
 
 /// Ensure the RPC client stub exists in the transport directory
 ///
