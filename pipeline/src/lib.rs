@@ -620,7 +620,7 @@ impl TestConfig {
 
     // After the transport layer generation:
     println!("[diagnostic] generating client trait");
-    let client_trait_files = ClientTraitGenerator::new(CRATE_VERSION).generate(&norm);
+    let client_trait_files = ClientTraitGenerator::new(DEFAULT_VERSION.as_str()).generate(&norm);
     write_generated(out_dir.join("client_trait"), &client_trait_files)
         .context("Failed to write client trait files")?;
 
@@ -647,7 +647,7 @@ impl TestConfig {
     let mut file =
         File::create(&lib_rs).with_context(|| format!("Failed to create lib.rs at {lib_rs:?}"))?;
 
-    let version_nodots = CRATE_VERSION.replace('.', "");
+    let version_nodots = DEFAULT_VERSION.as_str().replace('.', "");
 
     writeln!(
         file,
