@@ -144,7 +144,7 @@ fn test_node_version_behavior() {
     );
 
     // Test version string representation
-    let version_str = initial_state.version.as_str();
+    let version_str = initial_state.version.as_str_lowercase();
     assert!(
         version_str.starts_with("v"),
         "Version string should start with 'v'"
