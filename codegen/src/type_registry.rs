@@ -200,38 +200,6 @@ impl TypeRegistry {
     pub fn categorize_argument(&self, arg: &ApiArgument) -> RpcCategory {
         self.categorize(&arg.type_, &arg.names[0])
     }
-
-    /// Generate documentation for all categories
-    pub fn generate_category_docs(&self) -> String {
-        let mut docs = String::new();
-        docs.push_str("# Bitcoin RPC Type Categories\n\n");
-        docs.push_str("This document describes the systematic categorization of JSON-RPC types into Rust types.\n\n");
-
-        let mut categories_by_type = std::collections::HashMap::new();
-        for rule in CATEGORY_RULES {
-            if rule.rpc_type != "*" {
-                categories_by_type
-                    .entry(rule.rpc_type)
-                    .or_insert_with(Vec::new)
-                    .push(rule.category);
-            }
-        }
-
-        for (rpc_type, categories) in categories_by_type {
-            docs.push_str(&format!("## {} Types\n\n", rpc_type.to_uppercase()));
-            for category in categories {
-                docs.push_str(&format!(
-                    "- **{}** (`{}`): {}\n",
-                    format!("{:?}", category),
-                    category.to_rust_type(),
-                    category.description()
-                ));
-            }
-            docs.push_str("\n");
-        }
-
-        docs
-    }
 }
 
 impl Default for TypeRegistry {
