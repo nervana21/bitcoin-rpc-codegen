@@ -154,12 +154,43 @@ impl TypeRegistry {
         best_match
     }
 
-/// A single mapping rule:
-/// - `rpc_type`: the JSON schema type
-/// - `pattern`: an optional substring to match on the (normalized) field/key name
-/// - `rust_type`: the Rust type to use
-/// - `is_optional`: wrap in `Option<T>`?
-struct Rule {
+    /// Core mapper - returns (rust_type, is_optional)
+    fn map(&self, rpc_type: &str, field: &str) -> (&'static str, bool) {
+        let category = self.categorize(rpc_type, field);
+        (category.to_rust_type(), category.is_optional())
+    }
+
+    /// For results, respect the `optional` flag on ApiResult
+    pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
+        // Special case: ALL result fields of "amount" type should be Float
+        if result.type_ == "amount" {
+            println!(
+                "[map_result_type] key='{}', type='{}' → 'f64' (amount result)",
+                result.key_name, result.type_
+            );
+            return ("f64", result.optional);
+        }
+
+        let (ty, is_opt) = self.map(&result.type_, &result.key_name);
+        println!(
+            "[map_result_type] key='{}', type='{}' → '{}'",
+            result.key_name, result.type_, ty
+        );
+        (ty, is_opt || result.optional)
+    }
+
+    /// For arguments
+    pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
+        // Always use the first name - no special handling for unnamed fields in arguments
+        let field = &arg.names[0];
+        let (ty, is_opt) = self.map(&arg.type_, field);
+        println!(
+            "[map_argument_type] field='{}', type='{}' → '{}'",
+            field, arg.type_, ty
+        );
+        (ty, is_opt || arg.optional)
+    }
+
     /// Get the category for a result type
     pub fn categorize_result(&self, result: &ApiResult) -> RpcCategory {
         self.categorize(&result.type_, &result.key_name)
@@ -216,298 +247,344 @@ struct CategoryRule {
     category: RpcCategory,
 }
 
-const RULES: &[Rule] = &[
-    // 1. Primitives
-    Rule {
+const CATEGORY_RULES: &[CategoryRule] = &[
+    // 1. Primitives (no pattern needed)
+    CategoryRule {
         rpc_type: "string",
         pattern: None,
-        rust_type: "String",
-        is_optional: false,
+        category: RpcCategory::String,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "boolean",
         pattern: None,
-        rust_type: "bool",
-        is_optional: false,
+        category: RpcCategory::Boolean,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "null",
         pattern: None,
-        rust_type: "()",
-        is_optional: false,
+        category: RpcCategory::Null,
     },
-    // 2. Numbers & amounts (patterned first)
-    // Amount-like patterns (BTC amounts, satoshis, etc.)
-    Rule {
+    // 2. Bitcoin-specific string types
+    CategoryRule {
+        rpc_type: "string",
+        pattern: Some("txid"),
+        category: RpcCategory::BitcoinTxid,
+    },
+    CategoryRule {
+        rpc_type: "string",
+        pattern: Some("blockhash"),
+        category: RpcCategory::BitcoinBlockHash,
+    },
+    // 3. Bitcoin amounts (monetary values)
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("amount"),
-        rust_type: "bitcoin::Amount",
-        is_optional: false,
+        category: RpcCategory::BitcoinAmount,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("balance"),
-        rust_type: "bitcoin::Amount",
-        is_optional: false,
+        category: RpcCategory::BitcoinAmount,
     },
-    // Fee fields → floating-point BTC amounts
-    Rule {
+    // NEW: Handle "type": "amount" fields - specific patterns first
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("balance"), // Explicit balance fields
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("fee_rate"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("estimated_feerate"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("maxfeerate"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("maxburnamount"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("relayfee"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("incrementalfee"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: Some("incrementalrelayfee"),
+        category: RpcCategory::Float,
+    },
+    // Fallback rule for other "type": "amount" fields (like result amounts)
+    CategoryRule {
+        rpc_type: "amount",
+        pattern: None,
+        category: RpcCategory::BitcoinAmount,
+    },
+    // 4. Fee and rate fields (floating point)
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("fee"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("rate"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    // Specific fee-related overrides to float
-    Rule {
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("feerate"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("maxfeerate"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("maxburnamount"),
+        category: RpcCategory::Float,
+    },
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("relayfee"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("incrementalfee"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("incrementalrelayfee"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    // Integer patterns (u64)
-    // Block count
-    Rule {
-        rpc_type: "number",
-        pattern: Some("blocks"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("nblocks"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("maxtries"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("height"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("count"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("index"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("size"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("time"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("conf_target"),
-        rust_type: "u64",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("port"),
-        rust_type: "u16",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("nrequired"),
-        rust_type: "u32",
-        is_optional: false,
-    },
-    // Integer patterns (u32)
-    Rule {
-        rpc_type: "number",
-        pattern: Some("minconf"),
-        rust_type: "u32",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("locktime"),
-        rust_type: "u32",
-        is_optional: false,
-    },
-    Rule {
-        rpc_type: "number",
-        pattern: Some("version"),
-        rust_type: "u32",
-        is_optional: false,
-    },
-    // Float patterns
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("difficulty"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("probability"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "number",
         pattern: Some("percentage"),
-        rust_type: "f64",
-        is_optional: false,
+        category: RpcCategory::Float,
     },
-    // fallback number → default to floating-point
-    Rule {
+    CategoryRule {
         rpc_type: "number",
-        pattern: None,
-        rust_type: "f64",
-        is_optional: false,
+        pattern: Some("fee_rate"),
+        category: RpcCategory::Float,
     },
-    // 3. Hex blobs
-    Rule {
+    // 5. Port numbers
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("port"),
+        category: RpcCategory::Port,
+    },
+    // 6. Small integers (u32)
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("nrequired"),
+        category: RpcCategory::SmallInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("minconf"),
+        category: RpcCategory::SmallInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("maxconf"),
+        category: RpcCategory::SmallInteger, // NEW: Should match minconf
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("locktime"),
+        category: RpcCategory::SmallInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("version"),
+        category: RpcCategory::SmallInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("verbosity"),
+        category: RpcCategory::SmallInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("checklevel"),
+        category: RpcCategory::SmallInteger, // NEW: verifychain checklevel (0-4)
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("n"),
+        category: RpcCategory::SmallInteger, // NEW: gettxout output index
+    },
+    // 7. Large integers (u64)
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("blocks"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("nblocks"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("maxtries"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("height"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("count"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("index"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("size"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("time"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("conf_target"),
+        category: RpcCategory::LargeInteger,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("skip"),
+        category: RpcCategory::LargeInteger, // NEW: listtransactions skip
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("nodeid"),
+        category: RpcCategory::LargeInteger, // NEW: disconnectnode nodeid
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("peer_id"),
+        category: RpcCategory::LargeInteger, // NEW: getblockfrompeer peer_id
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("wait"),
+        category: RpcCategory::LargeInteger, // NEW: stop wait parameter
+    },
+    // 8. Hex types
+    CategoryRule {
         rpc_type: "hex",
         pattern: Some("txid"),
-        rust_type: "bitcoin::Txid",
-        is_optional: false,
+        category: RpcCategory::BitcoinTxid,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "hex",
         pattern: Some("blockhash"),
-        rust_type: "bitcoin::BlockHash",
-        is_optional: false,
+        category: RpcCategory::BitcoinBlockHash,
     },
-    Rule {
+    CategoryRule {
         rpc_type: "hex",
         pattern: None,
-        rust_type: "String",
-        is_optional: false,
+        category: RpcCategory::String,
     },
-    // 4. Arrays
-    Rule {
+    // 9. Array types
+    CategoryRule {
         rpc_type: "array",
-        pattern: Some("address"),
-        rust_type: "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>",
-        is_optional: false,
+        pattern: Some("keys"),
+        category: RpcCategory::StringArray,
     },
-    Rule {
+    CategoryRule {
+        rpc_type: "array",
+        pattern: Some("addresses"),
+        category: RpcCategory::StringArray,
+    },
+    CategoryRule {
+        rpc_type: "array",
+        pattern: Some("wallets"),
+        category: RpcCategory::StringArray,
+    },
+    CategoryRule {
+        rpc_type: "array",
+        pattern: Some("txids"),
+        category: RpcCategory::BitcoinArray, // NEW: Vec<bitcoin::Txid>
+    },
+    CategoryRule {
         rpc_type: "array",
         pattern: None,
-        rust_type: "Vec<serde_json::Value>",
-        is_optional: false,
+        category: RpcCategory::GenericArray,
     },
-    // 5. Objects
-    Rule {
+    // 10. Object types - specific patterns first
+    CategoryRule {
         rpc_type: "object",
-        pattern: Some("transaction"),
-        rust_type: "bitcoin::Transaction",
-        is_optional: false,
+        pattern: Some("options"),
+        category: RpcCategory::GenericObject,
     },
-    Rule {
+    CategoryRule {
+        rpc_type: "object",
+        pattern: Some("query_options"),
+        category: RpcCategory::GenericObject,
+    },
+    CategoryRule {
         rpc_type: "object",
         pattern: None,
-        rust_type: "serde_json::Value",
-        is_optional: false,
+        category: RpcCategory::GenericObject,
     },
-    // 6. Everything else
-    Rule {
+    CategoryRule {
+        rpc_type: "number",
+        pattern: None,
+        category: RpcCategory::LargeInteger, // ✅ Safe default for height, counts, etc.
+    },
+    // 11. Dummy fields (for testing)
+    CategoryRule {
+        rpc_type: "string",
+        pattern: Some("dummy"),
+        category: RpcCategory::Dummy,
+    },
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("dummy"),
+        category: RpcCategory::Dummy,
+    },
+    // 12. Fallback for unknown types
+    CategoryRule {
         rpc_type: "*",
         pattern: None,
-        rust_type: "serde_json::Value",
-        is_optional: false,
+        category: RpcCategory::Unknown,
     },
 ];
-
-/// Normalize names by lowercasing and stripping `_`, `-`, and spaces.
-fn normalize(name: &str) -> String {
-    name.chars()
-        .filter(|c| !matches!(c, '_' | '-' | ' '))
-        .flat_map(|c| c.to_lowercase())
-        .collect()
-}
-
-/// A registry of type mappings for JSON RPC types to Rust types.
-///
-/// This registry provides a centralized mapping of JSON RPC type identifiers
-/// (e.g., `"string"`, `"number"`, `"boolean"`, etc.) to their corresponding
-/// Rust type names (`String`, `f64`, `bool`, etc.). It also handles optional
-/// fields and supports wildcard matching for unknown or dynamic types.
-pub struct TypeRegistry;
-
-impl TypeRegistry {
-    /// Creates a new `TypeRegistry` instance.
-    ///
-    /// This constructor is provided for completeness, but the `TypeRegistry`
-    /// is a stateless singleton and does not need to be instantiated.
-    pub fn new() -> Self {
-        TypeRegistry
-    }
-
-    /// Core mapper
-    fn map(&self, rpc_type: &str, field: &str) -> (&'static str, bool) {
-        let field_norm = normalize(field);
-        // Scan rules top to bottom
-        for rule in RULES {
-            if rule.rpc_type == "*" || rule.rpc_type == rpc_type {
-                if let Some(pat) = rule.pattern {
-                    if !field_norm.contains(&normalize(pat)) {
-                        continue;
-                    }
-                }
-                return (rule.rust_type, rule.is_optional);
-            }
-        }
-        // never reached, but fallback anyway
-        ("serde_json::Value", false)
-    }
-
-    /// For results, respect the `optional` flag on ApiResult
-    pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
-        let (ty, is_opt) = self.map(&result.type_, &result.key_name);
-        (ty, is_opt || result.optional)
-    }
-
-    /// For arguments
-    pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
-        // just use its first name
-        let (ty, is_opt) = self.map(&arg.type_, &arg.names[0]);
-        (ty, is_opt || arg.optional)
-    }
-}
-
-impl Default for TypeRegistry {
-    fn default() -> Self {
-        TypeRegistry::new()
-    }
-}
