@@ -37,11 +37,10 @@ See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 
 - `rpc_api/`: JSON model of RPC methods and parameters
 - `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+- `pipeline/`: Orchestrates parsing → generation
 
 All components are modular and reusable. You can build overlays, language targets, or devtools by composing with this core.
 

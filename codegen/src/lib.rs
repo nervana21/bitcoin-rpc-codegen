@@ -11,7 +11,6 @@ use anyhow::Result;
 use generators::doc_comment;
 use lazy_static::lazy_static;
 use rpc_api::{ApiArgument, ApiMethod};
-use schema::validator::validate_numeric_value;
 use std::{fs, path::Path, process::Command};
 
 pub mod generators;

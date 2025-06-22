@@ -81,11 +81,10 @@ The project is organized into several focused crates:
 
 - `rpc_api/`: JSON model of RPC methods and parameters
 - `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+- `pipeline/`: Orchestrates parsing → generation
 
 ## Guidelines for Pull Requests
 

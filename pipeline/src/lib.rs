@@ -1,5 +1,5 @@
 //! High-level pipeline that generates a self-contained `bitcoin-rpc-midas` crate
-//! by tying together discovery/parsing, schema normalization, and code generation.
+//! by orchestrating code generation.
 //!
 //! This module provides the core functionality for generating a complete Bitcoin RPC client
 //! library, including transport layer, type definitions, and test node helpers.
@@ -12,7 +12,6 @@ use codegen::{
 };
 use parser::{DefaultHelpParser, HelpParser};
 use rpc_api::{parse_api_json, version::DEFAULT_VERSION};
-use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -946,11 +945,10 @@ The project is organized into several focused crates:
 
 - `rpc_api/`: JSON model of RPC methods and parameters
 - `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+- `pipeline/`: Orchestrates parsing → generation
 
 ## Guidelines for Pull Requests
 

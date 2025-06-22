@@ -12,7 +12,6 @@ thiserror = "2.0.12"
 
 parser = { path = "../parser" }
 rpc-api = { path = "../rpc-api" }
-schema = { path = "../schema" }
 
 [dev-dependencies]
 tempfile = "3.5.0"
