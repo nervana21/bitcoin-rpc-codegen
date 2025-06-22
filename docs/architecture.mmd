@@ -1,23 +1,15 @@
 flowchart LR
-  %% ───────────────────────── Nodes ─────────────────────────
-  RPC_API["rpc_api"]:::api
-  Codegen["codegen"]:::codegen
-  Transport["transport"]:::transport
-  Pipeline["pipeline"]:::pipeline
-  Midas["bitcoin‑rpc‑midas"]:::midas
-  NodeMgr["node"]:::node
-  Config["config"]:::config
+  API_JSON["api.json"]:::api --> RPC_API["rpc_api"]:::api
 
-  %% ───────────────────────── Flow ─────────────────────────
-  Codegen  --> Transport
-  Codegen  --> Pipeline
-  Pipeline --> Midas
+  RPC_API --> Codegen["codegen"]:::codegen
+  RPC_API --> Pipeline["pipeline"]:::pipeline
+  Codegen --> Pipeline
+  Codegen --> Transport["transport"]:::transport
+  Pipeline --> Midas["bitcoin‑rpc‑midas"]:::midas
 
-  %%  Node‑side utilities
-  NodeMgr  --> Transport
-  NodeMgr  --> Config
+  NodeMgr["node"]:::node --> Transport
+  NodeMgr --> Config["config"]:::config
 
-  %% ───────────────────────── Styles ─────────────────────────
   classDef api       fill:#d0e1ff,stroke:#2255aa,color:#000;
   classDef codegen   fill:#ffd9d9,stroke:#aa2222,color:#000;
   classDef transport fill:#fff7c7,stroke:#aa9922,color:#000;
