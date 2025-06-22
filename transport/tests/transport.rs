@@ -109,8 +109,6 @@ fn send_batch_success() {
     assert_eq!(results[1]["result"], json!("abc"));
 }
 
-// NEW TESTS BELOW
-
 #[test]
 fn call_method_with_type_deserialization() {
     let mut server = Server::new();
