@@ -1,8 +1,6 @@
 # Compiled outputs and generated files
-/target/
-!/target/generated/
-/bitcoin-rpc-midas/
-/codegen/resources/
+bitcoin-rpc-midas/
+target/
 
 # Rust artifacts
 Cargo.lock
@@ -18,6 +16,5 @@ target/tmp/
 *.orig
 
 # Project-specific
-/feedback/
 .DS_Store
-/scripts/
+scripts/
