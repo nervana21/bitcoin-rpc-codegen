@@ -88,10 +88,18 @@ impl Config {
 
     /// Get the default output directory for generated code
     pub fn default_output_dir() -> PathBuf {
-        std::env::var("OUT_DIR")
-            .map(PathBuf::from)
-            // If OUT_DIR is missing, just use the current working directory
-            .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+        // First try to get OUT_DIR environment variable
+        if let Ok(out_dir) = std::env::var("OUT_DIR") {
+            return PathBuf::from(out_dir);
+        }
+
+        // Fallback to current directory
+        if let Ok(current_dir) = std::env::current_dir() {
+            return current_dir;
+        }
+
+        // Last resort - use current directory as string
+        PathBuf::from(".")
     }
 }
 
