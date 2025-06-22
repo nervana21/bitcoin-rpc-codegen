@@ -2,7 +2,7 @@
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
 [![crates.io](https://img.shields.io/crates/v/bitcoin-rpc-midas)](https://crates.io/crates/bitcoin-rpc-midas)
 
-# Bitcoin RPC Code Generator
+# Bitcoin RPC Codegen
 
 Generate [bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-midas), a Bitcoin Core client designed to simplify Bitcoin testing and development.
 
@@ -17,7 +17,7 @@ Compared to hand-written RPC clients, this toolchain offers:
 - Improved isolation from environment and port conflicts
 - Built-in RPC batching to reduce network roundtrips
 
-These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The result is a type-safe client that remains aligned with upstream changes and is suitable for production use.
+These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The intended result is a client that remains aligned with upstream changes and is suitable for production use.
 
 ## Semantic Compression
 
