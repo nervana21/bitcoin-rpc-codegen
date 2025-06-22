@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use rpc_api::{ApiArgument, ApiResult};
 
 /// Categories for RPC types based on their semantic meaning and usage patterns.
@@ -633,3 +634,15 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         exact: false,
     },
 ];
+
+lazy_static! {
+    /// Bitcoin RPC Type System
+    ///
+    /// The type system uses a systematic categorization approach with the `RpcCategory` enum
+    /// to map JSON-RPC types to appropriate Rust types. This provides:
+    /// - Consistent type mapping across all RPC methods
+    /// - Semantic categorization of fields (e.g., amounts, ports, counts)
+    /// - Extensible pattern-based matching
+    /// - Auto-generated documentation
+    pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
+}

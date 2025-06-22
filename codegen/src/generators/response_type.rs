@@ -7,10 +7,10 @@
 //! things consistently.  
 
 use crate::utils::{camel_to_snake_case, capitalize};
-use crate::TYPE_REGISTRY;
 use anyhow::Result;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
+use type_registry::TYPE_REGISTRY;
 
 /* --------------------------------------------------------------------- */
 /*  Primitive → Rust helpers                                             */

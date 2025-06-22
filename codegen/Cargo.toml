@@ -11,6 +11,7 @@ serde_json = "1.0"
 thiserror = "2.0.12"
 
 rpc-api = { path = "../rpc-api" }
+type-registry = { path = "../type-registry" }
 
 [dev-dependencies]
 tempfile = "3.5.0"

@@ -21,11 +21,13 @@ Benefits:
 - Faster onboarding for contributors
 */
 
+use crate::generators::doc_comment;
 use crate::utils::camel_to_snake_case;
 use crate::wallet_methods::WALLET_METHODS;
-use crate::{generators::doc_comment, CodeGenerator, TYPE_REGISTRY};
+use crate::CodeGenerator;
 use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
+use type_registry::TYPE_REGISTRY;
 
 /// A code generator that creates a type-safe Rust client library for Bitcoin Core test environments.
 ///
