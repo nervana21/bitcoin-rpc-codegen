@@ -53,22 +53,6 @@ pub mod utils;
 /// Wallet-specific methods for Bitcoin Core RPC API.
 pub mod wallet_methods;
 
-/// Simple numeric value validation function
-fn validate_numeric_value(value: &serde_json::Value, rust_type: &str) -> Result<(), String> {
-    match (value, rust_type) {
-        (serde_json::Value::Number(_), "u64" | "i64" | "f64") => Ok(()),
-        (serde_json::Value::String(_), "String") => Ok(()),
-        (serde_json::Value::Bool(_), "bool") => Ok(()),
-        (serde_json::Value::Null, _) => Ok(()), // Null is valid for any type
-        (serde_json::Value::Array(_), _) if rust_type.contains("Vec") => Ok(()),
-        (serde_json::Value::Object(_), _) if rust_type.contains("HashMap") => Ok(()),
-        _ => Err(format!(
-            "Value {:?} does not match type {}",
-            value, rust_type
-        )),
-    }
-}
-
 /// Defines the core interface for generating Rust source files from a collection of
 /// Bitcoin Core RPC API methods. Implementors produce a set of `(filename, source)`
 /// pairs and may optionally perform post-generation validation.
