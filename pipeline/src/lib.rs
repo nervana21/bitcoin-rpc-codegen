@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 /// The version of the generated bitcoin-rpc-midas crate
-pub const CRATE_VERSION: &str = "0.1.1";
+pub const CRATE_VERSION: &str = "0.1.2";
 
 /// Generates a complete Bitcoin RPC client library structure and code.
 ///
