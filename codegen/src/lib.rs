@@ -16,13 +16,6 @@ use std::{fs, path::Path, process::Command};
 
 pub mod generators;
 
-/// Sub-crate: **`rpc_method_discovery`**
-///
-/// Discovers available RPC methods at runtime using `bitcoin-cli`.
-/// Queries the node for `help` output and converts it into an `ApiMethod` list.
-/// Useful for generating code against whichever node version is on your `PATH`.
-pub mod rpc_method_discovery;
-
 /// Sub-crate: **`namespace_scaffolder`**
 ///
 /// Writes `mod.rs` scaffolding for generated modules.
