@@ -80,7 +80,6 @@ By contributing, you agree that your contributions will be licensed under its MI
 The project is organized into several focused crates:
 
 - `rpc_api/`: JSON model of RPC methods and parameters
-- `parser/`: Parses `api.json` into structured form
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
@@ -92,7 +91,7 @@ The project is organized into several focused crates:
 2. **Write tests**: Include tests for any new functionality or bug fixes.
 3. **Update documentation**: Update relevant documentation as needed.
 4. **Follow the code style**: Run `cargo fmt` and `cargo clippy`.
-5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`).
+5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(types): Add support for new type`).
 
 ## Questions and Discussions
 

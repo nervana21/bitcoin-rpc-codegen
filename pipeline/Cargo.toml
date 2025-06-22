@@ -12,7 +12,6 @@ generated = []
 anyhow = "1.0"
 
 codegen = { path = "../codegen" }
-parser = { path = "../parser" }
 rpc-api = { path = "../rpc-api" }
 
 serde = { version = "1.0", features = ["derive"] }

@@ -1,7 +1,6 @@
 flowchart LR
   %% ───────────────────────── Nodes ─────────────────────────
   RPC_API["rpc_api"]:::api
-  Parser["parser"]:::parser
   Codegen["codegen"]:::codegen
   Transport["transport"]:::transport
   Pipeline["pipeline"]:::pipeline
@@ -10,8 +9,6 @@ flowchart LR
   Config["config"]:::config
 
   %% ───────────────────────── Flow ─────────────────────────
-  RPC_API  --> Parser
-  Parser   --> SchemaNorm
   Codegen  --> Transport
   Codegen  --> Pipeline
   Pipeline --> Midas
@@ -22,7 +19,6 @@ flowchart LR
 
   %% ───────────────────────── Styles ─────────────────────────
   classDef api       fill:#d0e1ff,stroke:#2255aa,color:#000;
-  classDef parser    fill:#d0ffd0,stroke:#2a8a2a,color:#000;
   classDef codegen   fill:#ffd9d9,stroke:#aa2222,color:#000;
   classDef transport fill:#fff7c7,stroke:#aa9922,color:#000;
   classDef pipeline  fill:#fad5ff,stroke:#aa44aa,color:#000;

@@ -36,7 +36,6 @@ See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 ### Key Components
 
 - `rpc_api/`: JSON model of RPC methods and parameters
-- `parser/`: Parses `api.json` into structured form
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
