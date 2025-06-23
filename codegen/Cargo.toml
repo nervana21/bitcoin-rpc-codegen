@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-lazy_static = "1.4"
 serde_json = "1.0"
 thiserror = "2.0.12"
 
