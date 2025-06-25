@@ -50,3 +50,5 @@ pub use client_trait::ClientTraitGenerator;
 /// calls and an `.execute().await` entrypoint returning a strongly-typed tuple.
 pub mod batch_builder;
 pub use batch_builder::BatchBuilderGenerator;
+
+pub mod test_node;
