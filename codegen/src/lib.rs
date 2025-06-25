@@ -7,21 +7,13 @@
 //! Other responsibilities—such as runtime testing, node spawning, or API discovery logic—reside in companion crates.
 #![warn(missing_docs)]
 
-use anyhow::Result;
-use generators::doc_comment;
-use lazy_static::lazy_static;
-use rpc_api::{ApiArgument, ApiMethod};
-use schema::validator::validate_numeric_value;
-use std::{fs, path::Path, process::Command};
-
 pub mod generators;
 
-/// Sub-crate: **`rpc_method_discovery`**
-///
-/// Discovers available RPC methods at runtime using `bitcoin-cli`.
-/// Queries the node for `help` output and converts it into an `ApiMethod` list.
-/// Useful for generating code against whichever node version is on your `PATH`.
-pub mod rpc_method_discovery;
+use crate::generators::doc_comment;
+use crate::generators::response_type;
+use anyhow::Result;
+use rpc_api::ApiMethod;
+use std::{fs, path::Path, process::Command};
 
 /// Sub-crate: **`namespace_scaffolder`**
 ///
@@ -37,19 +29,6 @@ pub mod rpc_method_discovery;
 /// use generated::client::*;
 /// ```
 pub mod namespace_scaffolder;
-
-/// Sub-crate: **`test_node_generator`**
-///
-/// Generates ergonomic TestNode methods that delegate to the underlying RPC client,
-/// simplifying common integration-test workflows.
-pub mod test_node_generator;
-
-/// Sub-crate: **`type_registry`**
-///
-/// Central registry for mapping Bitcoin RPC types to Rust types.
-/// Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
-pub mod type_registry;
-pub use type_registry::TypeRegistry;
 
 /// Sub-crate: **`transport_core_generator`**
 ///
@@ -132,7 +111,6 @@ pub struct TransportCodeGenerator;
 
 impl CodeGenerator for TransportCodeGenerator {
     fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
-        use generators::response_type::build_return_type;
         use utils::capitalize;
 
         methods
@@ -175,7 +153,9 @@ impl CodeGenerator for TransportCodeGenerator {
                 let docs_md = doc_comment::generate_example_docs(m, "latest")
                     .trim_end()
                     .to_string();
-                let response_struct = build_return_type(m).unwrap_or_default().unwrap_or_default();
+                let response_struct = response_type::build_return_type(m)
+                    .unwrap_or_default()
+                    .unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
                 } else {
@@ -217,48 +197,6 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
                 (m.name.clone(), src)
             })
             .collect()
-    }
-}
-
-lazy_static! {
-    /// Bitcoin RPC Type System
-    ///
-    /// The type system uses a systematic categorization approach with the `RpcCategory` enum
-    /// to map JSON-RPC types to appropriate Rust types. This provides:
-    /// - Consistent type mapping across all RPC methods
-    /// - Semantic categorization of fields (e.g., amounts, ports, counts)
-    /// - Extensible pattern-based matching
-    /// - Auto-generated documentation
-    #[doc = include_str!("../../docs/type_system.md")]
-    pub static ref TYPE_REGISTRY: TypeRegistry = TypeRegistry::new();
-}
-
-impl TypeRegistry {
-    /// Validates that a JSON value matches the expected type for a given field.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The JSON value to validate
-    /// * `type_str` - The RPC type string (e.g., "number", "string", etc.)
-    /// * `field_name` - The name of the field being validated
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(())` if the value matches the expected type
-    /// * `Err(String)` with an error message if validation fails
-    pub fn validate_value(
-        &self,
-        value: &serde_json::Value,
-        type_str: &str,
-        field_name: &str,
-    ) -> Result<(), String> {
-        let (rust_type, _) = self.map_argument_type(&ApiArgument {
-            type_: type_str.to_string(),
-            names: vec![field_name.to_string()],
-            optional: false,
-            description: String::new(),
-        });
-        validate_numeric_value(value, rust_type).map_err(|e| e.to_string())
     }
 }
 
