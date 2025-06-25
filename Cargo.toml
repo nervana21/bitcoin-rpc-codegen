@@ -1,13 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "rpc-api",
-    "parser",
-    "schema",
     "codegen",
-    "transport",
-    "node",
-    "pipeline",
     "config",
     "logging",
+    "node",
+    "pipeline",
+    "rpc-api",
+    "transport",
+    "type-registry",
 ]
