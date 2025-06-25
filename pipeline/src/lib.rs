@@ -1,5 +1,5 @@
 //! High-level pipeline that generates a self-contained `bitcoin-rpc-midas` crate
-//! by tying together discovery/parsing, schema normalization, and code generation.
+//! by orchestrating code generation.
 //!
 //! This module provides the core functionality for generating a complete Bitcoin RPC client
 //! library, including transport layer, type definitions, and test node helpers.
@@ -7,8 +7,8 @@
 use anyhow::{Context, Result};
 use codegen::generators::{BatchBuilderGenerator, ClientTraitGenerator, ResponseTypeCodeGenerator};
 use codegen::{
-    namespace_scaffolder::ModuleGenerator, test_node_generator::TestNodeGenerator, write_generated,
-    CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
+    generators::test_node::TestNodeGenerator, namespace_scaffolder::ModuleGenerator,
+    write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
 use parser::{DefaultHelpParser, HelpParser};
 use rpc_api::{parse_api_json, version::DEFAULT_VERSION};
