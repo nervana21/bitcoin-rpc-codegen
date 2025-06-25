@@ -6,25 +6,25 @@ use thiserror::Error;
 /// Includes both explicitly supported versions and runtime-discovered ones.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Version {
-    V27,
     V28,
+    V29,
 }
 
 // This becomes the single source of truth for supported versions
-pub const KNOWN: &[Version] = &[Version::V27, Version::V28];
+pub const KNOWN: &[Version] = &[Version::V28, Version::V29];
 
-pub const DEFAULT_VERSION: Version = Version::V28;
+pub const DEFAULT_VERSION: Version = Version::V29;
 
 impl Version {
     /// Convert the version into its numeric representation.
     pub fn as_number(&self) -> u32 {
         match self {
-            Version::V27 => 27,
             Version::V28 => 28,
+            Version::V29 => 29,
         }
     }
 
-    /// Convert the version into its string representation like "v27".
+    /// Convert the version into its string representation like "V29".
     pub fn as_str(&self) -> String {
         format!("V{}", self.as_number())
     }
@@ -42,7 +42,7 @@ impl Version {
 
     /// Whether the version is currently supported (including runtime).
     pub fn is_supported(&self) -> bool {
-        self.as_number() >= 27
+        self.as_number() >= 28
     }
 
     /// Converts a number to a Version, mapping known versions to their enum form.
@@ -92,4 +92,25 @@ pub enum VersionError {
     UnsupportedVersion(String),
     #[error("Invalid version format: {0}")]
     InvalidFormat(String),
+}
+
+/// Get the Bitcoin Core version this crate was compiled against
+pub fn compiled_version() -> &'static str {
+    option_env!("BITCOIN_CORE_VERSION")
+        .expect("BITCOIN_CORE_VERSION not set — ensure build.rs ran and api.json was valid")
+}
+
+/// Get the version as a Version enum
+pub fn compiled_version_enum() -> Version {
+    Version::from(compiled_version())
+}
+
+/// Check if the current compiled version matches the given version
+pub fn is_compiled_version(version: Version) -> bool {
+    compiled_version_enum() == version
+}
+
+/// Get all supported versions as a slice
+pub fn supported_versions() -> &'static [Version] {
+    KNOWN
 }
