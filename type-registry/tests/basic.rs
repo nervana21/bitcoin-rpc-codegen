@@ -1,5 +1,5 @@
-use codegen::type_registry::{RpcCategory, TypeRegistry};
 use rpc_api::{ApiArgument, ApiResult};
+use type_registry::{RpcCategory, TypeRegistry};
 
 #[test]
 fn test_categorization() {

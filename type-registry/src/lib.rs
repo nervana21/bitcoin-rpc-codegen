@@ -1,3 +1,8 @@
+//! Sub-crate: **`type_registry`**
+//!
+//! Central registry for mapping Bitcoin RPC types to Rust types.
+//! Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
+
 use rpc_api::{ApiArgument, ApiResult};
 
 /// Categories for RPC types based on their semantic meaning and usage patterns.
