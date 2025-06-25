@@ -2,8 +2,8 @@
 
 use crate::utils::capitalize;
 use crate::CodeGenerator;
-use crate::TYPE_REGISTRY;
 use rpc_api::ApiMethod;
+use type_registry::TypeRegistry;
 
 /// Generator for creating Bitcoin RPC client traits for specific versions
 pub struct ClientTraitGenerator {
@@ -102,7 +102,7 @@ impl<'a> MethodTemplate<'a> {
                 } else {
                     format!("_{}", arg.names[0])
                 };
-                let (base_ty, _) = TYPE_REGISTRY.map_argument_type(arg);
+                let (base_ty, _) = TypeRegistry.map_argument_type(arg);
                 let ty = if arg.optional {
                     format!("Option<{base_ty}>")
                 } else {

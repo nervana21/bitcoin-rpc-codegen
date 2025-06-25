@@ -1,7 +1,8 @@
 // codegen/src/generators/batch_builder.rs
 
-use crate::{utils::capitalize, CodeGenerator, TYPE_REGISTRY};
+use crate::{utils::capitalize, CodeGenerator};
 use rpc_api::ApiMethod;
+use type_registry::TypeRegistry;
 
 use std::fmt::Write;
 
@@ -48,7 +49,7 @@ pub struct BatchResults {{
                 // TODO: Remove the superfluous Option wrapper by making only batched methods Option<T>,
                 // or switch to a per-batch struct that only includes the fields that are actually queued (more involved).
                 let response_type = if m.results.len() == 1 {
-                    let (ty, _) = TYPE_REGISTRY.map_result_type(&m.results[0]);
+                    let (ty, _) = TypeRegistry.map_result_type(&m.results[0]);
                     if ty == "()" {
                         "()".to_string()
                     } else {

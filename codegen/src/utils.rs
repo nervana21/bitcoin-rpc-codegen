@@ -1,5 +1,8 @@
 // codegen/src/utils.rs
 
+use rpc_api::{ApiArgument, ApiResult};
+use type_registry::TypeRegistry;
+
 /// Converts a camelCase string to snake_case
 pub fn camel_to_snake_case(s: &str) -> String {
     let mut out = String::new();
@@ -27,4 +30,52 @@ pub fn capitalize(s: &str) -> String {
             }
         })
         .collect::<String>()
+}
+
+/// Determines the appropriate Rust type for a given API argument.
+///
+/// This function takes the parameter name and its API type as input,
+/// consults the type registry to map the API type to a Rust type,
+/// and wraps the type in `Option<>` if the argument is considered optional
+/// according to the registry's mapping rules.
+///
+/// # Arguments
+/// * `param_name` - The name of the parameter.
+/// * `api_ty` - The type of the parameter as specified in the API.
+///
+/// # Returns
+/// A `String` representing the Rust type for the argument, possibly wrapped in `Option<>`.
+pub fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
+    let (base_ty, is_option) = TypeRegistry::new().map_argument_type(&ApiArgument {
+        type_: api_ty.to_string(),
+        names: vec![param_name.to_string()],
+        optional: false,
+        description: String::new(),
+    });
+    if is_option {
+        format!("Option<{base_ty}>")
+    } else {
+        base_ty.to_string()
+    }
+}
+
+// TODO: consider inlining this function into `emit_results.rs`
+/// Determines the appropriate Rust type for a given API result.
+///
+/// This function takes an `ApiResult` reference, uses the type registry to map the API result type
+/// to a corresponding Rust type, and wraps the type in `Option<>` if the result is considered optional
+/// according to the registry's mapping rules.
+///
+/// # Arguments
+/// * `result` - A reference to the API result metadata.
+///
+/// # Returns
+/// A `String` representing the Rust type for the result, possibly wrapped in `Option<>`.
+pub fn rust_type_for_result(result: &ApiResult) -> String {
+    let (base_ty, is_option) = TypeRegistry::new().map_result_type(result);
+    if is_option {
+        format!("Option<{base_ty}>")
+    } else {
+        base_ty.to_string()
+    }
 }

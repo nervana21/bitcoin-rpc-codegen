@@ -7,10 +7,10 @@
 //! things consistently.  
 
 use crate::utils::{camel_to_snake_case, capitalize};
-use crate::TYPE_REGISTRY;
 use anyhow::Result;
 use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
+use type_registry::TypeRegistry;
 
 /* --------------------------------------------------------------------- */
 /*  Primitive → Rust helpers                                             */
@@ -182,7 +182,7 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
             "object" if !r.inner.is_empty() => {
                 writeln!(&mut buf, "pub struct {struct_name} {{")?;
                 for f in &r.inner {
-                    let (ty, opt) = TYPE_REGISTRY.map_result_type(f);
+                    let (ty, opt) = TypeRegistry.map_result_type(f);
                     let name = field_ident(f, 0);
                     let ty = if opt {
                         format!("Option<{ty}>")
@@ -201,7 +201,7 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
             }
             _ => {
                 // primitive or array → transparent wrapper
-                let (ty, _) = TYPE_REGISTRY.map_result_type(r);
+                let (ty, _) = TypeRegistry.map_result_type(r);
                 writeln!(&mut buf, "#[serde(transparent)]")?;
                 writeln!(&mut buf, "pub struct {struct_name}(pub {ty});\n")?;
             }
@@ -238,7 +238,7 @@ fn collect_fields(m: &ApiMethod) -> Vec<Field> {
             for f in &r.inner {
                 let name = field_ident(f, 0);
                 if seen.insert(name.clone()) {
-                    let (ty, _) = TYPE_REGISTRY.map_result_type(f);
+                    let (ty, _) = TypeRegistry.map_result_type(f);
                     let always = is_field_always_present(&name, &m.results);
                     out.push(Field {
                         name,

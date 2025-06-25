@@ -13,9 +13,9 @@
 use crate::generators::doc_comment;
 use crate::utils::camel_to_snake_case;
 use crate::CodeGenerator;
-use crate::TYPE_REGISTRY;
 use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
+use type_registry::TypeRegistry;
 
 fn camel(s: &str) -> String {
     let mut out = String::new();
@@ -35,11 +35,11 @@ fn camel(s: &str) -> String {
 
 /* ── Primitive‑to‑Rust type mapping ───────────────────────────── */
 fn rust_res_ty(res: &ApiResult) -> (&'static str, bool) {
-    TYPE_REGISTRY.map_result_type(res)
+    TypeRegistry.map_result_type(res)
 }
 
 fn rust_arg_ty(arg: &ApiArgument) -> (&'static str, bool) {
-    TYPE_REGISTRY.map_argument_type(arg)
+    TypeRegistry.map_argument_type(arg)
 }
 
 /// Generates type-safe client methods for Bitcoin RPC calls

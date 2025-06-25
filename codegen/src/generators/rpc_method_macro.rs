@@ -20,8 +20,8 @@
 
 use crate::generators::doc_comment::format_doc_comment;
 use crate::utils::capitalize;
-use crate::TYPE_REGISTRY;
 use rpc_api::ApiMethod;
+use type_registry::TypeRegistry;
 
 /// Generates a client-side macro implementation for an RPC method
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
@@ -141,7 +141,7 @@ fn generate_method_args(method: &ApiMethod) -> String {
     for arg in &method.arguments {
         let arg_name = &arg.names[0];
         let arg_type = {
-            let (ty, _) = TYPE_REGISTRY.map_argument_type(arg);
+            let (ty, _) = TypeRegistry.map_argument_type(arg);
             ty.to_string()
         };
         // Escape reserved keywords
