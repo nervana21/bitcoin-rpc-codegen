@@ -7,7 +7,6 @@ use transport::{BatchTransport, Transport, TransportError, TransportTrait};
 
 #[test]
 fn send_request_success() {
-    // 1) Spin up the mockito server (synchronous)
     let mut server = Server::new();
     let _m = server
         .mock("POST", "/")
@@ -16,14 +15,11 @@ fn send_request_success() {
         .with_body(r#"{"jsonrpc":"2.0","result":123,"id":1}"#)
         .create();
 
-    // 2) Create our Transport pointing at mockito
     let tx = Transport::new(server.url());
 
-    // 3) Use a dedicated Tokio runtime to run the async send_request
     let rt = tokio::runtime::Runtime::new().unwrap();
     let result = rt.block_on(tx.send_request("foo", &[] as &[u8])).unwrap();
 
-    // 4) Assert we got back the stubbed result
     assert_eq!(result, json!(123));
 }
 
@@ -53,7 +49,6 @@ fn send_request_rpc_error() {
 
 #[test]
 fn test_connection_error() {
-    // Create a transport pointing to a non-existent port
     let tx = Transport::new("http://127.0.0.1:0");
     let rt = tokio::runtime::Runtime::new().unwrap();
 
@@ -62,16 +57,13 @@ fn test_connection_error() {
         .unwrap_err();
 
     match err {
-        TransportError::Http(0, _) => {
-            // Success - we got a connection error with status 0
-        }
+        TransportError::Http(0, _) => {}
         other => panic!("expected Http(0, _) error, got {:?}", other),
     }
 }
 
 #[test]
 fn send_batch_success() {
-    // 1) Spin up the mockito server (synchronous)
     let mut server = Server::new();
     let _m = server
         .mock("POST", "/")
@@ -82,10 +74,8 @@ fn send_batch_success() {
         )
         .create();
 
-    // 2) Create our Transport pointing at mockito
     let tx = Transport::new(server.url());
 
-    // 3) Use a dedicated Tokio runtime to run the async send_batch
     let rt = tokio::runtime::Runtime::new().unwrap();
     let batch_requests = vec![
         json!({
@@ -103,13 +93,10 @@ fn send_batch_success() {
     ];
     let results = rt.block_on(tx.send_batch(&batch_requests)).unwrap();
 
-    // 4) Assert we got back the expected results
     assert_eq!(results.len(), 2);
     assert_eq!(results[0]["result"], json!(123));
     assert_eq!(results[1]["result"], json!("abc"));
 }
-
-// NEW TESTS BELOW
 
 #[test]
 fn call_method_with_type_deserialization() {
@@ -147,7 +134,7 @@ fn missing_result_error() {
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"jsonrpc":"2.0","id":1}"#) // Missing result field
+        .with_body(r#"{"jsonrpc":"2.0","id":1}"#)
         .create();
 
     let tx = Transport::new(server.url());
@@ -157,9 +144,7 @@ fn missing_result_error() {
         .unwrap_err();
 
     match err {
-        TransportError::MissingResult => {
-            // Success - we got the expected error
-        }
+        TransportError::MissingResult => {}
         other => panic!("expected MissingResult error, got {:?}", other),
     }
 }
@@ -171,7 +156,7 @@ fn serialization_error() {
         .mock("POST", "/")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"invalid json"#) // Invalid JSON
+        .with_body(r#"invalid json"#)
         .create();
 
     let tx = Transport::new(server.url());
@@ -182,7 +167,6 @@ fn serialization_error() {
 
     match err {
         TransportError::Http(0, reqwest_error) => {
-            // Robust: check that this is a decode error (JSON parse error)
             assert!(
                 reqwest_error.is_decode(),
                 "Expected a decode error, got: {:?}",
@@ -228,24 +212,19 @@ fn batch_transport_basic_functionality() {
     let batch_tx = BatchTransport::new(inner_tx);
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Test that we're not batching initially
     assert!(!batch_tx.is_batching());
 
-    // Start a batch
     batch_tx.begin_batch();
     assert!(batch_tx.is_batching());
 
-    // Queue some requests
     let _ = rt.block_on(batch_tx.send_request("foo", &[] as &[serde_json::Value]));
     let _ = rt.block_on(batch_tx.send_request("bar", &[json!("test")] as &[serde_json::Value]));
 
-    // End the batch and get results
     let results = rt.block_on(batch_tx.end_batch()).unwrap();
     assert_eq!(results.len(), 2);
     assert_eq!(results[0], json!(123));
     assert_eq!(results[1], json!("abc"));
 
-    // Verify we're no longer batching
     assert!(!batch_tx.is_batching());
 }
 
@@ -268,9 +247,7 @@ fn batch_transport_no_batch_in_progress() {
 
     let err = rt.block_on(batch_tx.end_batch()).unwrap_err();
     match err {
-        transport::BatchError::NoBatchInProgress => {
-            // Success - we got the expected error
-        }
+        transport::BatchError::NoBatchInProgress => {}
         other => panic!("expected NoBatchInProgress error, got {:?}", other),
     }
 }
