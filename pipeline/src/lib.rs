@@ -10,9 +10,7 @@ use codegen::{
     generators::test_node::TestNodeGenerator, namespace_scaffolder::ModuleGenerator,
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
-use parser::{DefaultHelpParser, HelpParser};
 use rpc_api::{parse_api_json, version::DEFAULT_VERSION};
-use schema::{DefaultSchemaNormalizer, DefaultSchemaValidator, SchemaNormalizer, SchemaValidator};
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -556,7 +554,6 @@ impl TestConfig {
     fs::create_dir_all(&test_node_dir)
         .with_context(|| format!("Failed to create test_node directory: {test_node_dir:?}"))?;
 
-    // 2) Parse & normalize schema
     println!("[diagnostic] detecting input file type for {input_path:?}");
     let (norm, src_desc) = if input_path
         .extension()
@@ -571,22 +568,10 @@ impl TestConfig {
             "structured JSON",
         )
     } else {
-        println!("[diagnostic] parsing help text at {input_path:?}");
-        let help = fs::read_to_string(input_path)
-            .with_context(|| format!("Failed to read help dump file: {input_path:?}"))?;
-        let raw = DefaultHelpParser
-            .parse(&help)
-            .context("HelpParser failed to parse help text")?;
-        (
-            DefaultSchemaNormalizer
-                .normalize(&raw)
-                .context("Schema normalization failed")?,
-            "help dump",
-        )
+        return Err(anyhow::anyhow!(
+            "Only JSON files are supported. Please provide a .json file."
+        ));
     };
-    DefaultSchemaValidator
-        .validate(&norm)
-        .context("Schema validation failed")?;
     println!(
         "[diagnostic] loaded {} methods from {}",
         norm.len(),
@@ -945,12 +930,10 @@ By contributing, you agree that your contributions will be licensed under its MI
 The project is organized into several focused crates:
 
 - `rpc_api/`: JSON model of RPC methods and parameters
-- `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
 - `codegen/`: Emits Rust modules and client implementations
 - `transport/`: Async RPC transport + error handling
 - `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+- `pipeline/`: Orchestrates parsing → generation
 
 ## Guidelines for Pull Requests
 
@@ -958,7 +941,7 @@ The project is organized into several focused crates:
 2. **Write tests**: Include tests for any new functionality or bug fixes.
 3. **Update documentation**: Update relevant documentation as needed.
 4. **Follow the code style**: Run `cargo fmt` and `cargo clippy`.
-5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`).
+5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(types): Add support for new type`).
 
 ## Questions and Discussions
 
