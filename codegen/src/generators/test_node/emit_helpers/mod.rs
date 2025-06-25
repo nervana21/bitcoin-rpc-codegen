@@ -1,4 +1,4 @@
 //! Version-specific helper functions for test node generation
 
-pub mod sendtoaddress_v28;
-pub mod sendtoaddress_v29;
+pub mod method_helpers_v28;
+pub mod method_helpers_v29;
