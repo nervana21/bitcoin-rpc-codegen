@@ -633,6 +633,13 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> s
     Ok(())
 }
 
+/// Generates the helper methods for sending bitcoin to an address with either a confirmation target or fee rate.
+///
+/// This function emits the helper methods for sending bitcoin to an address with either a confirmation target or fee rate.
+/// The methods provide the means to send bitcoin to an address with either a confirmation target or fee rate.
+///
+/// # Arguments
+/// * `code` - The string buffer to append the helper methods to
 pub fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
@@ -692,6 +699,12 @@ pub fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Generates the implementation for the Drop trait for the combined Bitcoin test client.
+///
+/// This function emits the implementation for the Drop trait for the `{client_name}` struct.
+/// The implementation provides the means to drop the client.
+///
+/// # Arguments
 pub fn emit_drop_impl(code: &mut String, client_name: &str) -> std::io::Result<()> {
     writeln!(code, "impl Drop for {client_name} {{").unwrap();
     writeln!(code, "    fn drop(&mut self) {{").unwrap();
