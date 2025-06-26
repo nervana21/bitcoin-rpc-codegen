@@ -1,6 +1,6 @@
-# Contributing to Bitcoin RPC Code Generator
+# Contributing to Bitcoin RPC Codegen
 
-We love your input! We want to make contributing to Bitcoin RPC Code Generator as easy and transparent as possible, whether it's:
+We love your input! We want to make contributing to Bitcoin RPC Codegen as easy and transparent as possible, whether it's:
 
 - Reporting a bug
 - Discussing the current state of the code
@@ -27,9 +27,9 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-## Report bugs using GitHub's [issue tracker](https://github.com/nervana21/bitcoin-rpc-codegen/issues)
+## Report bugs using GitHub's issue tracker
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/nervana21/bitcoin-rpc-codegen/issues/new); it's that easy! **Please replace `yourusername` with the actual GitHub organization or username if different.**
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/nervana21/bitcoin-rpc-codegen/issues/new).
 
 ## Write bug reports with detail, background, and sample code
 
@@ -79,13 +79,15 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 The project is organized into several focused crates:
 
-- `rpc_api/`: JSON model of RPC methods and parameters
-- `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
-- `codegen/`: Emits Rust modules and client implementations
-- `transport/`: Async RPC transport + error handling
-- `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+- [`rpc_api/`](./rpc-api/): JSON model of RPC methods and parameters
+- [`codegen/`](./codegen/): Emits Rust modules and client implementations
+- [`pipeline/`](./pipeline/): Coordinates the end-to-end code generation workflow
+- [`bitcoin-rpc-midas/`](https://github.com/nervana21/bitcoin-rpc-midas): The final generated Rust client library (output of the codegen pipeline).  
+  _Note: This directory is generated and published as a separate repository._
+
+- [`transport/`](./transport/): Async RPC transport + error handling
+- [`node/`](./node/): Regtest node management and test client support
+- [`config/`](./config/): Node and test configuration utilities
 
 ## Guidelines for Pull Requests
 
@@ -93,10 +95,10 @@ The project is organized into several focused crates:
 2. **Write tests**: Include tests for any new functionality or bug fixes.
 3. **Update documentation**: Update relevant documentation as needed.
 4. **Follow the code style**: Run `cargo fmt` and `cargo clippy`.
-5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(parser): add support for new type`).
+5. **Meaningful commits**: Use conventional commit messages (e.g., `feat(types): Add support for new type`).
 
 ## Questions and Discussions
 
 If you have questions or want to discuss ideas, please open an issue on GitHub.
 
-Thank you for contributing to the Bitcoin RPC Code Generator!
+Thank you for contributing to the Bitcoin RPC Codegen!
