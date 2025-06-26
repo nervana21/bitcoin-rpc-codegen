@@ -13,6 +13,18 @@ pub mod emit_results;
 pub mod emit_subclient;
 pub mod utils;
 
+/// Version-specific client helper implementations for Bitcoin Core RPC compatibility.
+///
+/// This module provides versioned implementations of Bitcoin Core RPC client helpers,
+/// allowing the test node generator to produce code that's compatible with specific
+/// Bitcoin Core versions. Each version implements the `VersionedClientHelpers` trait
+/// with methods for send-to-address helpers, wallet options, block mining helpers,
+/// and chain reset utilities, with extensibility for future versions and methods.
+///
+/// The module uses a factory pattern through `get_helpers_for_version()` to dispatch
+/// to the correct implementation based on the target Bitcoin Core version string.
+pub mod versions;
+
 /// A code generator that creates a type-safe Rust client library for Bitcoin Core test environments.
 ///
 /// This generator takes Bitcoin Core RPC API definitions and produces a complete Rust client library
