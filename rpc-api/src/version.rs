@@ -96,8 +96,7 @@ pub enum VersionError {
 
 /// Get the Bitcoin Core version this crate was compiled against
 pub fn compiled_version() -> &'static str {
-    option_env!("BITCOIN_CORE_VERSION")
-        .expect("BITCOIN_CORE_VERSION not set — ensure build.rs ran and api.json was valid")
+    option_env!("BITCOIN_CORE_VERSION").unwrap_or("v29")
 }
 
 /// Get the version as a Version enum
