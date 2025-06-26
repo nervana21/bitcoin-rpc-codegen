@@ -10,7 +10,8 @@ use codegen::{
     generators::test_node::TestNodeGenerator, namespace_scaffolder::ModuleGenerator,
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
-use rpc_api::{parse_api_json, version::DEFAULT_VERSION};
+use regex::Regex;
+use rpc_api::{parse_api_json, version::compiled_version_enum};
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -578,6 +579,18 @@ impl TestConfig {
         src_desc
     );
 
+    // Use the compile-time version instead of DEFAULT_VERSION
+    let target_version = compiled_version_enum();
+    println!("[pipeline] generating code for version: {}", target_version);
+    println!(
+        "[pipeline] target_version.as_number(): {}",
+        target_version.as_number()
+    );
+    println!(
+        "[pipeline] target_version.as_str(): {}",
+        target_version.as_str()
+    );
+
     // 3) Transport layer
     println!("[diagnostic] generating transport code");
     let tx_files = TransportCodeGenerator.generate(&norm);
@@ -605,7 +618,7 @@ impl TestConfig {
 
     // After the transport layer generation:
     println!("[diagnostic] generating client trait");
-    let client_trait_files = ClientTraitGenerator::new(DEFAULT_VERSION.as_str()).generate(&norm);
+    let client_trait_files = ClientTraitGenerator::new(target_version.as_str()).generate(&norm);
     write_generated(out_dir.join("client_trait"), &client_trait_files)
         .context("Failed to write client trait files")?;
 
@@ -614,13 +627,13 @@ impl TestConfig {
 
     // 4) Types
     println!("[diagnostic] generating types code");
-    let ty_files = ResponseTypeCodeGenerator::new(DEFAULT_VERSION.as_str()).generate(&norm);
+    let ty_files = ResponseTypeCodeGenerator::new(target_version.as_str()).generate(&norm);
     write_generated(out_dir.join("types"), &ty_files).context("Failed to write types files")?;
     write_mod_rs(&out_dir.join("types"), &ty_files).context("Failed to write types mod.rs")?;
 
     // 5) Test-node helpers
     println!("[diagnostic] generating test_node code");
-    let tn_files = TestNodeGenerator::new(DEFAULT_VERSION.as_str()).generate(&norm);
+    let tn_files = TestNodeGenerator::new(target_version.as_str()).generate(&norm);
 
     // Write all generated files directly to test_node_dir
     write_generated(&test_node_dir, &tn_files).context("Failed to write test_node files")?;
@@ -632,7 +645,7 @@ impl TestConfig {
     let mut file =
         File::create(&lib_rs).with_context(|| format!("Failed to create lib.rs at {lib_rs:?}"))?;
 
-    let version_nodots = DEFAULT_VERSION.as_str().replace('.', "");
+    let version_nodots = target_version.as_str().replace('.', "");
 
     writeln!(
         file,
@@ -656,7 +669,7 @@ impl TestConfig {
      pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
     )?;
 
-    ModuleGenerator::new(vec![DEFAULT_VERSION], out_dir.to_path_buf())
+    ModuleGenerator::new(vec![target_version], out_dir.to_path_buf())
         .generate_all()
         .context("ModuleGenerator failed")?;
 
@@ -694,6 +707,9 @@ fn write_cargo_toml(root: &Path) -> Result<()> {
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
     );
+
+    let target_version = compiled_version_enum();
+
     let toml = format!(
         r#"[package]
 publish = true
@@ -729,7 +745,7 @@ tracing = "0.1"
 [workspace]
 "#,
         CRATE_VERSION,
-        DEFAULT_VERSION.as_number()
+        target_version.as_number()
     );
 
     fs::write(root.join("Cargo.toml"), toml)
@@ -751,6 +767,9 @@ fn write_readme(root: &Path) -> Result<()> {
         "[diagnostic] writing README.md at {:?}",
         root.join("README.md")
     );
+
+    let target_version = compiled_version_enum();
+
     let readme = format!(
         r#"# Bitcoin-RPC-Midas
 
@@ -758,7 +777,7 @@ fn write_readme(root: &Path) -> Result<()> {
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
 [![crates.io](https://img.shields.io/crates/v/bitcoin-rpc-midas)](https://crates.io/crates/bitcoin-rpc-midas)
 
-Type-safe Rust client for Bitcoin Core v28 RPCs, with test node support. Generated from a version-flexible toolchain.
+Type-safe Rust client for Bitcoin Core v{} RPCs, with test node support. Generated from a version-flexible toolchain.
 
 ## Why Use This?
 
@@ -833,7 +852,8 @@ Bitcoin RPC Code Generator is released under the terms of the MIT license. See [
 
 This library communicates directly with `bitcoind`.
 **For mainnet use,** audit the code carefully, restrict RPC access to trusted hosts, and avoid exposing RPC endpoints to untrusted networks.
-"#
+"#,
+        target_version.as_number()
     );
 
     fs::write(root.join("README.md"), readme)
