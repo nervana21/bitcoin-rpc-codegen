@@ -199,10 +199,10 @@ impl Type {
                 }
             } else {
                 // Single named result - create object with one field
-                return Type::Object(vec![(
+                Type::Object(vec![(
                     result.key_name.clone(),
                     Type::from_json_schema(&result.type_, &result.key_name),
-                )]);
+                )])
             }
         } else {
             // Multiple results - create object with multiple fields
