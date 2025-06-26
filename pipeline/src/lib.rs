@@ -11,7 +11,7 @@ use codegen::{
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
 use regex::Regex;
-use rpc_api::{parse_api_json, version::compiled_version_enum};
+use rpc_api::parse_api_json;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -20,6 +20,38 @@ use std::{env, fs};
 
 /// The version of the generated bitcoin-rpc-midas crate
 pub const CRATE_VERSION: &str = "0.1.2";
+/// TODO: update README.md with this version
+
+/// Extract version from filename
+///
+/// This function extracts a Bitcoin Core version from the filename.
+/// It requires the filename to follow the pattern "api_vXX.json" where XX is a version number.
+///
+/// # Arguments
+///
+/// * `filename` - The filename string (e.g., "api_v28.json")
+///
+/// # Returns
+///
+/// Returns `Result<String>` containing the extracted version string (e.g., "v28", "v29")
+///
+/// # Errors
+///
+/// Returns an error if the filename doesn't match the expected pattern.
+fn extract_version_from_filename(filename: &str) -> Result<String> {
+    let re = Regex::new(r"^api_v(\d+)\.json$")?;
+    let caps = re
+        .captures(filename)
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Input filename '{}' does not match expected pattern 'api_vXX.json' where XX is a version number. \
+                Examples: api_v28.json, api_v29.json",
+                filename
+            )
+        })?;
+    let version = format!("v{}", &caps[1]);
+    Ok(version)
+}
 
 /// Generates a complete Bitcoin RPC client library structure and code.
 ///
@@ -38,7 +70,8 @@ pub const CRATE_VERSION: &str = "0.1.2";
 /// # Arguments
 ///
 /// * `input_path` - Optional path to the input file containing JSON API spec.
-///   If None, defaults to "api.json" in the project root.
+///   If None, defaults to "api_v29.json" in the project root.
+///   The filename must follow the pattern "api_vXX.json" where XX is the Bitcoin Core version.
 ///
 /// # Returns
 ///
@@ -55,15 +88,20 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
                 project_root.join(path)
             }
         }
-        None => project_root.join("api.json"),
+        None => {
+            let default_version = rpc_api::version::DEFAULT_VERSION;
+            project_root.join(format!("api_v{}.json", default_version.as_number()))
+        }
     };
     println!("[diagnostic] resolved input path: {input_path:?}");
 
     if !input_path.exists() {
         return Err(anyhow::anyhow!(
             "Input file not found: {:?}. Please either:\n\
-             1. Place an api.json file in the project root, or\n\
-             2. Specify the path to your API JSON file as an argument",
+             1. Place an api_vXX.json file in the project root (e.g., api_v28.json, api_v29.json), or\n\
+             2. Specify the path to your API JSON file as an argument\n\
+             \n\
+             The filename must follow the pattern 'api_vXX.json' where XX is the Bitcoin Core version.",
             input_path
         ));
     }
@@ -87,7 +125,21 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     copy_templates_to(&src_dir)
         .with_context(|| format!("Failed to copy template files to {src_dir:?}"))?;
 
-    write_cargo_toml(&crate_root)
+    // Extract version early to pass to functions that need it
+    let filename = input_path
+        .file_name()
+        .and_then(|f| f.to_str())
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Could not extract filename from input path: {:?}",
+                input_path
+            )
+        })?;
+
+    let version_str = extract_version_from_filename(filename)?;
+    let target_version = rpc_api::Version::from(version_str.as_str());
+
+    write_cargo_toml(&crate_root, target_version)
         .with_context(|| format!("Failed to write Cargo.toml in: {crate_root:?}"))?;
 
     let gitignore_path = crate_root.join(".gitignore");
@@ -95,7 +147,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     fs::write(&gitignore_path, "/target\n/Cargo.lock\n")
         .with_context(|| format!("Failed to write .gitignore at {gitignore_path:?}"))?;
 
-    write_readme(&crate_root)
+    write_readme(&crate_root, target_version)
         .with_context(|| format!("Failed to write README.md in: {crate_root:?}"))?;
 
     write_contributing(&crate_root)
@@ -105,7 +157,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         .with_context(|| format!("Failed to write LICENSE.md in: {crate_root:?}"))?;
 
     println!("[diagnostic] starting code generation into: {src_dir:?}");
-    generate_into(&src_dir, &input_path)
+    generate_into(&src_dir, &input_path, target_version)
         .with_context(|| format!("generate_into failed for src_dir {src_dir:?}"))?;
 
     println!("[diagnostic] contents of bitcoin-rpc-midas/src:");
@@ -149,13 +201,18 @@ fn find_project_root() -> Result<PathBuf> {
 ///
 /// * `out_dir` - The directory where the generated code will be written
 /// * `input_path` - Path to the input file containing JSON API spec
+/// * `target_version` - The Bitcoin Core version being targeted
 ///
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of the generation process
-fn generate_into(out_dir: &Path, input_path: &Path) -> Result<()> {
+fn generate_into(
+    out_dir: &Path,
+    input_path: &Path,
+    target_version: rpc_api::Version,
+) -> Result<()> {
     println!(
-        "[diagnostic] generate_into received out_dir: {out_dir:?}, input_path: {input_path:?}"
+        "[diagnostic] generate_into received out_dir: {out_dir:?}, input_path: {input_path:?}, target_version: {target_version}"
     );
 
     // 1) Prepare module directories
@@ -579,8 +636,6 @@ impl TestConfig {
         src_desc
     );
 
-    // Use the compile-time version instead of DEFAULT_VERSION
-    let target_version = compiled_version_enum();
     println!("[pipeline] generating code for version: {}", target_version);
     println!(
         "[pipeline] target_version.as_number(): {}",
@@ -698,17 +753,16 @@ impl TestConfig {
 /// # Arguments
 ///
 /// * `root` - The root directory of the generated crate
+/// * `target_version` - The Bitcoin Core version being targeted
 ///
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
-fn write_cargo_toml(root: &Path) -> Result<()> {
+fn write_cargo_toml(root: &Path, target_version: rpc_api::Version) -> Result<()> {
     println!(
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
     );
-
-    let target_version = compiled_version_enum();
 
     let toml = format!(
         r#"[package]
@@ -758,17 +812,16 @@ tracing = "0.1"
 /// # Arguments
 ///
 /// * `root` - The root directory of the generated crate
+/// * `target_version` - The Bitcoin Core version being targeted
 ///
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of writing the README.md file
-fn write_readme(root: &Path) -> Result<()> {
+fn write_readme(root: &Path, target_version: rpc_api::Version) -> Result<()> {
     println!(
         "[diagnostic] writing README.md at {:?}",
         root.join("README.md")
     );
-
-    let target_version = compiled_version_enum();
 
     let readme = format!(
         r#"# Bitcoin-RPC-Midas
