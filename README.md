@@ -15,7 +15,6 @@ Compared to hand-written RPC clients, this toolchain offers:
 - Increased compile-time checks
 - Simplified local testing with embedded regtest
 - Improved isolation from environment and port conflicts
-- Built-in RPC batching to reduce network roundtrips
 
 These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The intended result is a client that remains aligned with upstream changes and is suitable for production use.
 
@@ -33,15 +32,19 @@ Read more: [`docs/semantic-compression.md`](docs/semantic-compression.md)
 
 See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 
-### Key Components
+### Project Structure
 
-- `rpc_api/`: JSON model of RPC methods and parameters
-- `parser/`: Parses `api.json` into structured form
-- `schema/`: Normalizes and validates parsed data
-- `codegen/`: Emits Rust modules and client implementations
-- `transport/`: Async RPC transport + error handling
-- `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → schema → generation
+The project is organized into several focused crates:
+
+- [`rpc_api/`](./rpc-api/): JSON model of RPC methods and parameters
+- [`codegen/`](./codegen/): Emits Rust modules and client implementations
+- [`pipeline/`](./pipeline/): Coordinates the end-to-end code generation workflow
+- [`bitcoin-rpc-midas/`](https://github.com/nervana21/bitcoin-rpc-midas): The final generated Rust client library (output of the codegen pipeline).  
+  _Note: This directory is generated and published as a separate repository._
+
+- [`transport/`](./transport/): Async RPC transport + error handling
+- [`node/`](./node/): Regtest node management and test client support
+- [`config/`](./config/): Node and test configuration utilities
 
 All components are modular and reusable. You can build overlays, language targets, or devtools by composing with this core.
 
@@ -59,24 +62,20 @@ Or add it manually:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "0.1.1"
-anyhow = "1.0"
-bitcoin = "0.32.0"
-serde_json = "1.0"
+bitcoin-rpc-midas = "0.1.2"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
 ### Minimal Example
 
 ```rust
-use anyhow::Result;
 use bitcoin_rpc_midas::*; // Re-exports BitcoinTestClient and other helpers
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = BitcoinTestClient::new().await?;
-    let wallet_info = client.getwalletinfo().await?;
-    println!("Wallet state:\n{:#?}", wallet_info);
+    let blockchain_info = client.getblockchaininfo().await?;
+    println!("Blockchain info:\n{:#?}", blockchain_info);
     Ok(())
 }
 ```
