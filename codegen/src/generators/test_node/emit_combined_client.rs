@@ -27,7 +27,7 @@ pub fn generate_combined_client(
     emit_struct_definition(&mut code, client_name)?;
     emit_node_manager_impl(&mut code)?;
     emit_wallet_options_struct(&mut code)?;
-    emit_impl_block_start(&mut code, client_name)?;
+    writeln!(code, "impl {client_name} {{").unwrap();
     emit_constructors(&mut code)?;
     emit_wallet_methods(&mut code)?;
     emit_block_mining_helpers(&mut code)?;
@@ -38,7 +38,7 @@ pub fn generate_combined_client(
     emit_batch_method(&mut code)?;
     emit_delegated_rpc_methods(&mut code, methods)?;
     emit_send_to_address_helpers(&mut code)?;
-    emit_impl_block_end(&mut code)?;
+    writeln!(code, "}}\n").unwrap();
     emit_drop_impl(&mut code, client_name)?;
 
     Ok(code)
@@ -327,11 +327,6 @@ impl WalletOptions {{
 "#
     )
     .map_err(std::io::Error::other)?;
-    Ok(())
-}
-
-pub fn emit_impl_block_start(code: &mut String, client_name: &str) -> std::io::Result<()> {
-    writeln!(code, "impl {client_name} {{").unwrap();
     Ok(())
 }
 
@@ -694,11 +689,6 @@ pub fn emit_send_to_address_helpers(code: &mut String) -> std::io::Result<()> {
      ).await?)?)\n\
  }}\n"
     ).unwrap();
-    Ok(())
-}
-
-pub fn emit_impl_block_end(code: &mut String) -> std::io::Result<()> {
-    writeln!(code, "}}\n").unwrap();
     Ok(())
 }
 
