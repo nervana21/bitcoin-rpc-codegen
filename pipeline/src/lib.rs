@@ -814,7 +814,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "{}"
+bitcoin-rpc-midas = "{CRATE_VERSION}"
 ```
 
 ## About
@@ -833,8 +833,7 @@ Bitcoin RPC Code Generator is released under the terms of the MIT license. See [
 
 This library communicates directly with `bitcoind`.
 **For mainnet use,** audit the code carefully, restrict RPC access to trusted hosts, and avoid exposing RPC endpoints to untrusted networks.
-"#,
-        CRATE_VERSION
+"#
     );
 
     fs::write(root.join("README.md"), readme)
