@@ -87,7 +87,7 @@ impl Type {
                 "hex" => "String".to_string(),
                 "time" => "u64".to_string(),
                 "amount" => "f64".to_string(),
-                _ => format!("serde_json::Value"), // fallback
+                _ => "serde_json::Value".to_string(), // fallback
             },
             Type::Object(fields) => {
                 let field_defs = fields
