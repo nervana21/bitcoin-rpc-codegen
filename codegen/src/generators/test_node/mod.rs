@@ -8,7 +8,6 @@ use crate::CodeGenerator;
 use rpc_api::ApiMethod;
 
 pub mod emit_combined_client;
-pub mod emit_helpers;
 pub mod emit_params;
 pub mod emit_results;
 pub mod emit_subclient;
