@@ -95,7 +95,7 @@ impl Type {
                     .map(|(name, ty)| format!("    pub {}: {},", name, ty.to_rust_type()))
                     .collect::<Vec<_>>()
                     .join("\n");
-                format!("{{\n{}\n}}", field_defs)
+                format!("{{\n{field_defs}\n}}")
             }
             Type::Array(element_ty) => format!("Vec<{}>", element_ty.to_rust_type()),
             Type::Tuple(types) => {
@@ -104,7 +104,7 @@ impl Type {
                     .map(|ty| ty.to_rust_type())
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("({})", type_list)
+                format!("({type_list})")
             }
             Type::Option(inner_ty) => format!("Option<{}>", inner_ty.to_rust_type()),
             Type::Unit => "()".to_string(),
