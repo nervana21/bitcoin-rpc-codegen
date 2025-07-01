@@ -1,6 +1,6 @@
 // rpc_api/tests/basic.rs
 
-use rpc_api::{ApiArgument, ApiMethod, ApiResult, Version, VersionError};
+use rpc_api::{ApiArgument, ApiMethod, ApiResult, Type, Version, VersionError};
 use serde_json;
 use std::str::FromStr;
 
@@ -88,4 +88,171 @@ fn api_method_roundtrip() {
     assert_eq!(de.description, method.description);
     assert_eq!(de.arguments.len(), 1);
     assert_eq!(de.results.len(), 1);
+}
+
+#[test]
+fn type_is_optional_and_to_rust_type() {
+    // Primitive
+    let t = Type::Primitive("string".into());
+    assert!(!t.is_optional());
+    assert_eq!(t.to_rust_type(), "String");
+    let t = Type::Primitive("boolean".into());
+    assert_eq!(t.to_rust_type(), "bool");
+    let t = Type::Primitive("number".into());
+    assert_eq!(t.to_rust_type(), "f64");
+    let t = Type::Primitive("integer".into());
+    assert_eq!(t.to_rust_type(), "i64");
+    let t = Type::Primitive("hex".into());
+    assert_eq!(t.to_rust_type(), "String");
+    let t = Type::Primitive("time".into());
+    assert_eq!(t.to_rust_type(), "u64");
+    let t = Type::Primitive("amount".into());
+    assert_eq!(t.to_rust_type(), "f64");
+    let t = Type::Primitive("unknown".into());
+    assert_eq!(t.to_rust_type(), "serde_json::Value");
+    // Option
+    let t = Type::Option(Box::new(Type::Primitive("string".into())));
+    assert!(t.is_optional());
+    // Object
+    let t = Type::Object(vec![("foo".into(), Type::Primitive("string".into()))]);
+    assert_eq!(t.to_rust_type(), "{\n    pub foo: String,\n}");
+    // Array
+    let t = Type::Array(Box::new(Type::Primitive("string".into())));
+    assert_eq!(t.to_rust_type(), "Vec<String>");
+    // Tuple
+    let t = Type::Tuple(vec![
+        Type::Primitive("string".into()),
+        Type::Primitive("number".into()),
+    ]);
+    assert_eq!(t.to_rust_type(), "(String, f64)");
+    // Unit
+    let t = Type::Unit;
+    assert_eq!(t.to_rust_type(), "()");
+}
+
+#[test]
+fn type_from_api_results_cases() {
+    use rpc_api::ApiResult;
+    // Empty
+    let t = Type::from_api_results(&[]);
+    assert!(matches!(t, Type::Unit));
+    // Single unnamed primitive
+    let t = Type::from_api_results(&[ApiResult {
+        key_name: "".into(),
+        type_: "string".into(),
+        description: "desc".into(),
+        inner: vec![],
+        optional: false,
+    }]);
+    assert!(matches!(t, Type::Primitive(_)));
+    // Single unnamed object with inner
+    let t = Type::from_api_results(&[ApiResult {
+        key_name: "".into(),
+        type_: "object".into(),
+        description: "desc".into(),
+        inner: vec![ApiResult {
+            key_name: "foo".into(),
+            type_: "string".into(),
+            description: "desc".into(),
+            inner: vec![],
+            optional: false,
+        }],
+        optional: false,
+    }]);
+    assert!(matches!(t, Type::Object(_)));
+    // Single named result
+    let t = Type::from_api_results(&[ApiResult {
+        key_name: "foo".into(),
+        type_: "string".into(),
+        description: "desc".into(),
+        inner: vec![],
+        optional: false,
+    }]);
+    assert!(matches!(t, Type::Object(_)));
+    // Multiple results
+    let t = Type::from_api_results(&[
+        ApiResult {
+            key_name: "foo".into(),
+            type_: "string".into(),
+            description: "desc".into(),
+            inner: vec![],
+            optional: false,
+        },
+        ApiResult {
+            key_name: "bar".into(),
+            type_: "number".into(),
+            description: "desc".into(),
+            inner: vec![],
+            optional: true,
+        },
+    ]);
+    if let Type::Object(fields) = t {
+        assert_eq!(fields.len(), 2);
+        assert!(matches!(fields[1].1, Type::Option(_)));
+    } else {
+        panic!("Expected Type::Object");
+    }
+}
+
+#[test]
+fn infer_category_cases() {
+    use rpc_api::infer_category;
+    assert_eq!(infer_category("getblock"), "query");
+    assert_eq!(infer_category("setfoo"), "modify");
+    assert_eq!(infer_category("addbar"), "modify");
+    assert_eq!(infer_category("removebaz"), "modify");
+    assert_eq!(infer_category("sendcoins"), "action");
+    assert_eq!(infer_category("createwallet"), "action");
+    assert_eq!(infer_category("stopnode"), "control");
+    assert_eq!(infer_category("startnode"), "control");
+    assert_eq!(infer_category("foo"), "other");
+}
+
+#[test]
+fn extract_examples_cases() {
+    use rpc_api::extract_examples;
+    let desc = "This method.\nExample: foo\n```\nbar\n```\n";
+    let ex = extract_examples(desc);
+    assert!(ex.iter().any(|l| l.starts_with("Example:")));
+    assert!(ex.iter().any(|l| l.starts_with("```")));
+}
+
+#[test]
+fn parse_api_json_cases() {
+    use rpc_api::parse_api_json;
+    let json = r#"{"commands":{"foo":[{"description":"desc","arguments":[],"results":[]}]}}"#;
+    let parsed = parse_api_json(json).unwrap();
+    assert_eq!(parsed.len(), 1);
+    assert_eq!(parsed[0].name, "foo");
+    assert_eq!(parsed[0].description, "desc");
+    assert!(parsed[0].arguments.is_empty());
+    assert!(parsed[0].results.is_empty());
+}
+
+#[test]
+fn from_apimethod_for_rpcmethod() {
+    use rpc_api::{ApiArgument, ApiMethod, ApiResult, RpcMethod};
+    let api_method = ApiMethod {
+        name: "getfoo".into(),
+        description: "desc".into(),
+        arguments: vec![ApiArgument {
+            names: vec!["foo".into()],
+            type_: "string".into(),
+            optional: false,
+            description: "desc".into(),
+        }],
+        results: vec![ApiResult {
+            key_name: "bar".into(),
+            type_: "number".into(),
+            description: "desc".into(),
+            inner: vec![],
+            optional: false,
+        }],
+    };
+    let rpc_method: RpcMethod = api_method.into();
+    assert_eq!(rpc_method.name, "getfoo");
+    assert_eq!(rpc_method.category, "query");
+    assert_eq!(rpc_method.description, "desc");
+    assert_eq!(rpc_method.params.len(), 1);
+    assert_eq!(rpc_method.result.is_some(), true);
 }
