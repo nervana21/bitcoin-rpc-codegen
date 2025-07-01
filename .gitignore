@@ -1,6 +1,7 @@
 # Compiled outputs and generated files
 bitcoin-rpc-midas/
 target/
+mutants.out/
 
 # Rust artifacts
 Cargo.lock
