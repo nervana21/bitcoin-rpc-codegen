@@ -20,7 +20,7 @@ use std::{env, fs};
 
 /// The version of the generated bitcoin-rpc-midas crate
 pub const CRATE_VERSION: &str = "0.1.2";
-/// TODO: update README.md with this version
+// TODO: update README.md with this version
 
 /// Extract version from filename
 ///
@@ -636,7 +636,7 @@ impl TestConfig {
         src_desc
     );
 
-    println!("[pipeline] generating code for version: {}", target_version);
+    println!("[pipeline] generating code for version: {target_version}");
     println!(
         "[pipeline] target_version.as_number(): {}",
         target_version.as_number()

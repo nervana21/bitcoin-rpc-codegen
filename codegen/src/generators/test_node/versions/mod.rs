@@ -85,11 +85,11 @@ pub trait VersionedClientHelpers {
 /// # Panics
 /// * Panics if the version is not supported
 pub fn get_helpers_for_version(version: &str) -> Box<dyn VersionedClientHelpers> {
-    println!("[dispatch] using version: {}", version);
+    println!("[dispatch] using version: {version}");
     match version.trim_start_matches('v').trim_start_matches('V') {
         "28" => Box::new(V28Helpers),
         "29" => Box::new(V29Helpers),
-        _ => panic!("Unsupported version: {}", version),
+        _ => panic!("Unsupported version: {version}"),
     }
 }
 
