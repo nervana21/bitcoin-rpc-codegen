@@ -59,7 +59,7 @@ pub struct Param {
 }
 
 /// Strongly typed representation of RPC types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     /// Primitive types like "string", "boolean", "number", etc.
     Primitive(String),
@@ -327,5 +327,305 @@ fn parse_result(value: &serde_json::Value) -> ApiResult {
             .map(|props| props.iter().map(parse_result).collect())
             .unwrap_or_default(),
         optional: obj["optional"].as_bool().unwrap_or(false),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_example_lines() {
+        let desc = r#"
+            This method does something.
+
+            Example:
+            bitcoin-cli getblockchaininfo
+
+            ```
+            bitcoin-cli getblockchaininfo
+            ```
+        "#;
+
+        let examples = extract_examples(desc);
+
+        // Should extract both the "Example:" line and the code block line(s)
+        assert!(examples.iter().any(|l| l.starts_with("Example:")));
+        assert!(examples.iter().any(|l| l.starts_with("```")));
+        assert!(
+            !examples.is_empty(),
+            "Should extract at least one example line"
+        );
+    }
+
+    #[test]
+    fn extract_examples_cases() {
+        use super::extract_examples;
+
+        // Both Example: and code block
+        let desc = "This method.\nExample: foo\n```\nbar\n```\n";
+        let ex = extract_examples(desc);
+        assert_eq!(ex, vec!["Example: foo", "```", "```"]);
+
+        // Only Example:
+        let desc = "Blah\nExample: test\nBlah";
+        let ex = extract_examples(desc);
+        assert_eq!(ex, vec!["Example: test"]);
+
+        // Only code block
+        let desc = "Blah\n```\nBlah";
+        let ex = extract_examples(desc);
+        assert_eq!(ex, vec!["```"]);
+
+        // Neither
+        let desc = "No examples here.";
+        let ex = extract_examples(desc);
+        assert!(ex.is_empty());
+    }
+
+    #[test]
+    fn test_optional_argument_handling() {
+        // Test that optional arguments are properly marked as not required
+        let api_method = ApiMethod {
+            name: "test".into(),
+            description: "test".into(),
+            arguments: vec![
+                ApiArgument {
+                    names: vec!["required".into()],
+                    type_: "string".into(),
+                    optional: false,
+                    description: "required".into(),
+                },
+                ApiArgument {
+                    names: vec!["optional".into()],
+                    type_: "string".into(),
+                    optional: true,
+                    description: "optional".into(),
+                },
+            ],
+            results: vec![],
+        };
+
+        let rpc_method: RpcMethod = api_method.into();
+        assert_eq!(rpc_method.params.len(), 2);
+        assert_eq!(rpc_method.params[0].required, true); // !false = true
+        assert_eq!(rpc_method.params[1].required, false); // !true = false
+    }
+
+    #[test]
+    fn test_from_api_results_edge_cases() {
+        // Test object type with empty inner fields
+        let result = ApiResult {
+            key_name: "".into(),
+            type_: "object".into(),
+            description: "".into(),
+            inner: vec![], // empty inner
+            optional: false,
+        };
+        let ty = Type::from_api_results(&[result]);
+        // Should fall through to else branch and call from_json_schema
+        assert!(matches!(ty, Type::Object(_)));
+
+        // Test non-object type with non-empty inner (edge case)
+        let result = ApiResult {
+            key_name: "".into(),
+            type_: "string".into(), // not object
+            description: "".into(),
+            inner: vec![ApiResult {
+                key_name: "foo".into(),
+                type_: "string".into(),
+                description: "".into(),
+                inner: vec![],
+                optional: false,
+            }],
+            optional: false,
+        };
+        let ty = Type::from_api_results(&[result]);
+        // Should fall through to else branch
+        assert!(matches!(ty, Type::Primitive(_)));
+    }
+
+    #[test]
+    fn test_from_json_schema_all_cases() {
+        // Test all match arms to ensure they're not dead code
+        let test_cases = vec![
+            ("string", Type::Primitive("string".into())),
+            ("boolean", Type::Primitive("boolean".into())),
+            ("number", Type::Primitive("number".into())),
+            ("integer", Type::Primitive("integer".into())),
+            ("hex", Type::Primitive("hex".into())),
+            ("time", Type::Primitive("time".into())),
+            ("amount", Type::Primitive("amount".into())),
+            (
+                "array",
+                Type::Array(Box::new(Type::Primitive("string".into()))),
+            ),
+            ("object", Type::Object(vec![])),
+        ];
+
+        for (input, expected) in test_cases {
+            let result = Type::from_json_schema(input, "test");
+            assert_eq!(result, expected, "Failed for input: {}", input);
+        }
+
+        // Test fallback case
+        let result = Type::from_json_schema("unknown_type", "test");
+        assert!(matches!(result, Type::Primitive(_)));
+    }
+
+    #[test]
+    fn test_parse_result_function() {
+        // Test that parse_result actually parses JSON correctly
+        let json_value = serde_json::json!({
+            "type": "string",
+            "description": "test description",
+            "key_name": "test_key",
+            "inner": [],
+            "optional": true
+        });
+
+        let result = parse_result(&json_value);
+        assert_eq!(result.type_, "string");
+        assert_eq!(result.description, "test description");
+        assert_eq!(result.key_name, "test_key");
+        assert_eq!(result.optional, true);
+        assert!(result.inner.is_empty());
+    }
+
+    #[test]
+    fn test_parse_result_with_inner_fields() {
+        // Test parse_result with nested inner fields
+        let json_value = serde_json::json!({
+            "type": "object",
+            "description": "parent",
+            "key_name": "parent_key",
+            "inner": [{
+                "type": "string",
+                "description": "child",
+                "key_name": "child_key",
+                "inner": [],
+                "optional": false
+            }],
+            "optional": false
+        });
+
+        let result = parse_result(&json_value);
+        assert_eq!(result.type_, "object");
+        assert_eq!(result.key_name, "parent_key");
+        assert_eq!(result.inner.len(), 1);
+        assert_eq!(result.inner[0].type_, "string");
+        assert_eq!(result.inner[0].key_name, "child_key");
+    }
+
+    #[test]
+    fn test_from_api_results_complex_logic() {
+        // Test the specific condition: result.type_ == "object" && !result.inner.is_empty()
+
+        // Case 1: object type with non-empty inner (should create Object with fields)
+        let result = ApiResult {
+            key_name: "".into(),
+            type_: "object".into(),
+            description: "".into(),
+            inner: vec![ApiResult {
+                key_name: "field1".into(),
+                type_: "string".into(),
+                description: "".into(),
+                inner: vec![],
+                optional: false,
+            }],
+            optional: false,
+        };
+        let ty = Type::from_api_results(&[result]);
+        if let Type::Object(fields) = ty {
+            assert_eq!(fields.len(), 1);
+            assert_eq!(fields[0].0, "field1");
+        } else {
+            panic!("Expected Type::Object for object with non-empty inner");
+        }
+
+        // Case 2: object type with empty inner (should fall through to else)
+        let result = ApiResult {
+            key_name: "".into(),
+            type_: "object".into(),
+            description: "".into(),
+            inner: vec![], // empty inner
+            optional: false,
+        };
+        let ty = Type::from_api_results(&[result]);
+        // Should call from_json_schema which returns Type::Object(vec![])
+        assert!(matches!(ty, Type::Object(_)));
+    }
+
+    #[test]
+    fn test_from_json_schema_each_arm_individually() {
+        // Test each match arm individually to ensure they're not dead code
+
+        // Test "string" arm
+        let result = Type::from_json_schema("string", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "string"));
+
+        // Test "boolean" arm
+        let result = Type::from_json_schema("boolean", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "boolean"));
+
+        // Test "number" arm
+        let result = Type::from_json_schema("number", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "number"));
+
+        // Test "integer" arm
+        let result = Type::from_json_schema("integer", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "integer"));
+
+        // Test "hex" arm
+        let result = Type::from_json_schema("hex", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "hex"));
+
+        // Test "time" arm
+        let result = Type::from_json_schema("time", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "time"));
+
+        // Test "amount" arm
+        let result = Type::from_json_schema("amount", "test");
+        assert!(matches!(result, Type::Primitive(s) if s == "amount"));
+
+        // Test "array" arm
+        let result = Type::from_json_schema("array", "test");
+        assert!(matches!(result, Type::Array(_)));
+
+        // Test "object" arm
+        let result = Type::from_json_schema("object", "test");
+        assert!(matches!(result, Type::Object(_)));
+    }
+
+    #[test]
+    fn test_parse_result_not_default() {
+        // Test that parse_result doesn't return default values
+        let json_value = serde_json::json!({
+            "type": "custom_type",
+            "description": "custom description",
+            "key_name": "custom_key",
+            "inner": [{
+                "type": "nested_type",
+                "description": "nested",
+                "key_name": "nested_key",
+                "inner": [],
+                "optional": true
+            }],
+            "optional": false
+        });
+
+        let result = parse_result(&json_value);
+
+        // Verify it's not default values
+        assert_ne!(result.type_, "");
+        assert_ne!(result.description, "");
+        assert_ne!(result.key_name, "");
+        assert!(!result.inner.is_empty());
+        assert_eq!(result.optional, false);
+
+        // Verify nested parsing worked
+        assert_eq!(result.inner[0].type_, "nested_type");
+        assert_eq!(result.inner[0].key_name, "nested_key");
+        assert_eq!(result.inner[0].optional, true);
     }
 }
