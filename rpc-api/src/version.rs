@@ -70,13 +70,18 @@ impl FromStr for Version {
     type Err = VersionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some(num) = s.strip_prefix('V') {
+        // Accept both uppercase 'V' and lowercase 'v' prefixes
+        let num = if let Some(num) = s.strip_prefix('V') {
+            num
+        } else if let Some(num) = s.strip_prefix('v') {
+            num
+        } else {
+            return Err(VersionError::InvalidFormat(s.to_string()));
+        };
+
             num.parse::<u32>()
                 .map(Version::from_number)
                 .map_err(|_| VersionError::InvalidFormat(s.to_string()))
-        } else {
-            Err(VersionError::InvalidFormat(s.to_string()))
-        }
     }
 }
 
