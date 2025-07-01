@@ -291,6 +291,7 @@ fn serde_attrs_for_field(r: &ApiResult) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::CodeGenerator;
     use rpc_api::ApiResult;
 
     fn create_test_method(name: &str, results: Vec<ApiResult>) -> ApiMethod {
@@ -300,6 +301,135 @@ mod tests {
             results,
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn test_response_type_generator_generate() {
+        let generator = ResponseTypeCodeGenerator::new("v28");
+
+        // Test with empty methods
+        let result = generator.generate(&[]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "v28_types.rs");
+        assert!(result[0].1.contains("//! Generated RPC response types"));
+        assert!(result[0].1.contains("use serde::{Deserialize, Serialize}"));
+
+        // Test with void methods (should be skipped)
+        let void_method = create_test_method("void", vec![]);
+        let result = generator.generate(&[void_method]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "v28_types.rs");
+        assert!(result[0].1.contains("//! Generated RPC response types"));
+        assert!(!result[0].1.contains("pub struct VoidResponse")); // Should not generate struct for void method
+
+        // Test with single primitive result
+        let primitive_method = create_test_method(
+            "primitive",
+            vec![ApiResult {
+                type_: "string".to_string(),
+                key_name: "result".to_string(),
+                ..Default::default()
+            }],
+        );
+        let result = generator.generate(&[primitive_method]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "v28_types.rs");
+        assert!(result[0].1.contains("pub struct PrimitiveResponse"));
+        assert!(result[0].1.contains("pub String"));
+
+        // Test with multiple methods
+        let methods = vec![
+            create_test_method(
+                "method1",
+                vec![ApiResult {
+                    type_: "string".to_string(),
+                    key_name: "result".to_string(),
+                    ..Default::default()
+                }],
+            ),
+            create_test_method(
+                "method2",
+                vec![ApiResult {
+                    type_: "number".to_string(),
+                    key_name: "result".to_string(),
+                    ..Default::default()
+                }],
+            ),
+        ];
+        let result = generator.generate(&methods);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "v28_types.rs");
+        assert!(result[0].1.contains("pub struct Method1Response"));
+        assert!(result[0].1.contains("pub struct Method2Response"));
+        assert!(result[0].1.contains("pub String"));
+        assert!(result[0].1.contains("pub u64"));
+    }
+
+    #[test]
+    fn test_response_type_generator_version_handling() {
+        // Test different version strings
+        let generator_v28 = ResponseTypeCodeGenerator::new("v28");
+        let generator_v29 = ResponseTypeCodeGenerator::new("V29");
+
+        let method = create_test_method(
+            "test",
+            vec![ApiResult {
+                type_: "string".to_string(),
+                key_name: "result".to_string(),
+                ..Default::default()
+            }],
+        );
+
+        let result_v28 = generator_v28.generate(&[method.clone()]);
+        let result_v29 = generator_v29.generate(&[method]);
+
+        assert_eq!(result_v28[0].0, "v28_types.rs");
+        assert_eq!(result_v29[0].0, "v29_types.rs");
+    }
+
+    #[test]
+    fn test_response_type_generator_mixed_methods() {
+        let generator = ResponseTypeCodeGenerator::new("test");
+
+        let methods = vec![
+            // Void method (should be skipped)
+            create_test_method("void", vec![]),
+            // Primitive method (should generate struct)
+            create_test_method(
+                "primitive",
+                vec![ApiResult {
+                    type_: "string".to_string(),
+                    key_name: "result".to_string(),
+                    ..Default::default()
+                }],
+            ),
+            // Object method (should generate struct)
+            create_test_method(
+                "object",
+                vec![ApiResult {
+                    type_: "object".to_string(),
+                    key_name: "result".to_string(),
+                    inner: vec![ApiResult {
+                        type_: "string".to_string(),
+                        key_name: "field".to_string(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+            ),
+        ];
+
+        let result = generator.generate(&methods);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "test_types.rs");
+
+        let output = &result[0].1;
+        // Should not contain void method
+        assert!(!output.contains("pub struct VoidResponse"));
+        // Should contain other methods
+        assert!(output.contains("pub struct PrimitiveResponse"));
+        assert!(output.contains("pub struct ObjectResponse"));
+        assert!(output.contains("pub field: String"));
     }
 
     #[test]
@@ -387,5 +517,231 @@ mod tests {
         assert!(result.contains("pub struct MultiResponse"));
         assert!(result.contains("pub field1: Option<String>"));
         assert!(result.contains("pub difficulty: Option<f64>"));
+    }
+
+    #[test]
+    fn test_sanitize_doc_comment() {
+        // Test basic sanitization
+        let input = "Test comment";
+        let result = sanitize_doc_comment(input);
+        assert_eq!(result, "Test comment");
+
+        // Test with special characters
+        let input = "Test \"quoted\" comment with \\backslashes\\";
+        let result = sanitize_doc_comment(input);
+        assert!(result.contains("\\\"quoted\\\""));
+        assert!(result.contains("\\\\backslashes\\\\"));
+
+        // Test with newlines
+        let input = "Line 1\nLine 2\nLine 3";
+        let result = sanitize_doc_comment(input);
+        assert!(result.contains("Line 1"));
+        assert!(result.contains("Line 2"));
+        assert!(result.contains("Line 3"));
+        assert!(result.contains("/// "));
+    }
+
+    #[test]
+    fn test_field_ident() {
+        // Test basic field name
+        let result = ApiResult {
+            key_name: "test_field".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(field_ident(&result, 0), "test_field");
+
+        // Test camelCase conversion
+        let result = ApiResult {
+            key_name: "testField".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(field_ident(&result, 0), "test_field");
+
+        // Test with hyphens
+        let result = ApiResult {
+            key_name: "test-field".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(field_ident(&result, 0), "test_field");
+
+        // Test empty key_name (should use index)
+        let result = ApiResult {
+            key_name: "".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(field_ident(&result, 21), "field_21");
+
+        // Test Rust keyword (should be escaped)
+        let result = ApiResult {
+            key_name: "type".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(field_ident(&result, 0), "r#type");
+    }
+
+    #[test]
+    fn test_serde_attrs_for() {
+        // Test field that is always present (should return empty string)
+        let field = Field {
+            name: "test_field".to_string(),
+            ty: "String".to_string(),
+            always_present: true,
+        };
+        assert_eq!(serde_attrs_for(&field), "");
+
+        // Test field that is not always present (should return serde attribute)
+        let field = Field {
+            name: "test_field".to_string(),
+            ty: "String".to_string(),
+            always_present: false,
+        };
+        let result = serde_attrs_for(&field);
+        assert!(result.contains("#[serde(skip_serializing_if = \"Option::is_none\")]"));
+        assert!(result.contains("    ")); // Should include indentation
+    }
+
+    #[test]
+    fn test_serde_attrs_for_field() {
+        // Test non-optional field (should return empty string)
+        let result = ApiResult {
+            key_name: "test_field".to_string(),
+            type_: "string".to_string(),
+            description: "Test field".to_string(),
+            inner: vec![],
+            optional: false,
+        };
+        assert_eq!(serde_attrs_for_field(&result), "");
+
+        // Test optional field (should return serde attribute)
+        let result = ApiResult {
+            key_name: "test_field".to_string(),
+            type_: "string".to_string(),
+            description: "Test field".to_string(),
+            inner: vec![],
+            optional: true,
+        };
+        let output = serde_attrs_for_field(&result);
+        assert!(output.contains("#[serde(skip_serializing_if = \"Option::is_none\")]"));
+        assert!(output.contains("    ")); // Should include indentation
+    }
+
+    #[test]
+    fn test_is_field_always_present() {
+        // Test field that appears in all object results and is never optional
+        let results = vec![
+            ApiResult {
+                key_name: "result1".to_string(),
+                type_: "object".to_string(),
+                description: "First result".to_string(),
+                inner: vec![ApiResult {
+                    key_name: "test_field".to_string(),
+                    type_: "string".to_string(),
+                    description: "Test field".to_string(),
+                    inner: vec![],
+                    optional: false,
+                }],
+                optional: false,
+            },
+            ApiResult {
+                key_name: "result2".to_string(),
+                type_: "object".to_string(),
+                description: "Second result".to_string(),
+                inner: vec![ApiResult {
+                    key_name: "test_field".to_string(),
+                    type_: "string".to_string(),
+                    description: "Test field".to_string(),
+                    inner: vec![],
+                    optional: false,
+                }],
+                optional: false,
+            },
+        ];
+        assert!(is_field_always_present("test_field", &results));
+
+        // Test field that appears in all object results but is optional in one
+        let results = vec![
+            ApiResult {
+                key_name: "result1".to_string(),
+                type_: "object".to_string(),
+                description: "First result".to_string(),
+                inner: vec![ApiResult {
+                    key_name: "test_field".to_string(),
+                    type_: "string".to_string(),
+                    description: "Test field".to_string(),
+                    inner: vec![],
+                    optional: false,
+                }],
+                optional: false,
+            },
+            ApiResult {
+                key_name: "result2".to_string(),
+                type_: "object".to_string(),
+                description: "Second result".to_string(),
+                inner: vec![ApiResult {
+                    key_name: "test_field".to_string(),
+                    type_: "string".to_string(),
+                    description: "Test field".to_string(),
+                    inner: vec![],
+                    optional: true, // This makes it not always present
+                }],
+                optional: false,
+            },
+        ];
+        assert!(!is_field_always_present("test_field", &results));
+
+        // Test field that doesn't appear in all results
+        let results = vec![
+            ApiResult {
+                key_name: "result1".to_string(),
+                type_: "object".to_string(),
+                description: "First result".to_string(),
+                inner: vec![ApiResult {
+                    key_name: "test_field".to_string(),
+                    type_: "string".to_string(),
+                    description: "Test field".to_string(),
+                    inner: vec![],
+                    optional: false,
+                }],
+                optional: false,
+            },
+            ApiResult {
+                key_name: "result2".to_string(),
+                type_: "object".to_string(),
+                description: "Second result".to_string(),
+                inner: vec![], // No test_field here
+                optional: false,
+            },
+        ];
+        assert!(!is_field_always_present("test_field", &results));
+
+        // Test field that appears in non-object results (should be false)
+        let results = vec![ApiResult {
+            key_name: "result1".to_string(),
+            type_: "string".to_string(), // Not an object
+            description: "First result".to_string(),
+            inner: vec![],
+            optional: false,
+        }];
+        assert!(!is_field_always_present("test_field", &results));
+    }
+
+    #[test]
+    fn test_build_return_type_with_empty_inner() {
+        // Test object with empty inner array (should hit the match guard)
+        let method = create_test_method(
+            "empty_object",
+            vec![ApiResult {
+                type_: "object".to_string(),
+                key_name: "result".to_string(),
+                description: "Empty object".to_string(),
+                inner: vec![], // Empty inner array
+                optional: false,
+            }],
+        );
+        let result = build_return_type(&method).unwrap().unwrap();
+        // Should generate transparent wrapper, not struct
+        assert!(result.contains("#[serde(transparent)]"));
+        assert!(result.contains("pub struct EmptyObjectResponse"));
+        assert!(!result.contains("pub struct EmptyObjectResponse {")); // Should not be a struct with fields
     }
 }
