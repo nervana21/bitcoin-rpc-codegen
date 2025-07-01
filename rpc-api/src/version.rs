@@ -10,7 +10,6 @@ pub enum Version {
     V29,
 }
 
-// This becomes the single source of truth for supported versions
 pub const KNOWN: &[Version] = &[Version::V28, Version::V29];
 
 pub const DEFAULT_VERSION: Version = Version::V29;
@@ -29,7 +28,7 @@ impl Version {
         format!("V{}", self.as_number())
     }
 
-    /// Convert the version into its lowercase string representation like "v28".
+    /// Convert the version into its lowercase string representation like "v29".
     /// Used specifically for types module names to follow Rust naming conventions.
     pub fn as_str_lowercase(&self) -> String {
         format!("v{}", self.as_number())
