@@ -26,7 +26,13 @@ impl CodeGenerator for ClientTraitGenerator {
         let client_trait = render_client_trait(template, methods, &self.version);
 
         // render mod.rs that re-exports the trait
-        let version_no = self.version.replace('.', "");
+        let version_no = format!(
+            "V{}",
+            self.version
+                .trim_start_matches('v')
+                .trim_start_matches('V')
+                .replace('.', "")
+        );
         let mod_rs = format!(
             "//! Auto-generated module for BitcoinClient{version_no}\n\
              pub mod client_trait;\n\
@@ -45,7 +51,13 @@ pub fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str)
     let mut out = template.to_owned();
 
     // 1) version substitutions
-    let version_no = version.replace('.', "");
+    let version_no = format!(
+        "V{}",
+        version
+            .trim_start_matches('v')
+            .trim_start_matches('V')
+            .replace('.', "")
+    );
     out = out.replace("{{VERSION}}", version);
     out = out.replace("{{VERSION_NODOTS}}", &version_no);
 
