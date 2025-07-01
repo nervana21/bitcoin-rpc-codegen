@@ -168,7 +168,7 @@ impl Type {
     }
 
     /// Convert from ApiResult array to Type
-    fn from_api_results(results: &[ApiResult]) -> Self {
+    pub fn from_api_results(results: &[ApiResult]) -> Self {
         if results.is_empty() {
             return Type::Unit;
         }
@@ -225,7 +225,7 @@ impl Type {
 }
 
 /// Infer the category of an RPC method based on its name
-fn infer_category(method_name: &str) -> String {
+pub fn infer_category(method_name: &str) -> String {
     if method_name.starts_with("get") {
         "query".to_string()
     } else if method_name.starts_with("set")
@@ -243,7 +243,7 @@ fn infer_category(method_name: &str) -> String {
 }
 
 /// Extract example usage from method description
-fn extract_examples(description: &str) -> Vec<String> {
+pub fn extract_examples(description: &str) -> Vec<String> {
     // Simple heuristic: look for code blocks or "Example:" sections
     let mut examples = Vec::new();
 
