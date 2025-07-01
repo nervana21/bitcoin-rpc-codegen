@@ -40,7 +40,8 @@ impl CodeGenerator for ClientTraitGenerator {
     }
 }
 
-fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> String {
+/// Render the client trait
+pub fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> String {
     let mut out = template.to_owned();
 
     // 1) version substitutions
