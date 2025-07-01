@@ -95,7 +95,7 @@ fn sanitize_doc_comment(comment: &str) -> String {
 
 /// Code generator for producing type-safe Rust representations of Bitcoin RPC responses.
 ///
-/// This struct is responsible for generating a single Rust source file, `latest_types.rs`,
+/// This struct is responsible for generating a single Rust source file, `{version}_types.rs`,
 /// which defines one strongly-typed struct per RPC method (e.g., `GetBlockResponse`).
 /// Each struct mirrors the shape of that method's return value, supporting:
 /// - Primitive types (e.g., `u64`, `String`)
