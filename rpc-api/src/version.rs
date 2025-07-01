@@ -98,3 +98,104 @@ pub enum VersionError {
     #[error("Invalid version format: {0}")]
     InvalidFormat(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_as_number() {
+        assert_eq!(Version::V28.as_number(), 28);
+        assert_eq!(Version::V29.as_number(), 29);
+    }
+
+    #[test]
+    fn test_is_supported() {
+        assert!(Version::V28.is_supported());
+        assert!(Version::V29.is_supported());
+        // Test edge case - from_number(27) returns V28 (DEFAULT_VERSION), which IS supported
+        let old_version = Version::from_number(27);
+        assert!(old_version.is_supported()); // This is V28, which is supported
+    }
+
+    #[test]
+    fn test_as_str_lowercase() {
+        assert_eq!(Version::V28.as_str_lowercase(), "v28");
+        assert_eq!(Version::V29.as_str_lowercase(), "v29");
+    }
+
+    #[test]
+    fn test_from_number() {
+        assert_eq!(Version::from_number(28), Version::V28);
+        assert_eq!(Version::from_number(29), Version::V29);
+        // Test fallback to default
+        assert_eq!(Version::from_number(999), Version::V28); // DEFAULT_VERSION
+        assert_eq!(Version::from_number(27), Version::V28); // DEFAULT_VERSION
+    }
+
+    #[test]
+    fn test_normalize() {
+        assert_eq!(Version::V28.normalize(), Version::V28);
+        assert_eq!(Version::V29.normalize(), Version::V29);
+    }
+
+    #[test]
+    fn test_version_roundtrip() {
+        for version in KNOWN {
+            let num = version.as_number();
+            let from_num = Version::from_number(num);
+            assert_eq!(*version, from_num);
+        }
+    }
+
+    #[test]
+    fn test_version_string_representations() {
+        assert_eq!(Version::V28.as_str(), "V28");
+        assert_eq!(Version::V29.as_str(), "V29");
+        assert_eq!(Version::V28.as_str_lowercase(), "v28");
+        assert_eq!(Version::V29.as_str_lowercase(), "v29");
+    }
+
+    #[test]
+    fn test_version_support_logic() {
+        // Known versions should be supported
+        assert!(Version::V28.is_supported());
+        assert!(Version::V29.is_supported());
+
+        // Test boundary condition
+        let boundary_version = Version::from_number(28);
+        assert!(boundary_version.is_supported());
+
+        // Test that from_number(27) returns V28 (DEFAULT_VERSION), which IS supported
+        let old_version = Version::from_number(27);
+        assert!(old_version.is_supported()); // This is V28, which is supported
+    }
+
+    #[test]
+    fn test_version_known_logic() {
+        // Known versions should be known
+        assert!(Version::V28.is_known());
+        assert!(Version::V29.is_known());
+
+        // Test with unknown version - from_number(999) returns V28 (DEFAULT_VERSION), which IS known
+        let unknown_version = Version::from_number(999);
+        assert!(unknown_version.is_known()); // This is V28, which is known
+    }
+
+    #[test]
+    fn test_from_str_edge_cases() {
+        // Test that invalid strings fall back to DEFAULT_VERSION
+        let invalid_version = Version::from("invalid");
+        assert_eq!(invalid_version, Version::V28);
+
+        // Test that valid but unknown numbers fall back to DEFAULT_VERSION
+        let unknown_version = Version::from("v999");
+        assert_eq!(unknown_version, Version::V28);
+    }
+
+    #[test]
+    fn test_display_implementation() {
+        assert_eq!(Version::V28.to_string(), "V28");
+        assert_eq!(Version::V29.to_string(), "V29");
+    }
+}
