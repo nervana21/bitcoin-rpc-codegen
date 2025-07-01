@@ -79,9 +79,9 @@ impl FromStr for Version {
             return Err(VersionError::InvalidFormat(s.to_string()));
         };
 
-            num.parse::<u32>()
-                .map(Version::from_number)
-                .map_err(|_| VersionError::InvalidFormat(s.to_string()))
+        num.parse::<u32>()
+            .map(Version::from_number)
+            .map_err(|_| VersionError::InvalidFormat(s.to_string()))
     }
 }
 
@@ -97,24 +97,4 @@ pub enum VersionError {
     UnsupportedVersion(String),
     #[error("Invalid version format: {0}")]
     InvalidFormat(String),
-}
-
-/// Get the Bitcoin Core version this crate was compiled against
-pub fn compiled_version() -> &'static str {
-    option_env!("BITCOIN_CORE_VERSION").unwrap_or("v29")
-}
-
-/// Get the version as a Version enum
-pub fn compiled_version_enum() -> Version {
-    Version::from(compiled_version())
-}
-
-/// Check if the current compiled version matches the given version
-pub fn is_compiled_version(version: Version) -> bool {
-    compiled_version_enum() == version
-}
-
-/// Get all supported versions as a slice
-pub fn supported_versions() -> &'static [Version] {
-    KNOWN
 }
