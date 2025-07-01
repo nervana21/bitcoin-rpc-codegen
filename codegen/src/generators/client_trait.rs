@@ -83,12 +83,13 @@ fn build_imports() -> String {
 }
 
 /// Tiny DSL to turn one ApiMethod into its doc-comment + fn
-struct MethodTemplate<'a> {
+pub struct MethodTemplate<'a> {
     method: &'a ApiMethod,
 }
 
 impl<'a> MethodTemplate<'a> {
-    fn new(method: &'a ApiMethod) -> Self {
+    /// Create a new MethodTemplate for the given ApiMethod
+    pub fn new(method: &'a ApiMethod) -> Self {
         MethodTemplate { method }
     }
 
@@ -146,7 +147,7 @@ impl<'a> MethodTemplate<'a> {
     }
 
     /// Build the lines inside `vec![ ... ]`
-    fn json_params(&self) -> String {
+    pub fn json_params(&self) -> String {
         self.method
             .arguments
             .iter()
