@@ -1,10 +1,10 @@
 //! Generate result structs for RPC method returns
 
-use crate::utils::rust_type_for_result;
-use rpc_api::ApiMethod;
+use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
 use super::utils::camel;
+use type_registry::TypeRegistry;
 
 /// Generates Rust struct definitions for RPC method response types.
 ///
@@ -29,4 +29,24 @@ pub fn generate_result_code(methods: &[ApiMethod]) -> String {
         .unwrap();
     }
     code
+}
+
+/// Determines the appropriate Rust type for a given API result.
+///
+/// This function takes an `ApiResult` reference, uses the type registry to map the API result type
+/// to a corresponding Rust type, and wraps the type in `Option<>` if the result is considered optional
+/// according to the registry's mapping rules.
+///
+/// # Arguments
+/// * `result` - A reference to the API result metadata.
+///
+/// # Returns
+/// A `String` representing the Rust type for the result, possibly wrapped in `Option<>`.
+fn rust_type_for_result(result: &ApiResult) -> String {
+    let (base_ty, is_option) = TypeRegistry::new().map_result_type(result);
+    if is_option {
+        format!("Option<{base_ty}>")
+    } else {
+        base_ty.to_string()
+    }
 }

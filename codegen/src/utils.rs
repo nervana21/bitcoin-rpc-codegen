@@ -1,6 +1,6 @@
 // codegen/src/utils.rs
 
-use rpc_api::{ApiArgument, ApiResult};
+use rpc_api::ApiArgument;
 use type_registry::TypeRegistry;
 
 /// Converts a camelCase string to snake_case
@@ -52,27 +52,6 @@ pub fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
         optional: false,
         description: String::new(),
     });
-    if is_option {
-        format!("Option<{base_ty}>")
-    } else {
-        base_ty.to_string()
-    }
-}
-
-// TODO: consider inlining this function into `emit_results.rs`
-/// Determines the appropriate Rust type for a given API result.
-///
-/// This function takes an `ApiResult` reference, uses the type registry to map the API result type
-/// to a corresponding Rust type, and wraps the type in `Option<>` if the result is considered optional
-/// according to the registry's mapping rules.
-///
-/// # Arguments
-/// * `result` - A reference to the API result metadata.
-///
-/// # Returns
-/// A `String` representing the Rust type for the result, possibly wrapped in `Option<>`.
-pub fn rust_type_for_result(result: &ApiResult) -> String {
-    let (base_ty, is_option) = TypeRegistry::new().map_result_type(result);
     if is_option {
         format!("Option<{base_ty}>")
     } else {
