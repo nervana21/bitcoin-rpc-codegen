@@ -111,6 +111,10 @@ impl<'a> MethodTemplate<'a> {
             .arguments
             .iter()
             .map(|arg| {
+                // Add underscore prefix to all parameter names for consistency and clarity.
+                // This distinguishes parameters from other identifiers and follows Rust conventions
+                // for intentionally prefixed names. The special case for "type" uses r#_type
+                // to properly escape the reserved keyword.
                 let name = if arg.names[0] == "type" {
                     "r#_type".to_string()
                 } else {
