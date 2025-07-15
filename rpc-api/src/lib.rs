@@ -42,7 +42,6 @@ pub struct ApiResult {
 #[derive(Debug, Clone)]
 pub struct RpcMethod {
     pub name: String,
-    pub category: String,
     pub description: String,
     pub examples: Vec<String>,
     pub params: Vec<Param>,
@@ -119,7 +118,6 @@ impl Type {
 
 impl From<ApiMethod> for RpcMethod {
     fn from(api_method: ApiMethod) -> Self {
-        let category = infer_category(&api_method.name);
         let examples = extract_examples(&api_method.description);
 
         let params = api_method
@@ -141,7 +139,6 @@ impl From<ApiMethod> for RpcMethod {
 
         RpcMethod {
             name: api_method.name,
-            category,
             description: api_method.description,
             examples,
             params,
@@ -221,24 +218,6 @@ impl Type {
 
             Type::Object(fields)
         }
-    }
-}
-
-/// Infer the category of an RPC method based on its name
-pub fn infer_category(method_name: &str) -> String {
-    if method_name.starts_with("get") {
-        "query".to_string()
-    } else if method_name.starts_with("set")
-        || method_name.starts_with("add")
-        || method_name.starts_with("remove")
-    {
-        "modify".to_string()
-    } else if method_name.starts_with("send") || method_name.starts_with("create") {
-        "action".to_string()
-    } else if method_name.starts_with("stop") || method_name.starts_with("start") {
-        "control".to_string()
-    } else {
-        "other".to_string()
     }
 }
 
