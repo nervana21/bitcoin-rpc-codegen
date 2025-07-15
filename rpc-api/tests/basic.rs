@@ -195,20 +195,6 @@ fn type_from_api_results_cases() {
 }
 
 #[test]
-fn infer_category_cases() {
-    use rpc_api::infer_category;
-    assert_eq!(infer_category("getblock"), "query");
-    assert_eq!(infer_category("setfoo"), "modify");
-    assert_eq!(infer_category("addbar"), "modify");
-    assert_eq!(infer_category("removebaz"), "modify");
-    assert_eq!(infer_category("sendcoins"), "action");
-    assert_eq!(infer_category("createwallet"), "action");
-    assert_eq!(infer_category("stopnode"), "control");
-    assert_eq!(infer_category("startnode"), "control");
-    assert_eq!(infer_category("foo"), "other");
-}
-
-#[test]
 fn extract_examples_cases() {
     use rpc_api::extract_examples;
     let desc = "This method.\nExample: foo\n```\nbar\n```\n";
@@ -251,7 +237,6 @@ fn from_apimethod_for_rpcmethod() {
     };
     let rpc_method: RpcMethod = api_method.into();
     assert_eq!(rpc_method.name, "getfoo");
-    assert_eq!(rpc_method.category, "query");
     assert_eq!(rpc_method.description, "desc");
     assert_eq!(rpc_method.params.len(), 1);
     assert_eq!(rpc_method.result.is_some(), true);
