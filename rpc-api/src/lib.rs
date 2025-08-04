@@ -255,25 +255,91 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
         let command = &command_array.as_array().unwrap()[0];
         let command_obj = command.as_object().unwrap();
 
-        let arguments = command_obj["arguments"]
-            .as_array()
-            .map(|params| {
-                params
+        // --- DIAGNOSTIC PRINTS ---
+        println!("\n[DIAGNOSTIC] Processing command: {name}");
+        println!(
+            "[DIAGNOSTIC] command_obj keys: {:?}",
+            command_obj.keys().collect::<Vec<_>>()
+        );
+        println!("[DIAGNOSTIC] Full command_obj: {:#?}", command_obj);
+
+        // If you want to see the full JSON for this command:
+        println!(
+            "[DIAGNOSTIC] Full command JSON: {}",
+            serde_json::to_string_pretty(command).unwrap()
+        );
+
+        // --- Support both v28 (array) and v29 (object) argument formats ---
+        let arguments = match command_obj.get("arguments") {
+            Some(args) if args.is_array() => {
+                // v28 style
+                args.as_array()
+                    .unwrap()
                     .iter()
                     .map(|param| ApiArgument {
-                        names: param["names"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|n| n.as_str().unwrap().to_string())
-                            .collect(),
-                        type_: param["type"].as_str().unwrap().to_string(),
-                        optional: param["optional"].as_bool().unwrap_or(false),
-                        description: param["description"].as_str().unwrap_or("").to_string(),
+                        names: param
+                            .get("names")
+                            .and_then(|n| n.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                    .collect()
+                            })
+                            .unwrap_or_else(Vec::new),
+                        type_: param
+                            .get("type")
+                            .and_then(|t| t.as_str())
+                            .unwrap_or("string")
+                            .to_string(),
+                        optional: param
+                            .get("optional")
+                            .and_then(|b| b.as_bool())
+                            .unwrap_or(false),
+                        description: param
+                            .get("description")
+                            .and_then(|d| d.as_str())
+                            .unwrap_or("")
+                            .to_string(),
                     })
                     .collect()
-            })
-            .unwrap_or_default();
+            }
+            Some(args) if args.is_object() => {
+                // v29 style (JSON Schema)
+                let empty = serde_json::Map::new();
+                let properties = args
+                    .get("properties")
+                    .and_then(|p| p.as_object())
+                    .unwrap_or(&empty);
+                let required: std::collections::HashSet<_> = args
+                    .get("required")
+                    .and_then(|arr| arr.as_array())
+                    .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
+                    .unwrap_or_default();
+                properties
+                    .iter()
+                    .map(|(name, prop)| ApiArgument {
+                        names: vec![name.clone()],
+                        type_: prop
+                            .get("type")
+                            .and_then(|t| t.as_str())
+                            .unwrap_or("string")
+                            .to_string(),
+                        optional: !required.contains(name.as_str()),
+                        description: prop
+                            .get("description")
+                            .and_then(|d| d.as_str())
+                            .unwrap_or("")
+                            .to_string(),
+                    })
+                    .collect()
+            }
+            _ => vec![], // No arguments
+        };
+
+        // --- DIAGNOSTIC PRINTS FOR RESULTS ---
+        if !command_obj.contains_key("results") {
+            println!("[ERROR] Command '{name}' is missing 'results' key!");
+        }
 
         let results = command_obj["results"]
             .as_array()
