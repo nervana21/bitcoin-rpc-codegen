@@ -611,6 +611,14 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         category: RpcCategory::GenericObject,
         exact: false,
     },
+    // Specific floating-point fields that should be f64
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("verificationprogress"),
+        category: RpcCategory::Float,
+        exact: false,
+    },
+    // Catchall for remaining number fields
     CategoryRule {
         rpc_type: "number",
         pattern: None,
