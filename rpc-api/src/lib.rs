@@ -352,8 +352,9 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
             println!("[ERROR] Command '{name}' is missing 'results' key!");
         }
 
-        let results = command_obj["results"]
-            .as_array()
+        let results = command_obj
+            .get("results")
+            .and_then(|v| v.as_array())
             .map(|results| results.iter().map(parse_result).collect())
             .unwrap_or_default();
 
