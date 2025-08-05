@@ -1,6 +1,7 @@
 //! rpc-api/src/lib.rs
 //! Defines the canonical types, error enum, and supported-version logic.
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -304,17 +305,27 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
                     .collect()
             }
             Some(args) if args.is_object() => {
-                // v29 style (JSON Schema)
-                let empty = serde_json::Map::new();
+                // v29 style (JSON Schema) - Use IndexMap to preserve order
                 let properties = args
                     .get("properties")
                     .and_then(|p| p.as_object())
-                    .unwrap_or(&empty);
+                    .map(|obj| {
+                        // Convert to IndexMap to preserve insertion order
+                        let mut index_map = IndexMap::new();
+                        for (key, value) in obj {
+                            index_map.insert(key.clone(), value.clone());
+                        }
+                        index_map
+                    })
+                    .unwrap_or_else(IndexMap::new);
+
                 let required: std::collections::HashSet<_> = args
                     .get("required")
                     .and_then(|arr| arr.as_array())
                     .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
                     .unwrap_or_default();
+
+                // Now iterate in preserved order
                 properties
                     .iter()
                     .map(|(name, prop)| ApiArgument {
