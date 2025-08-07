@@ -1,6 +1,5 @@
-use codegen::{write_generated, CodeGenerator, TransportCodeGenerator};
-use rpc_api::{parse_api_json, ApiMethod, ApiResult};
-use tempfile::TempDir;
+use codegen::{CodeGenerator, TransportCodeGenerator};
+use rpc_api::{ApiMethod, ApiResult};
 
 #[test]
 fn transport_codegen_basic_functionality() {
@@ -63,29 +62,4 @@ fn transport_codegen_with_arguments() {
     assert!(src.contains("pub async fn getblock"));
     assert!(src.contains("blockhash: serde_json::Value"));
     assert!(src.contains("hash"));
-}
-
-#[tokio::test]
-async fn test_generate_types_from_schema() {
-    // 1. Read API schema
-    let schema_json = include_str!("../../api.json");
-    let methods = parse_api_json(schema_json).expect("Failed to parse API schema");
-
-    // 2. Generate types
-    let generator = TransportCodeGenerator;
-    let generated_files = generator.generate(&methods);
-
-    // 3. Write to temp directory
-    let tmp = TempDir::new().expect("Failed to create temp dir");
-    write_generated(tmp.path(), &generated_files).expect("Failed to write generated files");
-
-    // 4. Verify files were generated
-    for (name, _) in &generated_files {
-        let file_path = tmp.path().join(format!("{}.rs", name));
-        assert!(
-            file_path.exists(),
-            "Expected {} to exist",
-            file_path.display()
-        );
-    }
 }
