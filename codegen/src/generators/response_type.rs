@@ -18,8 +18,12 @@ use type_registry::TypeRegistry;
 
 fn field_ident(res: &ApiResult, idx: usize) -> String {
     if !res.key_name.is_empty() {
-        // First convert hyphens to underscores
-        let sanitized = res.key_name.replace('-', "_");
+        // Remove angle brackets and other invalid characters for Rust identifiers
+        let sanitized = res
+            .key_name
+            .replace('<', "")
+            .replace('>', "")
+            .replace('-', "_");
 
         // Convert camelCase to snake_case
         let snake_case = camel_to_snake_case(&sanitized);
