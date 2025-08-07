@@ -248,13 +248,14 @@ pub enum Error {
 
 pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
     let api: serde_json::Value = serde_json::from_str(json)?;
-    let commands = api["commands"].as_object().unwrap();
+
+    // Handle the canonical rpcs structure
+    let rpcs = api["rpcs"].as_object().unwrap();
 
     let mut parsed_methods = Vec::new();
 
-    for (name, command_array) in commands {
-        let command = &command_array.as_array().unwrap()[0];
-        let command_obj = command.as_object().unwrap();
+    for (name, command_obj) in rpcs {
+        let command_obj = command_obj.as_object().unwrap();
 
         // --- DIAGNOSTIC PRINTS ---
         println!("\n[DIAGNOSTIC] Processing command: {name}");
@@ -267,7 +268,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
         // If you want to see the full JSON for this command:
         println!(
             "[DIAGNOSTIC] Full command JSON: {}",
-            serde_json::to_string_pretty(command).unwrap()
+            serde_json::to_string_pretty(command_obj).unwrap()
         );
 
         // --- Support both v28 (array) and v29 (object) argument formats ---
@@ -354,16 +355,19 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
 
         let results = command_obj
             .get("results")
-            .and_then(|v| v.as_array())
-            .map(|results| results.iter().map(parse_result).collect())
-            .unwrap_or_default();
+            .and_then(|r| r.as_array())
+            .map(|arr| arr.iter().map(parse_result).collect())
+            .unwrap_or_else(Vec::new);
+
+        let description = command_obj
+            .get("description")
+            .and_then(|d| d.as_str())
+            .unwrap_or("")
+            .to_string();
 
         parsed_methods.push(ApiMethod {
             name: name.clone(),
-            description: command_obj["description"]
-                .as_str()
-                .unwrap_or("")
-                .to_string(),
+            description,
             arguments,
             results,
         });
@@ -379,8 +383,9 @@ fn parse_result(value: &serde_json::Value) -> ApiResult {
         type_: obj["type"].as_str().unwrap_or("").to_string(),
         description: obj["description"].as_str().unwrap_or("").to_string(),
         key_name: obj["key_name"].as_str().unwrap_or("").to_string(),
-        inner: obj["inner"]
-            .as_array()
+        inner: obj
+            .get("inner")
+            .and_then(|v| v.as_array())
             .map(|props| props.iter().map(parse_result).collect())
             .unwrap_or_default(),
         optional: obj["optional"].as_bool().unwrap_or(false),
