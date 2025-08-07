@@ -387,6 +387,7 @@ fn test_all_float_fields() {
         "probability",
         "percentage",
         "fee_rate",
+        "verificationprogress",
     ];
 
     for field in float_fields {
