@@ -108,6 +108,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "Unsupported version")]
     fn unsupported_version_panics() {
-        let _ = get_helpers_for_version("v100");
+        let _ = get_helpers_for_version("invalid");
     }
 }
