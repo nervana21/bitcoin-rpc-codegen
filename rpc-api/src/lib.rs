@@ -111,8 +111,8 @@ impl Type {
         }
     }
 
-    /// Check if this type should be wrapped in Option<T>
-    pub fn is_optional(&self) -> bool {
+    /// Check if this type is already wrapped in Option<T>
+    pub fn is_option_type(&self) -> bool {
         matches!(self, Type::Option(_))
     }
 }

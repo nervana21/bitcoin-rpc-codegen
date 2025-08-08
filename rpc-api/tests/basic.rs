@@ -91,10 +91,10 @@ fn api_method_roundtrip() {
 }
 
 #[test]
-fn type_is_optional_and_to_rust_type() {
+fn type_is_option_type_and_to_rust_type() {
     // Primitive
     let t = Type::Primitive("string".into());
-    assert!(!t.is_optional());
+    assert!(!t.is_option_type());
     assert_eq!(t.to_rust_type(), "String");
     let t = Type::Primitive("boolean".into());
     assert_eq!(t.to_rust_type(), "bool");
@@ -112,7 +112,7 @@ fn type_is_optional_and_to_rust_type() {
     assert_eq!(t.to_rust_type(), "serde_json::Value");
     // Option
     let t = Type::Option(Box::new(Type::Primitive("string".into())));
-    assert!(t.is_optional());
+    assert!(t.is_option_type());
     // Object
     let t = Type::Object(vec![("foo".into(), Type::Primitive("string".into()))]);
     assert_eq!(t.to_rust_type(), "{\n    pub foo: String,\n}");
