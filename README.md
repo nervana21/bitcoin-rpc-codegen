@@ -62,7 +62,7 @@ Or add it manually:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "0.1.2"
+bitcoin-rpc-midas = "0.1.3"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
