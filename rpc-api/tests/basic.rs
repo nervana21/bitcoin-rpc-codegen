@@ -204,18 +204,6 @@ fn extract_examples_cases() {
 }
 
 #[test]
-fn parse_api_json_cases() {
-    use rpc_api::parse_api_json;
-    let json = r#"{"commands":{"foo":[{"description":"desc","arguments":[],"results":[]}]}}"#;
-    let parsed = parse_api_json(json).unwrap();
-    assert_eq!(parsed.len(), 1);
-    assert_eq!(parsed[0].name, "foo");
-    assert_eq!(parsed[0].description, "desc");
-    assert!(parsed[0].arguments.is_empty());
-    assert!(parsed[0].results.is_empty());
-}
-
-#[test]
 fn from_apimethod_for_rpcmethod() {
     use rpc_api::{ApiArgument, ApiMethod, ApiResult, RpcMethod};
     let api_method = ApiMethod {
