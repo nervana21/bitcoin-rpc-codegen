@@ -129,8 +129,8 @@ mod tests {
         assert_eq!(Version::from_number(28), Version::V28);
         assert_eq!(Version::from_number(29), Version::V29);
         // Test fallback to default
-        assert_eq!(Version::from_number(999), Version::V28); // DEFAULT_VERSION
-        assert_eq!(Version::from_number(27), Version::V28); // DEFAULT_VERSION
+        assert_eq!(Version::from_number(999), DEFAULT_VERSION);
+        assert_eq!(Version::from_number(27), DEFAULT_VERSION);
     }
 
     #[test]
@@ -186,11 +186,11 @@ mod tests {
     fn test_from_str_edge_cases() {
         // Test that invalid strings fall back to DEFAULT_VERSION
         let invalid_version = Version::from("invalid");
-        assert_eq!(invalid_version, Version::V28);
+        assert_eq!(invalid_version, DEFAULT_VERSION);
 
         // Test that valid but unknown numbers fall back to DEFAULT_VERSION
         let unknown_version = Version::from("v999");
-        assert_eq!(unknown_version, Version::V28);
+        assert_eq!(unknown_version, DEFAULT_VERSION);
     }
 
     #[test]

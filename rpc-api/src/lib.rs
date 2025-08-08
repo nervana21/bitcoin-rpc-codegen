@@ -484,8 +484,8 @@ mod tests {
 
         let rpc_method: RpcMethod = api_method.into();
         assert_eq!(rpc_method.params.len(), 2);
-        assert_eq!(rpc_method.params[0].required, true); // !false = true
-        assert_eq!(rpc_method.params[1].required, false); // !true = false
+        assert_eq!(rpc_method.params[0].required, false);
+        assert_eq!(rpc_method.params[1].required, true);
     }
 
     #[test]

@@ -15,7 +15,7 @@ fn transport_codegen_basic_functionality() {
             type_: "string".into(),
             description: "Current network name".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         }],
     }];
 
@@ -41,14 +41,14 @@ fn transport_codegen_with_arguments() {
             names: vec!["blockhash".into()],
             type_: "string".into(),
             description: "The block hash".into(),
-            optional: false,
+            required: true,
         }],
         results: vec![ApiResult {
             key_name: "hash".into(),
             type_: "string".into(),
             description: "The block hash".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         }],
     }];
 

@@ -133,20 +133,25 @@ fn type_is_option_type_and_to_rust_type() {
 #[test]
 fn type_from_api_results_cases() {
     use rpc_api::ApiResult;
+
     // Empty
-    let t = Type::from_api_results(&[]);
+    let results = &[];
+    let t = Type::from_api_results(results);
     assert!(matches!(t, Type::Unit));
+
     // Single unnamed primitive
-    let t = Type::from_api_results(&[ApiResult {
+    let results = &[ApiResult {
         key_name: "".into(),
         type_: "string".into(),
         description: "desc".into(),
         inner: vec![],
         required: true,
-    }]);
+    }];
+    let t = Type::from_api_results(results);
     assert!(matches!(t, Type::Primitive(_)));
+
     // Single unnamed object with inner
-    let t = Type::from_api_results(&[ApiResult {
+    let results = &[ApiResult {
         key_name: "".into(),
         type_: "object".into(),
         description: "desc".into(),
@@ -158,19 +163,23 @@ fn type_from_api_results_cases() {
             required: true,
         }],
         required: true,
-    }]);
+    }];
+    let t = Type::from_api_results(results);
     assert!(matches!(t, Type::Object(_)));
+
     // Single named result
-    let t = Type::from_api_results(&[ApiResult {
+    let results = &[ApiResult {
         key_name: "foo".into(),
         type_: "string".into(),
         description: "desc".into(),
         inner: vec![],
         required: true,
-    }]);
+    }];
+    let t = Type::from_api_results(results);
     assert!(matches!(t, Type::Object(_)));
-    // Multiple results
-    let t = Type::from_api_results(&[
+
+    // Multiple results (all required)
+    let results = &[
         ApiResult {
             key_name: "foo".into(),
             type_: "string".into(),
@@ -185,9 +194,39 @@ fn type_from_api_results_cases() {
             inner: vec![],
             required: true,
         },
-    ]);
-    if let Type::Object(fields) = t {
+    ];
+    let t = Type::from_api_results(results);
+
+    if let Type::Object(fields) = &t {
         assert_eq!(fields.len(), 2);
+        assert!(matches!(fields[0].1, Type::Primitive(_)));
+        assert!(matches!(fields[1].1, Type::Primitive(_)));
+    } else {
+        panic!("Expected Type::Object");
+    }
+
+    // Multiple results (with optional field)
+    let results = &[
+        ApiResult {
+            key_name: "foo".into(),
+            type_: "string".into(),
+            description: "desc".into(),
+            inner: vec![],
+            required: true,
+        },
+        ApiResult {
+            key_name: "bar".into(),
+            type_: "number".into(),
+            description: "desc".into(),
+            inner: vec![],
+            required: false, // This should make it Option
+        },
+    ];
+    let t = Type::from_api_results(results);
+
+    if let Type::Object(fields) = &t {
+        assert_eq!(fields.len(), 2);
+        assert!(matches!(fields[0].1, Type::Primitive(_)));
         assert!(matches!(fields[1].1, Type::Option(_)));
     } else {
         panic!("Expected Type::Object");

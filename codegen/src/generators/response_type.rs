@@ -433,24 +433,40 @@ mod tests {
         // Should contain other methods
         assert!(output.contains("pub struct PrimitiveResponse"));
         assert!(output.contains("pub struct ObjectResponse"));
-        assert!(output.contains("pub field: String"));
+        assert!(output.contains("pub field: Option<String>"));
     }
 
     #[test]
     fn test_build_return_type() {
         // Test void method (no results)
         let void_method = create_test_method("void", vec![]);
-        assert!(build_return_type(&void_method).unwrap().is_none());
+        let void_result = build_return_type(&void_method);
+        assert!(
+            void_result.is_ok(),
+            "build_return_type should succeed for void method"
+        );
+        assert!(
+            void_result.unwrap().is_none(),
+            "Void method should return None"
+        );
 
         // Test void method (all results are "none")
-        let void_method = create_test_method(
+        let void_method_with_none = create_test_method(
             "void",
             vec![ApiResult {
                 type_: "none".to_string(),
                 ..Default::default()
             }],
         );
-        assert!(build_return_type(&void_method).unwrap().is_none());
+        let void_none_result = build_return_type(&void_method_with_none);
+        assert!(
+            void_none_result.is_ok(),
+            "build_return_type should succeed for void method with none"
+        );
+        assert!(
+            void_none_result.unwrap().is_none(),
+            "Void method with none should return None"
+        );
 
         // Test single primitive result
         let primitive_method = create_test_method(
@@ -461,9 +477,20 @@ mod tests {
                 ..Default::default()
             }],
         );
-        let result = build_return_type(&primitive_method).unwrap().unwrap();
-        assert!(result.contains("pub struct PrimitiveResponse"));
-        assert!(result.contains("pub String"));
+        let primitive_result = build_return_type(&primitive_method);
+        assert!(
+            primitive_result.is_ok(),
+            "build_return_type should succeed for primitive method"
+        );
+        let primitive_code = primitive_result.unwrap().unwrap();
+        assert!(
+            primitive_code.contains("pub struct PrimitiveResponse"),
+            "Primitive response should contain 'pub struct PrimitiveResponse'"
+        );
+        assert!(
+            primitive_code.contains("pub String"),
+            "Primitive response should contain 'pub String'"
+        );
 
         // Test single object result
         let object_method = create_test_method(
@@ -486,10 +513,24 @@ mod tests {
                 ..Default::default()
             }],
         );
-        let result = build_return_type(&object_method).unwrap().unwrap();
-        assert!(result.contains("pub struct ObjectResponse"));
-        assert!(result.contains("pub field1: String"));
-        assert!(result.contains("pub difficulty: f64"));
+        let object_result = build_return_type(&object_method);
+        assert!(
+            object_result.is_ok(),
+            "build_return_type should succeed for object method"
+        );
+        let object_code = object_result.unwrap().unwrap();
+        assert!(
+            object_code.contains("pub struct ObjectResponse"),
+            "Object response should contain 'pub struct ObjectResponse'"
+        );
+        assert!(
+            object_code.contains("pub field1: Option<String>"),
+            "Object response should contain 'pub field1: Option<String>'"
+        );
+        assert!(
+            object_code.contains("pub difficulty: Option<f64>"),
+            "Object response should contain 'pub difficulty: Option<f64>'"
+        );
 
         // Test multi-variant result
         let multi_method = create_test_method(
@@ -517,10 +558,24 @@ mod tests {
                 },
             ],
         );
-        let result = build_return_type(&multi_method).unwrap().unwrap();
-        assert!(result.contains("pub struct MultiResponse"));
-        assert!(result.contains("pub field1: Option<String>"));
-        assert!(result.contains("pub difficulty: Option<f64>"));
+        let multi_result = build_return_type(&multi_method);
+        assert!(
+            multi_result.is_ok(),
+            "build_return_type should succeed for multi-variant method"
+        );
+        let multi_code = multi_result.unwrap().unwrap();
+        assert!(
+            multi_code.contains("pub struct MultiResponse"),
+            "Multi-variant response should contain 'pub struct MultiResponse'"
+        );
+        assert!(
+            multi_code.contains("pub field1: Option<String>"),
+            "Multi-variant response should contain 'pub field1: Option<String>'"
+        );
+        assert!(
+            multi_code.contains("pub difficulty: Option<f64>"),
+            "Multi-variant response should contain 'pub difficulty: Option<f64>'"
+        );
     }
 
     #[test]

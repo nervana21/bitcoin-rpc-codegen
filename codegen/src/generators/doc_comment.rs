@@ -235,7 +235,7 @@ Result:
                 type_: "number".to_string(),
                 description: "The current block count".to_string(),
                 inner: vec![],
-                optional: false,
+                required: true,
             }],
         };
 
