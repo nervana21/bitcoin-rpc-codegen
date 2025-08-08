@@ -63,6 +63,7 @@ pub trait CodeGenerator {
     }
 }
 
+#[allow(unused)]
 fn format_with_rustfmt(path: &Path) {
     if let Ok(status) = Command::new("rustfmt")
         .arg("--edition=2021")
