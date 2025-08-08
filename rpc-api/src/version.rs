@@ -13,7 +13,7 @@ pub enum Version {
 pub const KNOWN: &[Version] = &[Version::V28, Version::V29];
 
 // Default fallback if no compile-time version is obtained
-pub const DEFAULT_VERSION: Version = Version::V28;
+pub const DEFAULT_VERSION: Version = Version::V29;
 
 impl Version {
     /// Convert the version into its numeric representation.
