@@ -33,13 +33,13 @@ fn transport_codegen_with_args() {
             ApiArgument {
                 names: vec!["arg1".into()],
                 description: "".into(),
-                optional: false,
+                required: true,
                 type_: "string".into(),
             },
             ApiArgument {
                 names: vec!["arg2".into()],
                 description: "".into(),
-                optional: false,
+                required: true,
                 type_: "number".into(),
             },
         ],
