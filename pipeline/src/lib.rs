@@ -730,13 +730,15 @@ impl TestConfig {
 
     println!("Generated modules in {out_dir:?}");
 
-    let batch_transport_src = std::fs::read_to_string("transport/src/batch_transport.rs")
-        .with_context(|| {
-            format!(
-                "Failed to read batch_transport.rs at {:?}",
-                "transport/src/batch_transport.rs"
-            )
-        })?;
+    let project_root = find_project_root()?;
+    let batch_transport_src =
+        std::fs::read_to_string(project_root.join("transport/src/batch_transport.rs"))
+            .with_context(|| {
+                format!(
+                    "Failed to read batch_transport.rs at {:?}",
+                    project_root.join("transport/src/batch_transport.rs")
+                )
+            })?;
     let dest_path = out_dir.join("transport").join("batch_transport.rs");
 
     std::fs::create_dir_all(dest_path.parent().unwrap())
@@ -1185,7 +1187,8 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
 ///
 /// Returns `Result<()>` indicating success or failure of copying the template files
 fn copy_templates_to(dst_dir: &Path) -> Result<()> {
-    let src_dir = PathBuf::from("templates");
+    let project_root = find_project_root()?;
+    let src_dir = project_root.join("templates");
 
     for filename in TEMPLATE_FILES {
         let src_path = src_dir.join(filename);
