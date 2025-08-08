@@ -388,8 +388,22 @@ fn parse_result(value: &serde_json::Value) -> ApiResult {
             .and_then(|v| v.as_array())
             .map(|props| props.iter().map(parse_result).collect())
             .unwrap_or_default(),
-        required: obj["required"].as_bool().unwrap_or(true),
+        required: is_required(obj),
     }
+}
+
+fn is_required(obj: &serde_json::Map<String, serde_json::Value>) -> bool {
+    // First check if there's an explicit "required" field
+    if let Some(required) = obj.get("required") {
+        if let Some(required_bool) = required.as_bool() {
+            return required_bool;
+        }
+    }
+
+    // Fall back to checking for "optional" field (inverted logic)
+    !obj.get("optional")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
