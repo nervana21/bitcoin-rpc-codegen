@@ -180,7 +180,7 @@ impl TypeRegistry {
     pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
         // Special case: ALL result fields of "amount" type should be Float
         if result.type_ == "amount" {
-            return ("f64", result.optional);
+            return ("f64", !result.required);
         }
 
         // Use description as fallback when key_name is empty
@@ -190,7 +190,7 @@ impl TypeRegistry {
             &result.key_name
         };
         let (ty, is_opt) = self.map(&result.type_, name);
-        (ty, is_opt || result.optional)
+        (ty, is_opt || !result.required)
     }
 
     /// For arguments

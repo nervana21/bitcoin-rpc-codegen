@@ -53,7 +53,7 @@ fn api_result_roundtrip() {
         type_: "number".into(),
         description: "a test result".into(),
         inner: vec![],
-        optional: false,
+        required: true,
     };
     let json = serde_json::to_string(&res).expect("serialize ApiResult");
     let de: ApiResult = serde_json::from_str(&json).expect("deserialize ApiResult");
@@ -79,7 +79,7 @@ fn api_method_roundtrip() {
             type_: "none".into(),
             description: "".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         }],
     };
     let json = serde_json::to_string(&method).expect("serialize ApiMethod");
@@ -142,7 +142,7 @@ fn type_from_api_results_cases() {
         type_: "string".into(),
         description: "desc".into(),
         inner: vec![],
-        optional: false,
+        required: true,
     }]);
     assert!(matches!(t, Type::Primitive(_)));
     // Single unnamed object with inner
@@ -155,9 +155,9 @@ fn type_from_api_results_cases() {
             type_: "string".into(),
             description: "desc".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         }],
-        optional: false,
+        required: true,
     }]);
     assert!(matches!(t, Type::Object(_)));
     // Single named result
@@ -166,7 +166,7 @@ fn type_from_api_results_cases() {
         type_: "string".into(),
         description: "desc".into(),
         inner: vec![],
-        optional: false,
+        required: true,
     }]);
     assert!(matches!(t, Type::Object(_)));
     // Multiple results
@@ -176,14 +176,14 @@ fn type_from_api_results_cases() {
             type_: "string".into(),
             description: "desc".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         },
         ApiResult {
             key_name: "bar".into(),
             type_: "number".into(),
             description: "desc".into(),
             inner: vec![],
-            optional: true,
+            required: true,
         },
     ]);
     if let Type::Object(fields) = t {
@@ -220,7 +220,7 @@ fn from_apimethod_for_rpcmethod() {
             type_: "number".into(),
             description: "desc".into(),
             inner: vec![],
-            optional: false,
+            required: true,
         }],
     };
     let rpc_method: RpcMethod = api_method.into();

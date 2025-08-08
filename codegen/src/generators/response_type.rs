@@ -270,7 +270,7 @@ fn is_field_always_present(name: &str, results: &[ApiResult]) -> bool {
         r.type_ == "object"
             && r.inner
                 .iter()
-                .any(|f| field_ident(f, 0) == name && !f.optional)
+                .any(|f| field_ident(f, 0) == name && f.required)
     })
 }
 
@@ -285,7 +285,7 @@ fn serde_attrs_for(field: &Field) -> String {
 
 /// Render serde attrs for a single `ApiResult`.
 fn serde_attrs_for_field(r: &ApiResult) -> String {
-    if r.optional {
+    if !r.required {
         "#[serde(skip_serializing_if = \"Option::is_none\")]\n    ".into()
     } else {
         "".into()
@@ -612,7 +612,7 @@ mod tests {
             type_: "string".to_string(),
             description: "Test field".to_string(),
             inner: vec![],
-            optional: false,
+            required: true,
         };
         assert_eq!(serde_attrs_for_field(&result), "");
 
@@ -622,7 +622,7 @@ mod tests {
             type_: "string".to_string(),
             description: "Test field".to_string(),
             inner: vec![],
-            optional: true,
+            required: false,
         };
         let output = serde_attrs_for_field(&result);
         assert!(output.contains("#[serde(skip_serializing_if = \"Option::is_none\")]"));
@@ -642,9 +642,9 @@ mod tests {
                     type_: "string".to_string(),
                     description: "Test field".to_string(),
                     inner: vec![],
-                    optional: false,
+                    required: true,
                 }],
-                optional: false,
+                required: true,
             },
             ApiResult {
                 key_name: "result2".to_string(),
@@ -655,9 +655,9 @@ mod tests {
                     type_: "string".to_string(),
                     description: "Test field".to_string(),
                     inner: vec![],
-                    optional: false,
+                    required: true,
                 }],
-                optional: false,
+                required: true,
             },
         ];
         assert!(is_field_always_present("test_field", &results));
@@ -673,9 +673,9 @@ mod tests {
                     type_: "string".to_string(),
                     description: "Test field".to_string(),
                     inner: vec![],
-                    optional: false,
+                    required: true,
                 }],
-                optional: false,
+                required: true,
             },
             ApiResult {
                 key_name: "result2".to_string(),
@@ -686,9 +686,9 @@ mod tests {
                     type_: "string".to_string(),
                     description: "Test field".to_string(),
                     inner: vec![],
-                    optional: true, // This makes it not always present
+                    required: false, // This makes it not always present
                 }],
-                optional: false,
+                required: true,
             },
         ];
         assert!(!is_field_always_present("test_field", &results));
@@ -704,16 +704,16 @@ mod tests {
                     type_: "string".to_string(),
                     description: "Test field".to_string(),
                     inner: vec![],
-                    optional: false,
+                    required: true,
                 }],
-                optional: false,
+                required: true,
             },
             ApiResult {
                 key_name: "result2".to_string(),
                 type_: "object".to_string(),
                 description: "Second result".to_string(),
                 inner: vec![], // No test_field here
-                optional: false,
+                required: true,
             },
         ];
         assert!(!is_field_always_present("test_field", &results));
@@ -724,7 +724,7 @@ mod tests {
             type_: "string".to_string(), // Not an object
             description: "First result".to_string(),
             inner: vec![],
-            optional: false,
+            required: true,
         }];
         assert!(!is_field_always_present("test_field", &results));
     }
@@ -739,7 +739,7 @@ mod tests {
                 key_name: "result".to_string(),
                 description: "Empty object".to_string(),
                 inner: vec![], // Empty inner array
-                optional: false,
+                required: true,
             }],
         );
         let result = build_return_type(&method).unwrap().unwrap();

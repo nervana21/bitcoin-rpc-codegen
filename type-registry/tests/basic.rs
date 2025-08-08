@@ -265,7 +265,7 @@ fn test_result_type_mapping() {
         type_: "number".to_string(),
         description: "Port number".to_string(),
         inner: vec![],
-        optional: false,
+        required: true,
     };
 
     let (ty, is_opt) = registry.map_result_type(&result);
@@ -605,7 +605,7 @@ fn test_result_with_empty_key_name() {
         type_: "number".to_string(),
         description: "port".to_string(), // Should be used as fallback
         inner: vec![],
-        optional: false,
+        required: true,
     };
 
     let (ty, _) = registry.map_result_type(&result);

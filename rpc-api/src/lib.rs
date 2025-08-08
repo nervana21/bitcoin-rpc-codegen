@@ -35,7 +35,7 @@ pub struct ApiResult {
     pub type_: String,
     pub description: String,
     pub inner: Vec<ApiResult>,
-    pub optional: bool,
+    pub required: bool,
 }
 
 /// Strongly typed internal representation of an RPC method
@@ -183,7 +183,7 @@ impl Type {
                         .map(|inner_result| {
                             let ty =
                                 Type::from_json_schema(&inner_result.type_, &inner_result.key_name);
-                            let ty = if inner_result.optional {
+                            let ty = if !inner_result.required {
                                 Type::Option(Box::new(ty))
                             } else {
                                 ty
@@ -208,7 +208,7 @@ impl Type {
                 .iter()
                 .map(|result| {
                     let ty = Type::from_json_schema(&result.type_, &result.key_name);
-                    let ty = if result.optional {
+                    let ty = if !result.required {
                         Type::Option(Box::new(ty))
                     } else {
                         ty
@@ -388,7 +388,7 @@ fn parse_result(value: &serde_json::Value) -> ApiResult {
             .and_then(|v| v.as_array())
             .map(|props| props.iter().map(parse_result).collect())
             .unwrap_or_default(),
-        optional: obj["optional"].as_bool().unwrap_or(false),
+        required: obj["required"].as_bool().unwrap_or(true),
     }
 }
 
@@ -482,7 +482,7 @@ mod tests {
             type_: "object".into(),
             description: "".into(),
             inner: vec![], // empty inner
-            optional: false,
+            required: false,
         };
         let ty = Type::from_api_results(&[result]);
         // Should fall through to else branch and call from_json_schema
@@ -498,9 +498,9 @@ mod tests {
                 type_: "string".into(),
                 description: "".into(),
                 inner: vec![],
-                optional: false,
+                required: false,
             }],
-            optional: false,
+            required: false,
         };
         let ty = Type::from_api_results(&[result]);
         // Should fall through to else branch
@@ -543,14 +543,14 @@ mod tests {
             "description": "test description",
             "key_name": "test_key",
             "inner": [],
-            "optional": true
+            "required": true
         });
 
         let result = parse_result(&json_value);
         assert_eq!(result.type_, "string");
         assert_eq!(result.description, "test description");
         assert_eq!(result.key_name, "test_key");
-        assert_eq!(result.optional, true);
+        assert_eq!(result.required, true);
         assert!(result.inner.is_empty());
     }
 
@@ -566,9 +566,9 @@ mod tests {
                 "description": "child",
                 "key_name": "child_key",
                 "inner": [],
-                "optional": false
+                "required": false
             }],
-            "optional": false
+            "required": false
         });
 
         let result = parse_result(&json_value);
@@ -593,9 +593,9 @@ mod tests {
                 type_: "string".into(),
                 description: "".into(),
                 inner: vec![],
-                optional: false,
+                required: false,
             }],
-            optional: false,
+            required: false,
         };
         let ty = Type::from_api_results(&[result]);
         if let Type::Object(fields) = ty {
@@ -611,7 +611,7 @@ mod tests {
             type_: "object".into(),
             description: "".into(),
             inner: vec![], // empty inner
-            optional: false,
+            required: false,
         };
         let ty = Type::from_api_results(&[result]);
         // Should call from_json_schema which returns Type::Object(vec![])
@@ -671,9 +671,9 @@ mod tests {
                 "description": "nested",
                 "key_name": "nested_key",
                 "inner": [],
-                "optional": true
+                "required": true
             }],
-            "optional": false
+            "required": false
         });
 
         let result = parse_result(&json_value);
@@ -683,11 +683,11 @@ mod tests {
         assert_ne!(result.description, "");
         assert_ne!(result.key_name, "");
         assert!(!result.inner.is_empty());
-        assert_eq!(result.optional, false);
+        assert_eq!(result.required, false);
 
         // Verify nested parsing worked
         assert_eq!(result.inner[0].type_, "nested_type");
         assert_eq!(result.inner[0].key_name, "nested_key");
-        assert_eq!(result.inner[0].optional, true);
+        assert_eq!(result.inner[0].required, true);
     }
 }
