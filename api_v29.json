@@ -501,6 +501,12 @@
       "name": "bumpfee",
       "argument_names": [
         "txid",
+        "conf_target",
+        "fee_rate",
+        "replaceable",
+        "estimate_mode",
+        "outputs",
+        "original_change_index",
         "options"
       ],
       "arguments": [
@@ -1593,6 +1599,8 @@
       "name": "createwalletdescriptor",
       "argument_names": [
         "type",
+        "internal",
+        "hdkey",
         "options"
       ],
       "arguments": [
@@ -3737,6 +3745,7 @@
       "argument_names": [
         "path",
         "type",
+        "rollback",
         "options"
       ],
       "arguments": [
@@ -4687,6 +4696,24 @@
       "name": "fundrawtransaction",
       "argument_names": [
         "hexstring",
+        "add_inputs",
+        "include_unsafe",
+        "minconf",
+        "maxconf",
+        "changeAddress",
+        "changePosition",
+        "change_type",
+        "includeWatching",
+        "lockUnspents",
+        "fee_rate",
+        "feeRate",
+        "subtractFeeFromOutputs",
+        "input_weights",
+        "max_tx_weight",
+        "conf_target",
+        "estimate_mode",
+        "replaceable",
+        "solving_data",
         "options",
         "iswitness"
       ],
@@ -6101,7 +6128,7 @@
       "name": "getblock",
       "argument_names": [
         "blockhash",
-        "verbosity"
+        "verbosity|verbose"
       ],
       "arguments": [
         {
@@ -8955,6 +8982,8 @@
       "examples": "> bitcoin-cli gethdkeys \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gethdkeys\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli -named gethdkeys active_only=true private=true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gethdkeys\", \"params\": {\"active_only\":\"true\",\"private\":\"true\"}}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
       "name": "gethdkeys",
       "argument_names": [
+        "active_only",
+        "private",
         "options"
       ],
       "arguments": [
@@ -11899,7 +11928,7 @@
       "name": "getrawtransaction",
       "argument_names": [
         "txid",
-        "verbosity",
+        "verbosity|verbose",
         "blockhash"
       ],
       "arguments": [
@@ -14071,6 +14100,9 @@
       "name": "importmempool",
       "argument_names": [
         "filepath",
+        "use_current_time",
+        "apply_fee_delta_priority",
+        "apply_unbroadcast_set",
         "options"
       ],
       "arguments": [
@@ -15696,6 +15728,11 @@
         "maxconf",
         "addresses",
         "include_unsafe",
+        "minimumAmount",
+        "maximumAmount",
+        "maximumCount",
+        "minimumSumAmount",
+        "include_immature_coinbase",
         "query_options"
       ],
       "arguments": [
@@ -16746,6 +16783,12 @@
       "name": "psbtbumpfee",
       "argument_names": [
         "txid",
+        "conf_target",
+        "fee_rate",
+        "replaceable",
+        "estimate_mode",
+        "outputs",
+        "original_change_index",
         "options"
       ],
       "arguments": [
@@ -17242,6 +17285,7 @@
         "start_height",
         "stop_height",
         "filtertype",
+        "filter_false_positives",
         "options"
       ],
       "arguments": [
@@ -17800,6 +17844,26 @@
         "conf_target",
         "estimate_mode",
         "fee_rate",
+        "add_inputs",
+        "include_unsafe",
+        "minconf",
+        "maxconf",
+        "add_to_wallet",
+        "change_address",
+        "change_position",
+        "change_type",
+        "fee_rate",
+        "include_watching",
+        "inputs",
+        "locktime",
+        "lock_unspents",
+        "psbt",
+        "subtract_fee_from_outputs",
+        "max_tx_weight",
+        "conf_target",
+        "estimate_mode",
+        "replaceable",
+        "solving_data",
         "options"
       ],
       "arguments": [
@@ -18445,6 +18509,20 @@
         "conf_target",
         "estimate_mode",
         "fee_rate",
+        "add_to_wallet",
+        "fee_rate",
+        "include_watching",
+        "inputs",
+        "locktime",
+        "lock_unspents",
+        "psbt",
+        "send_max",
+        "minconf",
+        "maxconf",
+        "conf_target",
+        "estimate_mode",
+        "replaceable",
+        "solving_data",
         "options"
       ],
       "arguments": [
@@ -20449,6 +20527,7 @@
       "name": "simulaterawtransaction",
       "argument_names": [
         "rawtxs",
+        "include_watchonly",
         "options"
       ],
       "arguments": [
@@ -21733,6 +21812,23 @@
         "inputs",
         "outputs",
         "locktime",
+        "add_inputs",
+        "include_unsafe",
+        "minconf",
+        "maxconf",
+        "changeAddress",
+        "changePosition",
+        "change_type",
+        "includeWatching",
+        "lockUnspents",
+        "fee_rate",
+        "feeRate",
+        "subtractFeeFromOutputs",
+        "max_tx_weight",
+        "conf_target",
+        "estimate_mode",
+        "replaceable",
+        "solving_data",
         "options",
         "bip32derivs"
       ],
