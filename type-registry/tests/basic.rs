@@ -546,7 +546,7 @@ fn test_dummy_field_handling() {
     for (rpc_type, field_name, expected_type, should_be_optional) in test_cases {
         let category = registry.categorize(rpc_type, field_name);
         let ty = category.to_rust_type();
-        let is_opt = category.is_optional();
+        let is_opt = category.is_optional_by_default();
         assert_eq!(
             ty, expected_type,
             "Dummy field '{}' should map to {}",
@@ -695,7 +695,7 @@ fn test_category_optional_handling() {
 
     for (category, should_be_optional) in test_cases {
         assert_eq!(
-            category.is_optional(),
+            category.is_optional_by_default(),
             should_be_optional,
             "Category {:?} optional status should be {}",
             category,

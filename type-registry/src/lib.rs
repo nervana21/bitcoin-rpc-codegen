@@ -78,8 +78,8 @@ impl RpcCategory {
         }
     }
 
-    /// Check if this category should be wrapped in Option<T>
-    pub fn is_optional(&self) -> bool {
+    /// Check if this category should be treated as optional by default
+    pub fn is_optional_by_default(&self) -> bool {
         matches!(self, RpcCategory::Dummy)
     }
 
@@ -173,7 +173,7 @@ impl TypeRegistry {
     /// Core mapper - returns (rust_type, is_optional)
     fn map(&self, rpc_type: &str, field: &str) -> (&'static str, bool) {
         let category = self.categorize(rpc_type, field);
-        (category.to_rust_type(), category.is_optional())
+        (category.to_rust_type(), category.is_optional_by_default())
     }
 
     /// For results, respect the `optional` flag on ApiResult
