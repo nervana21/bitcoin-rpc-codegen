@@ -198,7 +198,7 @@ impl TypeRegistry {
         // Always use the first name - no special handling for unnamed fields in arguments
         let field = &arg.names[0];
         let (ty, is_opt) = self.map(&arg.type_, field);
-        (ty, is_opt || arg.optional)
+        (ty, is_opt || !arg.required)
     }
 
     /// Get the category for a result type

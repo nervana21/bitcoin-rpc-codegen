@@ -53,7 +53,7 @@ pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {
         }
     };
 
-    if !method.arguments.is_empty() && method.arguments.iter().all(|arg| arg.optional) {
+    if !method.arguments.is_empty() && method.arguments.iter().all(|arg| !arg.required) {
         // 1) default‐params variant
         let default_doc = format!("{description} with default parameters.");
         let default_fn = format!(
@@ -150,7 +150,7 @@ fn generate_method_args(method: &ApiMethod) -> String {
         } else {
             arg_name.clone()
         };
-        if arg.optional {
+        if !arg.required {
             args.push_str(&format!(", {escaped_name}: Option<{arg_type}>"));
         } else {
             args.push_str(&format!(", {escaped_name}: {arg_type}"));
@@ -177,7 +177,7 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
         } else {
             format!("into_json({escaped_name})?")
         };
-        if arg.optional {
+        if !arg.required {
             optional_args.push(format!(
                 "if let Some({escaped_name}) = {escaped_name} {{\n    params.push(into_json({escaped_name})?);\n}}"
             ));

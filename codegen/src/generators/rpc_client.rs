@@ -90,8 +90,8 @@ impl CodeGenerator for RpcClientGenerator {
             for arg in m
                 .arguments
                 .iter()
-                .filter(|a| !a.optional)
-                .chain(m.arguments.iter().filter(|a| a.optional))
+                .filter(|a| a.required)
+                .chain(m.arguments.iter().filter(|a| !a.required))
             {
                 let (ty, opt) = rust_arg_ty(arg);
                 let ident = camel_to_snake_case(&arg.names[0]);

@@ -121,7 +121,7 @@ impl<'a> MethodTemplate<'a> {
                     format!("_{}", arg.names[0])
                 };
                 let (base_ty, _) = TypeRegistry.map_argument_type(arg);
-                let ty = if arg.optional {
+                let ty = if !arg.required {
                     format!("Option<{base_ty}>")
                 } else {
                     base_ty.to_string()

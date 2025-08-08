@@ -34,14 +34,14 @@ fn api_argument_roundtrip() {
     let arg = ApiArgument {
         names: vec!["foo".into(), "bar".into()],
         type_: "string".into(),
-        optional: true,
+        required: true,
         description: "a test argument".into(),
     };
     let json = serde_json::to_string(&arg).expect("serialize ApiArgument");
     let de: ApiArgument = serde_json::from_str(&json).expect("deserialize ApiArgument");
     assert_eq!(de.names, arg.names);
     assert_eq!(de.type_, arg.type_);
-    assert_eq!(de.optional, arg.optional);
+    assert_eq!(de.required, arg.required);
     assert_eq!(de.description, arg.description);
 }
 
@@ -71,7 +71,7 @@ fn api_method_roundtrip() {
         arguments: vec![ApiArgument {
             names: vec!["a".into()],
             type_: "bool".into(),
-            optional: false,
+            required: true,
             description: "a bool".into(),
         }],
         results: vec![ApiResult {
@@ -212,7 +212,7 @@ fn from_apimethod_for_rpcmethod() {
         arguments: vec![ApiArgument {
             names: vec!["foo".into()],
             type_: "string".into(),
-            optional: false,
+            required: true,
             description: "desc".into(),
         }],
         results: vec![ApiResult {

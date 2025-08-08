@@ -76,7 +76,7 @@ fn test_address_type_mapping() {
     let arg = ApiArgument {
         type_: "string".to_string(),
         names: vec!["address".to_string()],
-        optional: false,
+        required: true,
         description: "Bitcoin address".to_string(),
     };
 
@@ -92,7 +92,7 @@ fn test_txids_array_mapping() {
     let arg = ApiArgument {
         type_: "array".to_string(),
         names: vec!["txids".to_string()],
-        optional: false,
+        required: true,
         description: "Transaction IDs".to_string(),
     };
 
@@ -108,14 +108,14 @@ fn test_maxconf_matches_minconf() {
     let minconf_arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["minconf".to_string()],
-        optional: false,
+        required: true,
         description: "Minimum confirmations".to_string(),
     };
 
     let maxconf_arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["maxconf".to_string()],
-        optional: false,
+        required: true,
         description: "Maximum confirmations".to_string(),
     };
 
@@ -138,7 +138,7 @@ fn test_port_type_mapping() {
     let arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["port".to_string()],
-        optional: false,
+        required: true,
         description: "Network port".to_string(),
     };
 
@@ -155,7 +155,7 @@ fn test_nrequired_type_mapping() {
     let arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["nrequired".to_string()],
-        optional: false,
+        required: true,
         description: "Number of required signatures".to_string(),
     };
 
@@ -175,7 +175,7 @@ fn test_port_variations() {
         let arg = ApiArgument {
             type_: "number".to_string(),
             names: vec![field_name.to_string()],
-            optional: false,
+            required: true,
             description: "Port number".to_string(),
         };
 
@@ -209,7 +209,7 @@ fn test_other_number_mappings() {
         let arg = ApiArgument {
             type_: "number".to_string(),
             names: vec![field_name.to_string()],
-            optional: false,
+            required: true,
             description: "Test field".to_string(),
         };
 
@@ -230,7 +230,7 @@ fn test_fallback_number_mapping() {
     let arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["unknown_field".to_string()],
-        optional: false,
+        required: true,
         description: "Unknown field".to_string(),
     };
 
@@ -246,7 +246,7 @@ fn test_optional_handling() {
     let arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["port".to_string()],
-        optional: true,
+        required: false,
         description: "Optional port".to_string(),
     };
 
@@ -278,7 +278,7 @@ fn test_result_type_mapping() {
         type_: "number".to_string(),
         description: "Required count".to_string(),
         inner: vec![],
-        optional: false,
+        required: true,
     };
 
     let (ty, is_opt) = registry.map_result_type(&result);
@@ -623,7 +623,7 @@ fn test_argument_with_multiple_names() {
     let arg = ApiArgument {
         type_: "number".to_string(),
         names: vec!["port".to_string(), "alternative_name".to_string()],
-        optional: false,
+        required: true,
         description: "Network port".to_string(),
     };
 

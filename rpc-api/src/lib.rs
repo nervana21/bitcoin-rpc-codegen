@@ -23,7 +23,7 @@ pub struct ApiArgument {
     pub names: Vec<String>,
     #[serde(rename = "type")]
     pub type_: String,
-    pub optional: bool,
+    pub required: bool,
     pub description: String,
 }
 

@@ -49,7 +49,7 @@ pub fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
     let (base_ty, is_option) = TypeRegistry::new().map_argument_type(&ApiArgument {
         type_: api_ty.to_string(),
         names: vec![param_name.to_string()],
-        optional: false,
+        required: true,
         description: String::new(),
     });
     if is_option {
