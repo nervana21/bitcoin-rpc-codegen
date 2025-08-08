@@ -127,7 +127,7 @@ impl From<ApiMethod> for RpcMethod {
             .map(|arg| Param {
                 name: arg.names[0].clone(),
                 ty: Type::from_json_schema(&arg.type_, &arg.names[0]),
-                required: !arg.optional,
+                required: arg.required,
                 description: arg.description,
             })
             .collect();
@@ -293,10 +293,10 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
                             .and_then(|t| t.as_str())
                             .unwrap_or("string")
                             .to_string(),
-                        optional: param
-                            .get("optional")
+                        required: param
+                            .get("required")
                             .and_then(|b| b.as_bool())
-                            .unwrap_or(false),
+                            .unwrap_or(true), // Default to required if not specified
                         description: param
                             .get("description")
                             .and_then(|d| d.as_str())
@@ -336,7 +336,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
                             .and_then(|t| t.as_str())
                             .unwrap_or("string")
                             .to_string(),
-                        optional: !required.contains(name.as_str()),
+                        required: required.contains(name.as_str()),
                         description: prop
                             .get("description")
                             .and_then(|d| d.as_str())
@@ -455,13 +455,13 @@ mod tests {
                 ApiArgument {
                     names: vec!["required".into()],
                     type_: "string".into(),
-                    optional: false,
+                    required: false,
                     description: "required".into(),
                 },
                 ApiArgument {
                     names: vec!["optional".into()],
                     type_: "string".into(),
-                    optional: true,
+                    required: true,
                     description: "optional".into(),
                 },
             ],
