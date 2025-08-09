@@ -133,7 +133,7 @@ pub fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::
         code,
         "#[derive(Debug)]\n\
          pub struct {client_name} {{\n\
-             node_client: BitcoinNodeClient,\n\
+             node: BitcoinNodeClient,\n\
              wallet_client: BitcoinWalletClient,\n\
              node_manager: Option<Box<dyn NodeManager>>,\n\
              /// A thin RPC wrapper around the transport, with batching built in\n\
@@ -230,7 +230,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         let rpc = RpcClient::from_transport(transport.clone());
         
         // Create node and wallet clients
-        let node_client = BitcoinNodeClient::new(transport.clone());
+        let node = BitcoinNodeClient::new(transport.clone());
         
         // Wait for node to be ready for RPC
         // Core initialization states that require waiting:
@@ -245,7 +245,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         let mut retries = 0;
         
         loop {{
-            match node_client.getblockchaininfo().await {{
+            match node.getblockchaininfo().await {{
                 Ok(_) => break,
                 Err(TransportError::Rpc(e)) => {{
                     // Check if the error matches any known initialization state
@@ -267,7 +267,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         }}
         
         Ok(Self {{
-            node_client,
+            node,
             wallet_client: BitcoinWalletClient::new(transport.clone()),
             node_manager: Some(Box::new(node_manager)),
             rpc,
@@ -328,7 +328,7 @@ pub fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
                          .with_wallet(wallet_name.clone())\n\
                      );\n\n\
                      self.wallet_client.with_transport(new_transport.clone());\n\
-                     self.node_client.with_transport(new_transport);\n\n\
+                     self.node.with_transport(new_transport);\n\n\
                      Ok(wallet_name)\n\
                  }},\n\
                  Err(e) => Err(e),\n\
@@ -442,7 +442,7 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> s
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
         let doc_comment = doc_comment::format_doc_comment(&m.description);
-        let target = "node_client";
+        let target = "node";
 
         // Get the specific return type for this method
         let ret_ty = if m.results.is_empty() || m.results[0].type_.to_lowercase() == "none" {
