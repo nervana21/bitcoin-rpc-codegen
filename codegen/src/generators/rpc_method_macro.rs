@@ -170,13 +170,7 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
         } else {
             arg_name.clone()
         };
-        let arg_expr = if method.name == "addnode" && arg_name == "command" {
-            "serde_json::to_value(command)?".to_string()
-        } else if arg.type_ == "object-named-parameters" {
-            format!("into_json({escaped_name}.unwrap_or_default())?")
-        } else {
-            format!("into_json({escaped_name})?")
-        };
+        let arg_expr = format!("into_json({escaped_name})?");
         if !arg.required {
             optional_args.push(format!(
                 "if let Some({escaped_name}) = {escaped_name} {{\n    params.push(into_json({escaped_name})?);\n}}"
