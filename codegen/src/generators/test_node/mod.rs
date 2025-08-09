@@ -3,7 +3,6 @@
 //! This module contains the modularized test node generator components,
 //! split into logical units for better maintainability and testing.
 
-use crate::wallet_methods::WALLET_METHODS;
 use crate::CodeGenerator;
 use rpc_api::ApiMethod;
 
@@ -68,16 +67,8 @@ impl CodeGenerator for TestNodeGenerator {
         let params_code = emit_params::generate_params_code(methods);
         let result_code = emit_results::generate_result_code(methods);
 
-        let wallet_methods: Vec<_> = methods
-            .iter()
-            .filter(|m| WALLET_METHODS.contains(&m.name.as_str()))
-            .cloned()
-            .collect();
-        let node_methods: Vec<_> = methods
-            .iter()
-            .filter(|m| !WALLET_METHODS.contains(&m.name.as_str()))
-            .cloned()
-            .collect();
+        let wallet_methods: Vec<_> = methods.iter().cloned().collect();
+        let node_methods: Vec<_> = methods.iter().cloned().collect();
 
         let wallet_code = emit_subclient::generate_subclient(
             "BitcoinWalletClient",

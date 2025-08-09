@@ -42,11 +42,6 @@ pub use transport_core_generator::TransportCoreGenerator;
 /// Utility functions for code generation.
 pub mod utils;
 
-/// Sub-crate: **`wallet_methods`**
-///
-/// Wallet-specific methods for Bitcoin Core RPC API.
-pub mod wallet_methods;
-
 /// Defines the core interface for generating Rust source files from a collection of
 /// Bitcoin Core RPC API methods. Implementors produce a set of `(filename, source)`
 /// pairs and may optionally perform post-generation validation.

@@ -2,7 +2,6 @@
 
 use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
-use crate::wallet_methods::WALLET_METHODS;
 use rpc_api::ApiMethod;
 
 use std::fmt::Write;
@@ -443,11 +442,7 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> s
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
         let doc_comment = doc_comment::format_doc_comment(&m.description);
-        let target = if WALLET_METHODS.contains(&m.name.as_str()) {
-            "wallet_client"
-        } else {
-            "node_client"
-        };
+        let target = "node_client";
 
         // Get the specific return type for this method
         let ret_ty = if m.results.is_empty() || m.results[0].type_.to_lowercase() == "none" {

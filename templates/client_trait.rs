@@ -2,7 +2,6 @@
 
 use async_trait::async_trait;
 use crate::transport::{TransportTrait, TransportExt, TransportError};
-use crate::transport::core::wallet_methods::WALLET_METHODS;
 use serde::de::DeserializeOwned;
 {{IMPORTS}}
 
@@ -21,11 +20,7 @@ pub trait RpcDispatchExt: TransportTrait + TransportExt {
         params: &[serde_json::Value],
     ) -> impl Future<Output = Result<R, TransportError>> + Send {
         async move {
-            if WALLET_METHODS.contains(&method) {
-                self.wallet_call(method, params).await
-            } else {
-                self.call(method, params).await
-            }
+            self.call(method, params).await
         }
     }
 }
