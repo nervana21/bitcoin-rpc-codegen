@@ -38,7 +38,6 @@ pub fn generate_mod_rs() -> String {
 #[cfg(test)]
 pub mod params;
 pub mod response;
-pub mod wallet;
 pub mod client;
 
 // re-export common clients
