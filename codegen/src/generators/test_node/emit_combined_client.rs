@@ -53,7 +53,7 @@ pub fn generate_combined_client(
 /// - Transport layer types (TransportError, DefaultTransport, RpcClient, BatchBuilder)
 /// - Version-specific type definitions from the generated types module
 /// - Node management types (BitcoinNodeManager, TestConfig)
-/// - Subclient types (BitcoinNodeClient, BitcoinWalletClient)
+/// - Subclient types (BitcoinNodeClient)
 /// - Bitcoin-specific types (Amount)
 ///
 /// The version parameter is used to generate the correct import path for
@@ -81,7 +81,6 @@ use serde_json::Value;
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
 use super::node::BitcoinNodeClient;
-use super::wallet::BitcoinWalletClient;
 
 use bitcoin::Amount;"
     )
@@ -134,7 +133,6 @@ pub fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::
         "#[derive(Debug)]\n\
          pub struct {client_name} {{\n\
              node: BitcoinNodeClient,\n\
-             wallet_client: BitcoinWalletClient,\n\
              node_manager: Option<Box<dyn NodeManager>>,\n\
              /// A thin RPC wrapper around the transport, with batching built in\n\
              rpc: RpcClient,\n\
@@ -229,7 +227,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         // Create RPC client for batching support
         let rpc = RpcClient::from_transport(transport.clone());
         
-        // Create node and wallet clients
+        // Create node client
         let node = BitcoinNodeClient::new(transport.clone());
         
         // Wait for node to be ready for RPC
@@ -268,7 +266,6 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         
         Ok(Self {{
             node,
-            wallet_client: BitcoinWalletClient::new(transport.clone()),
             node_manager: Some(Box::new(node_manager)),
             rpc,
         }})
@@ -298,12 +295,12 @@ pub fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
          ) -> Result<String, TransportError> {{\n\
              let wallet_name = wallet_name.into();\n\n\
              // Check if wallet is currently loaded\n\
-             let wallets = self.wallet_client.listwallets().await?;\n\
+             let wallets = self.node.listwallets().await?;\n\
              if wallets.0.iter().any(|w| w == &wallet_name) {{\n\
-                 self.wallet_client.unloadwallet(wallet_name.clone(), false).await?;\n\
+                 self.node.unloadwallet(wallet_name.clone(), false).await?;\n\
              }}\n\n\
              // Try to create wallet\n\
-             match self.wallet_client\n\
+             match self.node\n\
                  .createwallet(\n\
                      wallet_name.clone(),\n\
                      opts.disable_private_keys,\n\
@@ -319,7 +316,7 @@ pub fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
                  Ok(_) => Ok(wallet_name),\n\
                  Err(TransportError::Rpc(err)) if err.contains(\"\\\"code\\\":-4\") => {{\n\
                      // Try loading instead\n\
-                     self.wallet_client.loadwallet(wallet_name.clone(), false).await?;\n\n\
+                     self.node.loadwallet(wallet_name.clone(), false).await?;\n\n\
                      let new_transport = Arc::new(\n\
                          DefaultTransport::new(\n\
                              &format!(\"http://127.0.0.1:{{}}\", self.node_manager.as_ref().unwrap().rpc_port()),\n\
@@ -327,7 +324,6 @@ pub fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
                          )\n\
                          .with_wallet(wallet_name.clone())\n\
                      );\n\n\
-                     self.wallet_client.with_transport(new_transport.clone());\n\
                      self.node.with_transport(new_transport);\n\n\
                      Ok(wallet_name)\n\
                  }},\n\

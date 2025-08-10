@@ -44,7 +44,6 @@ pub mod client;
 
 // re-export common clients
 pub use client::BitcoinTestClient;
-pub use wallet::BitcoinWalletClient;
 pub use node::BitcoinNodeClient;
 "
     )

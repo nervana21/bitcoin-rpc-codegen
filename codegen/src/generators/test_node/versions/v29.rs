@@ -25,7 +25,7 @@ impl VersionedClientHelpers for V29Helpers {
          conf_target: u64,\n\
          estimate_mode: String,\n\
      ) -> Result<Value, TransportError> {{\n\
-         Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
+         Ok(serde_json::to_value(self.node.sendtoaddress(\n\
              address,\n\
              amount,\n\
              \"\".to_string(),\n\
@@ -46,7 +46,7 @@ impl VersionedClientHelpers for V29Helpers {
      amount: Amount,\n\
      fee_rate: f64,\n\
  ) -> Result<Value, TransportError> {{\n\
-     Ok(serde_json::to_value(self.wallet_client.sendtoaddress(\n\
+     Ok(serde_json::to_value(self.node.sendtoaddress(\n\
          address,\n\
          amount,\n\
          \"\".to_string(),\n\
@@ -137,7 +137,7 @@ impl WalletOptions {{
         let _wallet_name = self.ensure_default_wallet(\"test_wallet\").await?;
 
         println!(\"[debug] Getting new address\");
-        let address = self.wallet_client.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
+        let address = self.node.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
         println!(\"[debug] Generated address: {{:?}}\", address);
         println!(\"[debug] Generating blocks\");
         let blocks = self.node.generatetoaddress(

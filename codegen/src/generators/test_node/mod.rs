@@ -67,15 +67,8 @@ impl CodeGenerator for TestNodeGenerator {
         let params_code = emit_params::generate_params_code(methods);
         let result_code = emit_results::generate_result_code(methods);
 
-        let wallet_methods: Vec<_> = methods.iter().cloned().collect();
         let node_methods: Vec<_> = methods.iter().cloned().collect();
 
-        let wallet_code = emit_subclient::generate_subclient(
-            "BitcoinWalletClient",
-            &wallet_methods,
-            &self.version,
-        )
-        .unwrap();
         let node_code =
             emit_subclient::generate_subclient("BitcoinNodeClient", &node_methods, &self.version)
                 .unwrap();
@@ -89,7 +82,6 @@ impl CodeGenerator for TestNodeGenerator {
         let mod_rs_code = utils::generate_mod_rs();
 
         vec![
-            ("wallet.rs".to_string(), wallet_code),
             ("node.rs".to_string(), node_code),
             ("client.rs".to_string(), client_code),
             ("params.rs".to_string(), params_code),
