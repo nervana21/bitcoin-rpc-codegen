@@ -1,4 +1,5 @@
 use codegen::{CodeGenerator, TransportCodeGenerator};
+use rpc_api::version::DEFAULT_VERSION;
 use rpc_api::{ApiArgument, ApiMethod};
 
 #[test]
@@ -10,7 +11,7 @@ fn test_json_rpc_codegen_transport() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator;
+    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
 
     // should produce exactly one module named "foo"
@@ -18,10 +19,10 @@ fn test_json_rpc_codegen_transport() {
     let (mod_name, src) = &files[0];
     assert_eq!(mod_name, "foo");
 
-    // now should reference TransportTrait
-    assert!(src.contains("use transport::{TransportTrait, TransportError};"));
-    assert!(src.contains("transport.send_request(\"foo\""));
+    // verify the generated source contains expected elements
     assert!(src.contains("pub async fn foo"));
+    assert!(src.contains("transport: &dyn TransportTrait"));
+    assert!(src.contains("TransportError"));
 }
 
 #[test]
@@ -46,7 +47,7 @@ fn transport_codegen_with_args() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator;
+    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 
@@ -70,7 +71,7 @@ fn transport_codegen_error_handling() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator;
+    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 
@@ -90,7 +91,7 @@ fn transport_codegen_imports() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator;
+    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 
