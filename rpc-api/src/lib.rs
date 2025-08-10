@@ -263,7 +263,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
             "[DIAGNOSTIC] command_obj keys: {:?}",
             command_obj.keys().collect::<Vec<_>>()
         );
-        println!("[DIAGNOSTIC] Full command_obj: {:#?}", command_obj);
+        println!("[DIAGNOSTIC] Full command_obj: {command_obj:#?}");
 
         // If you want to see the full JSON for this command:
         println!(
@@ -287,7 +287,7 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
                                     .filter_map(|v| v.as_str().map(|s| s.to_string()))
                                     .collect()
                             })
-                            .unwrap_or_else(Vec::new),
+                            .unwrap_or_default(),
                         type_: param
                             .get("type")
                             .and_then(|t| t.as_str())

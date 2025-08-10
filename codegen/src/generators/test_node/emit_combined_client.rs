@@ -476,7 +476,7 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> s
                     } else {
                         &camel_to_snake_case(&arg.names[0])
                     };
-                    format!("        params.push(serde_json::to_value({})?);", name)
+                    format!("        params.push(serde_json::to_value({name})?);")
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
