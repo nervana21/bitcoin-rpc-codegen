@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 /// The version of the generated bitcoin-rpc-midas crate
-pub const CRATE_VERSION: &str = "0.1.4";
+pub const CRATE_VERSION: &str = "0.1.5";
 // TODO: update README.md with this version
 
 /// Extract version from filename
