@@ -39,12 +39,10 @@ pub fn generate_mod_rs() -> String {
 pub mod params;
 pub mod response;
 pub mod wallet;
-pub mod node;
 pub mod client;
 
 // re-export common clients
 pub use client::BitcoinTestClient;
-pub use node::BitcoinNodeClient;
 "
     )
     .unwrap();

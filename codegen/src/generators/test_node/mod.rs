@@ -9,7 +9,6 @@ use rpc_api::ApiMethod;
 pub mod emit_combined_client;
 pub mod emit_params;
 pub mod emit_results;
-pub mod emit_subclient;
 pub mod utils;
 
 /// Version-specific client helper implementations for Bitcoin Core RPC compatibility.
@@ -67,11 +66,6 @@ impl CodeGenerator for TestNodeGenerator {
         let params_code = emit_params::generate_params_code(methods);
         let result_code = emit_results::generate_result_code(methods);
 
-        let node_methods: Vec<_> = methods.iter().cloned().collect();
-
-        let node_code =
-            emit_subclient::generate_subclient("BitcoinNodeClient", &node_methods, &self.version)
-                .unwrap();
         let client_code = emit_combined_client::generate_combined_client(
             "BitcoinTestClient",
             methods,
@@ -82,7 +76,6 @@ impl CodeGenerator for TestNodeGenerator {
         let mod_rs_code = utils::generate_mod_rs();
 
         vec![
-            ("node.rs".to_string(), node_code),
             ("client.rs".to_string(), client_code),
             ("params.rs".to_string(), params_code),
             ("response.rs".to_string(), result_code),

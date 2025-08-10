@@ -25,7 +25,7 @@ impl VersionedClientHelpers for V28Helpers {
          conf_target: u64,\n\
          estimate_mode: String,\n\
      ) -> Result<Value, TransportError> {{\n\
-         Ok(serde_json::to_value(self.node.sendtoaddress(\n\
+         Ok(serde_json::to_value(self.sendtoaddress(\n\
              address,\n\
              amount,\n\
              \"\".to_string(),\n\
@@ -46,7 +46,7 @@ impl VersionedClientHelpers for V28Helpers {
      amount: Amount,\n\
      fee_rate: f64,\n\
  ) -> Result<Value, TransportError> {{\n\
-     Ok(serde_json::to_value(self.node.sendtoaddress(\n\
+     Ok(serde_json::to_value(self.sendtoaddress(\n\
          address,\n\
          amount,\n\
          \"\".to_string(),\n\
@@ -137,10 +137,10 @@ impl WalletOptions {{
         let _wallet_name = self.ensure_default_wallet(\"test_wallet\").await?;
 
         println!(\"[debug] Getting new address\");
-        let address = self.node.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
+        let address = self.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
         println!(\"[debug] Generated address: {{:?}}\", address);
         println!(\"[debug] Generating blocks\");
-        let blocks = self.node.generatetoaddress(
+        let blocks = self.generatetoaddress(
             num_blocks,
             address.0.clone(),
             maxtries
@@ -172,19 +172,19 @@ impl WalletOptions {{
          /// 3. Reconsiders the genesis block to maintain a valid chain\n\
          pub async fn reset_chain(&mut self) -> Result<(), TransportError> {{\n\
              // First try pruning to height 0\n\
-             self.node.pruneblockchain(0).await?;\n\
+             self.pruneblockchain(0).await?;\n\
              // Check if we still have blocks\n\
-             let info = self.node.getblockchaininfo().await?;\n\
+             let info = self.getblockchaininfo().await?;\n\
              let current_height = info.blocks;\n\
              if current_height > 1 {{\n\
                  // Invalidate all blocks except genesis\n\
                  for height in (1..=current_height).rev() {{\n\
-                     let block_hash = self.node.getblockhash(height).await?.0;\n\
-                     self.node.invalidateblock(block_hash).await?;\n\
+                     let block_hash = self.getblockhash(height).await?.0;\n\
+                     self.invalidateblock(block_hash).await?;\n\
                  }}\n\
                  // Reconsider genesis block\n\
-                 let genesis_hash = self.node.getblockhash(0).await?.0;\n\
-                 self.node.reconsiderblock(genesis_hash).await?;\n\
+                 let genesis_hash = self.getblockhash(0).await?.0;\n\
+                 self.reconsiderblock(genesis_hash).await?;\n\
              }}\n\
              Ok(())\n\
          }}\n"
