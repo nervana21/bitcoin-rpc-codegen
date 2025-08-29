@@ -12,6 +12,7 @@ use codegen::{
 };
 use regex::Regex;
 use rpc_api::parse_api_json;
+use rpc_api::version::DEFAULT_VERSION;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -88,10 +89,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
                 project_root.join(path)
             }
         }
-        None => {
-            let default_version = rpc_api::version::DEFAULT_VERSION;
-            project_root.join(format!("api_v{}.json", default_version.as_number()))
-        }
+        None => project_root.join(format!("api_v{}.json", DEFAULT_VERSION.as_number())),
     };
     println!("[diagnostic] resolved input path: {input_path:?}");
 
@@ -313,8 +311,7 @@ pub struct BitcoinNodeManager {
     state: Arc<RwLock<NodeState>>,
     child: Arc<Mutex<Option<Child>>>,
     pub(crate) rpc_port: u16,
-    rpc_username: String,
-    rpc_password: String,
+    config: TestConfig,
     _datadir: Option<TempDir>,
 }
 
@@ -342,8 +339,7 @@ impl BitcoinNodeManager {
             state: Arc::new(RwLock::new(NodeState::default())),
             child: Arc::new(Mutex::new(None)),
             rpc_port,
-            rpc_username: config.rpc_username.clone(),
-            rpc_password: config.rpc_password.clone(),
+            config: config.clone(),
             _datadir: Some(datadir),
         })
     }
@@ -362,7 +358,7 @@ impl BitcoinNodeManager {
         let datadir = self._datadir.as_ref().unwrap().path();
         let mut cmd = Command::new("bitcoind");
         cmd.args([
-            "-regtest",
+            &format!("-chain={}", self.config.as_chain_str()),
             "-listen=0",
             &format!("-datadir={}", datadir.display()),
             &format!("-rpcport={}", self.rpc_port),
@@ -432,7 +428,7 @@ impl BitcoinNodeManager {
             let client = reqwest::Client::new();
             match client
                 .post(format!("http://127.0.0.1:{}/", self.rpc_port))
-                .basic_auth(&self.rpc_username, Some(&self.rpc_password))
+                .basic_auth(&self.config.rpc_username, Some(&self.config.rpc_password))
                 .json(&serde_json::json!({
                     "jsonrpc": "2.0",
                     "method": "getnetworkinfo",
@@ -554,25 +550,23 @@ impl Default for BitcoinNodeManager {
     println!("[diagnostic] writing test_config.rs");
     fs::write(
         &test_config_rs,
-        r#"use std::env;
+        r#"use bitcoin::Network;
+use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
-/// This struct is the single source of truth for test‑node settings: RPC port, username, and password.
-/// Defaults are:
-/// - `rpc_port = 0` (auto‑select a free port)
-/// - `rpc_username = "rpcuser"`
-/// - `rpc_password = "rpcpassword"`
 #[derive(Debug, Clone)]
 pub struct TestConfig {
     /// The port number for RPC communication with the Bitcoin node.
     /// A value of 0 indicates that an available port should be automatically selected.
     pub rpc_port: u16,
     /// The username for RPC authentication.
-    /// Can be customized to match your `bitcoin.conf` `rpcuser` setting.
     pub rpc_username: String,
     /// The password for RPC authentication.
-    /// Can be customized to match your `bitcoin.conf` `rpcpassword` setting.
     pub rpc_password: String,
+    /// Which Bitcoin network to run against.
+    pub network: Network,
+    /// Bitcoin Core version; `None` to auto-detect
+    pub core_version: Option<u32>,
 }
 
 impl Default for TestConfig {
@@ -581,17 +575,47 @@ impl Default for TestConfig {
             rpc_port: 0,
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
+            network: Network::Regtest,
+            core_version: Some(29), // TODO: remove this once we have a way to auto-detect the version
         }
     }
 }
 
 impl TestConfig {
+    /// Return the value used with `-chain=<value>` for the configured network
+    pub fn as_chain_str(&self) -> &'static str {
+        #[allow(unreachable_patterns)]
+        match self.network {
+            Network::Bitcoin => "main",
+            Network::Regtest => "regtest",
+            Network::Signet => "signet",
+            Network::Testnet => "testnet",
+            Network::Testnet4 => "testnet4",
+            _ => panic!("Unsupported network variant"),
+        }
+    }
+
+    /// Parse network from common strings (case-insensitive). Accepts: regtest, testnet|test,
+    /// signet, mainnet|main|bitcoin, testnet4.
+    pub fn network_from_str(s: &str) -> Option<Network> {
+        match s.to_ascii_lowercase().as_str() {
+            "regtest" => Some(Network::Regtest),
+            "testnet" | "test" => Some(Network::Testnet),
+            "signet" => Some(Network::Signet),
+            "mainnet" | "main" | "bitcoin" => Some(Network::Bitcoin),
+            "testnet4" => Some(Network::Testnet4),
+            _ => None,
+        }
+    }
+
     /// Create a `TestConfig`, overriding defaults with environment variables:
     /// - `RPC_PORT`: overrides `rpc_port`
     /// - `RPC_USER`: overrides `rpc_username`
     /// - `RPC_PASS`: overrides `rpc_password`
+    /// - `RPC_NETWORK`: one of `regtest`, `testnet|test`, `signet`, `mainnet|main|bitcoin`, `testnet4`
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
+
         if let Ok(port_str) = env::var("RPC_PORT") {
             if let Ok(port) = port_str.parse() {
                 cfg.rpc_port = port;
@@ -602,6 +626,11 @@ impl TestConfig {
         }
         if let Ok(pass) = env::var("RPC_PASS") {
             cfg.rpc_password = pass;
+        }
+        if let Ok(net) = env::var("RPC_NETWORK") {
+            if let Some(n) = Self::network_from_str(&net) {
+                cfg.network = n;
+            }
         }
         cfg
     }
@@ -722,6 +751,8 @@ impl TestConfig {
      pub use config::Config;\n\
      pub use client_trait::client_trait::BitcoinClient{version_nodots};\n\
      pub use node::BitcoinNodeManager;\n\
+     pub use bitcoin::Network;\n\
+     pub use node::test_config::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use types::*;\n\
      pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
@@ -844,55 +875,48 @@ Compared to hand-written RPC clients, this toolchain offers:
 - Reduced repetition
 - Fewer versioning issues
 - Increased compile-time checks
-- Simplified local testing with embedded regtest
+- Support for all Bitcoin p2p networks (mainnet, regtest, signet, testnet, and testnet4)
 - Improved isolation from environment and port conflicts
-- Built-in RPC batching to reduce network roundtrips
-
-These features are intended to make Bitcoin Core RPCs easier to integrate, test, and maintain in Rust projects. The intended result is a client that remains aligned with upstream changes and is suitable for production use.
 
 ## Architecture
 
 The crate is organized into focused modules:
 
 - `client_trait/`: Trait definitions for type-safe RPC method calls
-- `node/`: Regtest node management and test configuration
+- `node/`: Multi-network node management and test client support
 - `test_node/`: Integration testing helpers with embedded Bitcoin nodes
 - `transport/`: Async RPC transport with error handling and batching
 - `types/`: Generated type definitions for all RPC responses
 
-## Quick Start
+## Example
 
-```rust
-use anyhow::Result;
-use bitcoin_rpc_midas::*;
-
-#[tokio::main]
-async fn main() -> Result<()> {{
-    // Creates and manages a regtest node automatically
-    let client = BitcoinTestClient::new().await?;
-    
-    // Ensure a wallet exists before using wallet functionality
-    let _wallet_name = client.ensure_default_wallet("test_wallet").await?;
-    
-    // Type-safe RPC calls with compile-time guarantees
-    let blockchain_info = client.getblockchaininfo().await?;
-    let wallet_info = client.getwalletinfo().await?;
-    
-    println!("Blockchain: {{:#?}}", blockchain_info);
-    println!("Wallet: {{:#?}}", wallet_info);
-    
-    Ok(())
-}}
-```
-
-## Installation
-
-Add to your `Cargo.toml`:
+This asynchronous example uses [Tokio](https://tokio.rs) and enables some
+optional features, so your `Cargo.toml` could look like this:
 
 ```toml
 [dependencies]
 bitcoin-rpc-midas = "{CRATE_VERSION}"
+tokio = {{ version = "1.0", features = ["full"] }}  
 ```
+
+And then the code:
+
+```rust
+use bitcoin_rpc_midas::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    let client = BitcoinTestClient::new_with_network(Network::Regtest).await?;
+
+    let blockchain_info = client.getblockchaininfo().await?;
+    println!("Blockchain info:\n{{:#?}}", blockchain_info);
+
+    Ok(())
+}}
+```
+## Requirements
+
+Requires a working `bitcoind` executable.
 
 ## About
 
@@ -1008,9 +1032,9 @@ The project is organized into several focused crates:
 
 - `rpc_api/`: JSON model of RPC methods and parameters
 - `codegen/`: Emits Rust modules and client implementations
-- `transport/`: Async RPC transport + error handling
-- `node/`: Regtest node management and test client support
-- `pipeline/`: Orchestrates parsing → generation
+- `transport/`: Async RPC transport + error handling with batching support
+- `node/`: Multi-network node management and test client support
+- `config/`: Node and network configuration utilities
 
 ## Guidelines for Pull Requests
 
