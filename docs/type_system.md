@@ -31,6 +31,12 @@ Each RPC field is assigned one of the following categories:
 | `BitcoinBlockHash` | `bitcoin::BlockHash` | Block hashes                           |
 | `BitcoinAddress`   | `bitcoin::Address`   | Bech32 or legacy addresses             |
 
+### Union Types
+
+| Category       | Rust Type           | Description                                          |
+| -------------- | ------------------- | ---------------------------------------------------- |
+| `HashOrHeight` | `serde_json::Value` | Can be either block hash (string) or height (number) |
+
 ### Collection Types
 
 | Category       | Rust Type                | Description                      |

@@ -25,6 +25,10 @@ pub enum RpcCategory {
     /// Bitcoin addresses (P2PKH, P2SH, Bech32, etc.)
     BitcoinAddress,
 
+    // Union types for parameters that accept multiple types
+    /// Union type that can be either a block hash (string) or height (number)
+    HashOrHeight,
+
     // Numeric types with specific domains
     /// Network port numbers (0-65535)
     Port,
@@ -64,6 +68,7 @@ impl RpcCategory {
             RpcCategory::BitcoinBlockHash => "bitcoin::BlockHash",
             RpcCategory::BitcoinAmount => "bitcoin::Amount",
             RpcCategory::BitcoinAddress => "bitcoin::Address",
+            RpcCategory::HashOrHeight => "serde_json::Value", // Can be either hash string or height number
             RpcCategory::Port => "u16",
             RpcCategory::SmallInteger => "u32",
             RpcCategory::LargeInteger => "u64",
@@ -103,6 +108,9 @@ impl RpcCategory {
             RpcCategory::BitcoinBlockHash => "Bitcoin block hashes",
             RpcCategory::BitcoinAmount => "Bitcoin amounts with satoshi precision",
             RpcCategory::BitcoinAddress => "Bitcoin addresses (P2PKH, P2SH, Bech32, etc.)",
+            RpcCategory::HashOrHeight => {
+                "Union type that can be either a block hash (string) or height (number)"
+            }
             RpcCategory::Port => "Network port numbers (0-65535)",
             RpcCategory::SmallInteger => "Small bounded integers (u32)",
             RpcCategory::LargeInteger => "Large integers for counts, heights, timestamps (u64)",
@@ -197,6 +205,14 @@ impl TypeRegistry {
     pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
         // Always use the first name - no special handling for unnamed fields in arguments
         let field = &arg.names[0];
+
+        // Check if this is a union type based on type_str field
+        if let Some(type_str) = &arg.type_str {
+            if type_str.iter().any(|s| s.contains("string or numeric")) {
+                return ("serde_json::Value", !arg.required);
+            }
+        }
+
         let (ty, is_opt) = self.map(&arg.type_, field);
         (ty, is_opt || !arg.required)
     }
@@ -559,6 +575,19 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         rpc_type: "hex",
         pattern: None,
         category: RpcCategory::String,
+        exact: false,
+    },
+    // Union types
+    CategoryRule {
+        rpc_type: "number",
+        pattern: Some("hash_or_height"),
+        category: RpcCategory::HashOrHeight,
+        exact: false,
+    },
+    CategoryRule {
+        rpc_type: "string",
+        pattern: Some("hash_or_height"),
+        category: RpcCategory::HashOrHeight,
         exact: false,
     },
     // Array types
