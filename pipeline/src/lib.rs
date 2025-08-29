@@ -331,7 +331,9 @@ impl BitcoinNodeManager {
         let rpc_port = if config.rpc_port == 0 {
             // Bind to port 0 to let the OS assign an available port
             let listener = std::net::TcpListener::bind(("127.0.0.1", 0))?;
-            listener.local_addr()?.port()
+            let port = listener.local_addr()?.port();
+            drop(listener); // Explicitly drop the listener to free the port
+            port
         } else {
             config.rpc_port
         };
