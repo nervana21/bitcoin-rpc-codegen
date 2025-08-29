@@ -1,6 +1,7 @@
 // config/src/lib.rs
 
 use anyhow::Result;
+use bitcoin::Network;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
@@ -42,6 +43,8 @@ pub struct BitcoinConfig {
     pub password: String,
     /// Bitcoin Core version; `None` to auto-detect
     pub core_version: Option<u32>,
+    /// Bitcoin network to use
+    pub network: Option<Network>,
 }
 
 /// Logging configuration
@@ -123,6 +126,7 @@ impl Default for Config {
                 username: "rpcuser".to_string(),
                 password: "rpcpassword".to_string(),
                 core_version: None,
+                network: None,
             },
             logging: LoggingConfig {
                 level: "info".to_string(),

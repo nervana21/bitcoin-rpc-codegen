@@ -79,7 +79,8 @@ use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig}};
 
-use bitcoin::Amount;"
+use bitcoin::Amount;
+use bitcoin::Network;"
     )
     .unwrap();
     Ok(())
@@ -195,9 +196,36 @@ pub fn emit_node_manager_impl(code: &mut String) -> std::io::Result<()> {
 pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     writeln!(
         code,
-        "    pub async fn new() -> Result<Self, TransportError> {{
-        println!(\"[DEBUG] BitcoinTestClient::new called\");
+        "    /// Creates a new Bitcoin test client with default configuration (regtest network).
+    /// ```no_run
+    /// use bitcoin_rpc_midas::test_node::client::BitcoinTestClient;
+    ///
+    /// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
+    ///     let client = BitcoinTestClient::new().await?;
+    ///     Ok(())
+    /// }}
+    /// ```
+    pub async fn new() -> Result<Self, TransportError> {{
+        tracing::debug!(\"BitcoinTestClient::new() called\");
         let config = TestConfig::default();
+        let node_manager = BitcoinNodeManager::new_with_config(&config)?;
+        Self::new_with_manager(node_manager).await
+    }}
+
+    /// Creates a new Bitcoin test client with a specific network.
+    /// ```no_run
+    /// use bitcoin_rpc_midas::test_node::client::BitcoinTestClient;
+    /// use bitcoin::Network;
+    ///
+    /// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
+    ///     let client = BitcoinTestClient::new_with_network(Network::Bitcoin).await?;
+    ///     Ok(())
+    /// }}
+    /// ```
+    pub async fn new_with_network(network: Network) -> Result<Self, TransportError> {{
+        tracing::debug!(\"BitcoinTestClient::new_with_network({{:?}}) called\", network);
+        let mut config = TestConfig::default();
+        config.network = network;
         let node_manager = BitcoinNodeManager::new_with_config(&config)?;
         Self::new_with_manager(node_manager).await
     }}
@@ -205,6 +233,16 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     /// Creates a new Bitcoin test client with a specific node manager.
     /// This allows for custom node configuration and lifecycle management.
     /// The node manager must implement the `NodeManager` trait.
+    /// ```no_run
+    /// use bitcoin_rpc_midas::test_node::client::BitcoinTestClient;
+    /// use bitcoin_rpc_midas::node::{{BitcoinNodeManager, TestConfig}};
+    ///
+    /// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
+    ///     let config = TestConfig::default();
+    ///     let node_manager = BitcoinNodeManager::new_with_config(&config)?;
+    ///     let client = BitcoinTestClient::new_with_manager(node_manager).await?;
+    ///     Ok(())
+    /// }}
     /// ```
     pub async fn new_with_manager<M: NodeManager + 'static>(mut node_manager: M) -> Result<Self, TransportError> {{
         tracing::debug!(\"BitcoinTestClient::new_with_manager called\");
