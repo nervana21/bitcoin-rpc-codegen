@@ -144,7 +144,7 @@ fn test_port_type_mapping() {
 
     let (ty, is_opt) = registry.map_argument_type(&arg);
     assert_eq!(ty, "u16");
-    assert_eq!(is_opt, false);
+    assert!(!is_opt);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn test_nrequired_type_mapping() {
 
     let (ty, is_opt) = registry.map_argument_type(&arg);
     assert_eq!(ty, "u32");
-    assert_eq!(is_opt, false);
+    assert!(!is_opt);
 }
 
 #[test]
@@ -252,7 +252,7 @@ fn test_optional_handling() {
 
     let (ty, is_opt) = registry.map_argument_type(&arg);
     assert_eq!(ty, "u16");
-    assert_eq!(is_opt, true);
+    assert!(is_opt);
 }
 
 #[test]
@@ -270,7 +270,7 @@ fn test_result_type_mapping() {
 
     let (ty, is_opt) = registry.map_result_type(&result);
     assert_eq!(ty, "u16");
-    assert_eq!(is_opt, false);
+    assert!(!is_opt);
 
     // Test result type mapping for nrequired
     let result = ApiResult {
@@ -283,7 +283,7 @@ fn test_result_type_mapping() {
 
     let (ty, is_opt) = registry.map_result_type(&result);
     assert_eq!(ty, "u32");
-    assert_eq!(is_opt, false);
+    assert!(!is_opt);
 }
 
 #[test]
@@ -774,7 +774,7 @@ fn test_category_descriptions() {
 fn test_type_registry_default() {
     // Test that TypeRegistry implements Default
     let registry1 = TypeRegistry::new();
-    let registry2 = TypeRegistry::default();
+    let registry2 = TypeRegistry;
 
     // They should behave identically
     assert_eq!(

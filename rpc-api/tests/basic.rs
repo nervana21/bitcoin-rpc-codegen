@@ -1,7 +1,6 @@
 // rpc_api/tests/basic.rs
 
 use rpc_api::{ApiArgument, ApiMethod, ApiResult, Type, Version, VersionError};
-use serde_json;
 use std::str::FromStr;
 
 /// Make sure all supported version strings round‐trip through `Version::from_str`.
@@ -266,5 +265,5 @@ fn from_apimethod_for_rpcmethod() {
     assert_eq!(rpc_method.name, "getfoo");
     assert_eq!(rpc_method.description, "desc");
     assert_eq!(rpc_method.params.len(), 1);
-    assert_eq!(rpc_method.result.is_some(), true);
+    assert!(rpc_method.result.is_some());
 }

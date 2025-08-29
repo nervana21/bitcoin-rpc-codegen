@@ -11,7 +11,7 @@ fn test_json_rpc_codegen_transport() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
 
     // should produce exactly one module named "foo"
@@ -47,7 +47,7 @@ fn transport_codegen_with_args() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 
@@ -71,7 +71,7 @@ fn transport_codegen_error_handling() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 
@@ -91,7 +91,7 @@ fn transport_codegen_imports() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator::new(&DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
     let files = gen.generate(&methods);
     assert_eq!(files.len(), 1);
 

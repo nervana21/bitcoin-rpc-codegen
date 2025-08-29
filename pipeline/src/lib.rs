@@ -648,7 +648,7 @@ impl TestConfig {
 
     // 3) Transport layer
     println!("[diagnostic] generating transport code");
-    let tx_files = TransportCodeGenerator::new(&target_version.as_str()).generate(&norm);
+    let tx_files = TransportCodeGenerator::new(target_version.as_str()).generate(&norm);
     write_generated(out_dir.join("transport"), &tx_files)
         .context("Failed to write transport files")?;
 

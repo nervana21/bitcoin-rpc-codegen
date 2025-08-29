@@ -153,7 +153,7 @@ fn generate_versioned_mod_rs(
     use std::fmt::Write;
 
     let mod_rs_content = versions.iter().fold(String::new(), |mut output, version| {
-        let _ = writeln!(output, "{}", mod_template.replace("{}", &version.as_str()));
+        let _ = writeln!(output, "{}", mod_template.replace("{}", version.as_str()));
         output
     });
 
