@@ -380,7 +380,7 @@ mod tests {
             }],
         );
 
-        let result_v28 = generator_v28.generate(&[method.clone()]);
+        let result_v28 = generator_v28.generate(std::slice::from_ref(&method));
         let result_v29 = generator_v29.generate(&[method]);
 
         assert_eq!(result_v28[0].0, "v28_types.rs");

@@ -484,8 +484,8 @@ mod tests {
 
         let rpc_method: RpcMethod = api_method.into();
         assert_eq!(rpc_method.params.len(), 2);
-        assert_eq!(rpc_method.params[0].required, false);
-        assert_eq!(rpc_method.params[1].required, true);
+        assert!(!rpc_method.params[0].required);
+        assert!(rpc_method.params[1].required);
     }
 
     #[test]
@@ -564,7 +564,7 @@ mod tests {
         assert_eq!(result.type_, "string");
         assert_eq!(result.description, "test description");
         assert_eq!(result.key_name, "test_key");
-        assert_eq!(result.required, true);
+        assert!(result.required);
         assert!(result.inner.is_empty());
     }
 
@@ -697,11 +697,11 @@ mod tests {
         assert_ne!(result.description, "");
         assert_ne!(result.key_name, "");
         assert!(!result.inner.is_empty());
-        assert_eq!(result.required, false);
+        assert!(!result.required);
 
         // Verify nested parsing worked
         assert_eq!(result.inner[0].type_, "nested_type");
         assert_eq!(result.inner[0].key_name, "nested_key");
-        assert_eq!(result.inner[0].required, true);
+        assert!(result.inner[0].required);
     }
 }

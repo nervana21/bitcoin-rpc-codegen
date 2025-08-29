@@ -1,8 +1,5 @@
 // logging/tests/basic.rs
 
-use logging;
-use tracing;
-
 /// A very basic integration test for the `pipeline_logging` crate.
 ///
 /// This simply verifies that:
