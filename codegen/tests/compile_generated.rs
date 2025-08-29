@@ -43,6 +43,7 @@ fn transport_codegen_with_arguments() {
         arguments: vec![rpc_api::ApiArgument {
             names: vec!["blockhash".into()],
             type_: "string".into(),
+            type_str: None,
             required: true,
             description: "The block hash".into(),
         }],

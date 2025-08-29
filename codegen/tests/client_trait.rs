@@ -37,6 +37,7 @@ fn generate_single_method() {
         vec![ApiArgument {
             names: vec!["blockhash".into()],
             type_: "string".into(),
+            type_str: None,
             required: true,
             description: "Block hash".into(),
         }],
@@ -71,12 +72,14 @@ fn generate_optional_and_reserved_arg() {
             ApiArgument {
                 names: vec!["type".into()],
                 type_: "string".into(),
+                type_str: None,
                 required: false,
                 description: "Type arg".into(),
             },
             ApiArgument {
                 names: vec!["foo".into()],
                 type_: "number".into(),
+                type_str: None,
                 required: false,
                 description: "Foo arg".into(),
             },
@@ -106,6 +109,7 @@ fn render_client_trait_substitutes_all() {
         vec![ApiArgument {
             names: vec!["blockhash".into()],
             type_: "string".into(),
+            type_str: None,
             required: true,
             description: "Block hash".into(),
         }],
@@ -134,12 +138,14 @@ fn json_params_generates_correct_parameter_strings() {
             ApiArgument {
                 names: vec!["param1".into()],
                 type_: "string".into(),
+                type_str: None,
                 required: true,
                 description: "First param".into(),
             },
             ApiArgument {
                 names: vec!["type".into()],
                 type_: "string".into(),
+                type_str: None,
                 required: true,
                 description: "Type param".into(),
             },
@@ -179,6 +185,7 @@ fn json_params_handles_reserved_keyword_type() {
         vec![ApiArgument {
             names: vec!["type".into()],
             type_: "string".into(),
+            type_str: None,
             required: true,
             description: "Type param".into(),
         }],

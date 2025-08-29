@@ -33,6 +33,7 @@ fn api_argument_roundtrip() {
     let arg = ApiArgument {
         names: vec!["foo".into(), "bar".into()],
         type_: "string".into(),
+        type_str: None,
         required: true,
         description: "a test argument".into(),
     };
@@ -70,6 +71,7 @@ fn api_method_roundtrip() {
         arguments: vec![ApiArgument {
             names: vec!["a".into()],
             type_: "bool".into(),
+            type_str: None,
             required: true,
             description: "a bool".into(),
         }],
@@ -250,6 +252,7 @@ fn from_apimethod_for_rpcmethod() {
         arguments: vec![ApiArgument {
             names: vec!["foo".into()],
             type_: "string".into(),
+            type_str: None,
             required: true,
             description: "desc".into(),
         }],

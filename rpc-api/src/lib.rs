@@ -23,6 +23,8 @@ pub struct ApiArgument {
     pub names: Vec<String>,
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(rename = "type_str")]
+    pub type_str: Option<Vec<String>>,
     pub required: bool,
     pub description: String,
 }
@@ -272,81 +274,96 @@ pub fn parse_api_json(json: &str) -> Result<Vec<ApiMethod>, serde_json::Error> {
         );
 
         // --- Support both v28 (array) and v29 (object) argument formats ---
-        let arguments = match command_obj.get("arguments") {
-            Some(args) if args.is_array() => {
-                // v28 style
-                args.as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|param| ApiArgument {
-                        names: param
-                            .get("names")
-                            .and_then(|n| n.as_array())
-                            .map(|arr| {
-                                arr.iter()
-                                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                                    .collect()
-                            })
-                            .unwrap_or_default(),
-                        type_: param
-                            .get("type")
-                            .and_then(|t| t.as_str())
-                            .unwrap_or("string")
-                            .to_string(),
-                        required: param
-                            .get("required")
-                            .and_then(|b| b.as_bool())
-                            .unwrap_or(true), // Default to required if not specified
-                        description: param
-                            .get("description")
-                            .and_then(|d| d.as_str())
-                            .unwrap_or("")
-                            .to_string(),
-                    })
-                    .collect()
-            }
-            Some(args) if args.is_object() => {
-                // v29 style (JSON Schema) - Use IndexMap to preserve order
-                let properties = args
-                    .get("properties")
-                    .and_then(|p| p.as_object())
-                    .map(|obj| {
-                        // Convert to IndexMap to preserve insertion order
-                        let mut index_map = IndexMap::new();
-                        for (key, value) in obj {
-                            index_map.insert(key.clone(), value.clone());
-                        }
-                        index_map
-                    })
-                    .unwrap_or_else(IndexMap::new);
+        let arguments =
+            match command_obj.get("arguments") {
+                Some(args) if args.is_array() => {
+                    // v28 style
+                    args.as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|param| ApiArgument {
+                            names: param
+                                .get("names")
+                                .and_then(|n| n.as_array())
+                                .map(|arr| {
+                                    arr.iter()
+                                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                        .collect()
+                                })
+                                .unwrap_or_default(),
+                            type_: param
+                                .get("type")
+                                .and_then(|t| t.as_str())
+                                .unwrap_or("string")
+                                .to_string(),
+                            type_str: param.get("type_str").and_then(|ts| ts.as_array()).map(
+                                |arr| {
+                                    arr.iter()
+                                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                        .collect()
+                                },
+                            ),
+                            required: param
+                                .get("required")
+                                .and_then(|b| b.as_bool())
+                                .unwrap_or(true), // Default to required if not specified
+                            description: param
+                                .get("description")
+                                .and_then(|d| d.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                        })
+                        .collect()
+                }
+                Some(args) if args.is_object() => {
+                    // v29 style (JSON Schema) - Use IndexMap to preserve order
+                    let properties = args
+                        .get("properties")
+                        .and_then(|p| p.as_object())
+                        .map(|obj| {
+                            // Convert to IndexMap to preserve insertion order
+                            let mut index_map = IndexMap::new();
+                            for (key, value) in obj {
+                                index_map.insert(key.clone(), value.clone());
+                            }
+                            index_map
+                        })
+                        .unwrap_or_else(IndexMap::new);
 
-                let required: std::collections::HashSet<_> = args
-                    .get("required")
-                    .and_then(|arr| arr.as_array())
-                    .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
-                    .unwrap_or_default();
+                    let required: std::collections::HashSet<_> = args
+                        .get("required")
+                        .and_then(|arr| arr.as_array())
+                        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
+                        .unwrap_or_default();
 
-                // Now iterate in preserved order
-                properties
-                    .iter()
-                    .map(|(name, prop)| ApiArgument {
-                        names: vec![name.clone()],
-                        type_: prop
-                            .get("type")
-                            .and_then(|t| t.as_str())
-                            .unwrap_or("string")
-                            .to_string(),
-                        required: required.contains(name.as_str()),
-                        description: prop
-                            .get("description")
-                            .and_then(|d| d.as_str())
-                            .unwrap_or("")
-                            .to_string(),
-                    })
-                    .collect()
-            }
-            _ => vec![], // No arguments
-        };
+                    // Now iterate in preserved order
+                    properties
+                        .iter()
+                        .map(|(name, prop)| ApiArgument {
+                            names: vec![name.clone()],
+                            type_: prop
+                                .get("type")
+                                .and_then(|t| t.as_str())
+                                .unwrap_or("string")
+                                .to_string(),
+                            type_str: prop.get("type_str").and_then(|ts| ts.as_array()).map(
+                                |arr| {
+                                    arr.iter()
+                                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                        .collect()
+                                },
+                            ),
+                            required: required.contains(name.as_str()),
+                            description: prop
+                                .get("description")
+                                .and_then(|d| d.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                        })
+                        .collect()
+                }
+                _ => vec![], // No arguments
+            };
 
         // --- DIAGNOSTIC PRINTS FOR RESULTS ---
         if !command_obj.contains_key("results") {
@@ -469,12 +486,14 @@ mod tests {
                 ApiArgument {
                     names: vec!["required".into()],
                     type_: "string".into(),
+                    type_str: None,
                     required: false,
                     description: "required".into(),
                 },
                 ApiArgument {
                     names: vec!["optional".into()],
                     type_: "string".into(),
+                    type_str: None,
                     required: true,
                     description: "optional".into(),
                 },

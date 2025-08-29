@@ -371,8 +371,9 @@ impl BitcoinNodeManager {
             "-fallbackfee=0.0002",
             "-server=1",
             "-prune=1",
-            &format!("-rpcuser={}", self.rpc_username),
-            &format!("-rpcpassword={}", self.rpc_password),
+            "-coinstatsindex",
+            &format!("-rpcuser={}", self.config.rpc_username),
+            &format!("-rpcpassword={}", self.config.rpc_password),
         ]);
 
         // Capture both stdout and stderr for better error reporting
