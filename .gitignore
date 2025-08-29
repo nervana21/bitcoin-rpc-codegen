@@ -19,3 +19,4 @@ target/tmp/
 # Project-specific
 .DS_Store
 scripts/
+*.patch
