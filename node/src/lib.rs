@@ -10,7 +10,7 @@ use tempfile::TempDir;
 use tokio::io::AsyncBufReadExt;
 use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, RwLock};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 pub mod test_config;
 pub use config::{BitcoinConfig, Config};
 use rpc_api::Version;
@@ -138,7 +138,7 @@ impl NodeManager for BitcoinNodeManager {
         tokio::spawn(async move {
             let mut lines = stderr_reader.lines();
             while let Ok(Some(line)) = lines.next_line().await {
-                error!("[DEBUG] bitcoind stderr: {}", line);
+                error!("bitcoind stderr: {}", line);
             }
         });
 
@@ -148,7 +148,7 @@ impl NodeManager for BitcoinNodeManager {
         tokio::spawn(async move {
             let mut lines = stdout_reader.lines();
             while let Ok(Some(line)) = lines.next_line().await {
-                info!("[DEBUG] bitcoind stdout: {}", line);
+                info!("bitcoind stdout: {}", line);
             }
         });
 
@@ -162,18 +162,13 @@ impl NodeManager for BitcoinNodeManager {
         while Instant::now() < deadline {
             if let Some(child) = child_guard.as_mut() {
                 if let Ok(Some(status)) = child.try_wait() {
-                    let error = format!("Bitcoin node exited early with status: {status}");
+                    let error = format!("Bitcoin node exited early with status: {}", status);
                     error!("{}", error);
                     anyhow::bail!(error);
                 }
             }
 
             // Try to connect to RPC
-            info!(
-                "[DEBUG] Attempt {}: Trying to connect to RPC at port {}",
-                attempts + 1,
-                self.rpc_port
-            );
             let client = reqwest::Client::new();
             match client
                 .post(format!("http://127.0.0.1:{}/", self.rpc_port))
@@ -196,7 +191,7 @@ impl NodeManager for BitcoinNodeManager {
                         );
                         return Ok(());
                     } else {
-                        warn!(
+                        debug!(
                             "RPC request failed with status {} (attempt {})",
                             response.status(),
                             attempts

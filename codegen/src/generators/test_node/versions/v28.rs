@@ -132,22 +132,22 @@ impl WalletOptions {{
         writeln!(
         code,
         "    /// Helper method to mine blocks to a new address
-    pub async fn mine_blocks(&mut self, num_blocks: u64, maxtries: u64) -> Result<(String, Value), TransportError> {{
-        // Ensure we have a wallet with default settings
-        let _wallet_name = self.ensure_default_wallet(\"test_wallet\").await?;
+pub async fn mine_blocks(&mut self, num_blocks: u64, maxtries: u64) -> Result<(String, Value), TransportError> {{
+    // Ensure we have a wallet with default settings
+    let _wallet_name = self.ensure_default_wallet(\"test_wallet\").await?;
 
-        println!(\"[debug] Getting new address\");
-        let address = self.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
-        println!(\"[debug] Generated address: {{:?}}\", address);
-        println!(\"[debug] Generating blocks\");
-        let blocks = self.generatetoaddress(
-            num_blocks,
-            address.0.clone(),
-            maxtries
-        ).await?;
-        println!(\"[debug] Generated blocks: {{:?}}\", blocks);
-        Ok((address.0, serde_json::to_value(blocks)?))
-    }}\n"
+    tracing::debug!(\"Getting new address\");
+    let address = self.getnewaddress(\"\".to_string(), \"bech32m\".to_string()).await?;
+    tracing::debug!(\"Generated address: {{:?}}\", address);
+    tracing::debug!(\"Generating blocks\");
+    let blocks = self.generatetoaddress(
+        num_blocks,
+        address.0.clone(),
+        maxtries
+    ).await?;
+    tracing::debug!(\"Generated blocks: {{:?}}\", blocks);
+    Ok((address.0, serde_json::to_value(blocks)?))
+}}\n"
     ).unwrap();
         Ok(())
     }

@@ -149,32 +149,32 @@ pub fn emit_node_manager_impl(code: &mut String) -> std::io::Result<()> {
         code,
         "impl NodeManager for BitcoinNodeManager {{\n\
              fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>> {{\n\
-                 println!(\"[DEBUG] NodeManager::start called on BitcoinNodeManager\");\n\
+                 tracing::debug!(\"NodeManager::start called on BitcoinNodeManager\");\n\
                  Box::pin(async move {{\n\
-                     println!(\"[DEBUG] Inside NodeManager::start async block\");\n\
+                     tracing::debug!(\"Inside NodeManager::start async block\");\n\
                      let result = self.start_internal().await;\n\
-                     println!(\"[DEBUG] NodeManager::start result: {{:?}}\", result);\n\
+                     tracing::debug!(\"NodeManager::start result: {{:?}}\", result);\n\
                      result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
                  }})\n\
              }}\n\
              \n\
              fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>> {{\n\
-                 println!(\"[DEBUG] NodeManager::stop called on BitcoinNodeManager\");\n\
+                 tracing::debug!(\"NodeManager::stop called on BitcoinNodeManager\");\n\
                  Box::pin(async move {{\n\
-                     println!(\"[DEBUG] Inside NodeManager::stop async block\");\n\
+                     tracing::debug!(\"Inside NodeManager::stop async block\");\n\
                      let result = self.stop_internal().await;\n\
-                     println!(\"[DEBUG] NodeManager::stop result: {{:?}}\", result);\n\
+                     tracing::debug!(\"NodeManager::stop result: {{:?}}\", result);\n\
                      result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
                  }})\n\
              }}\n\
              \n\
              fn rpc_port(&self) -> u16 {{\n\
-                 println!(\"[DEBUG] NodeManager::rpc_port called on BitcoinNodeManager\");\n\
+                 tracing::debug!(\"NodeManager::rpc_port called on BitcoinNodeManager\");\n\
                  self.rpc_port\n\
              }}\n\
              \n\
              fn as_any(&self) -> &dyn std::any::Any {{\n\
-                 println!(\"[DEBUG] NodeManager::as_any called on BitcoinNodeManager\");\n\
+                 tracing::debug!(\"NodeManager::as_any called on BitcoinNodeManager\");\n\
                  self\n\
              }}\n\
          }}\n"
@@ -207,14 +207,14 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     /// The node manager must implement the `NodeManager` trait.
     /// ```
     pub async fn new_with_manager<M: NodeManager + 'static>(mut node_manager: M) -> Result<Self, TransportError> {{
-        println!(\"[DEBUG] BitcoinTestClient::new_with_manager called\");
+        tracing::debug!(\"BitcoinTestClient::new_with_manager called\");
         // Start the node
-        println!(\"[DEBUG] Calling node_manager.start()\");
+        tracing::debug!(\"Calling node_manager.start()\");
         node_manager.start().await?;
-        println!(\"[DEBUG] node_manager.start() completed successfully\");
+        tracing::debug!(\"node_manager.start() completed successfully\");
         
         // Wait for node to be ready for RPC
-        println!(\"[DEBUG] Creating transport with port {{}}\", node_manager.rpc_port());
+        tracing::debug!(\"Creating transport with port {{}}\", node_manager.rpc_port());
         let transport = Arc::new(DefaultTransport::new(\n\
             &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),
@@ -242,7 +242,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
                     // Check if the error matches any known initialization state
                     let is_init_state = init_states.iter().any(|state| e.contains(state));
                     if is_init_state && retries < max_retries {{
-                        println!(\"[DEBUG] Waiting for initialization: {{}} (attempt {{}}/{{}})\", e, retries + 1, max_retries);
+                        tracing::debug!(\"Waiting for initialization: {{}} (attempt {{}}/{{}})\", e, retries + 1, max_retries);
                         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                         retries += 1;
                         continue;
@@ -254,7 +254,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         }}
         
         if retries > 0 {{
-            println!(\"[DEBUG] Node initialization completed after {{}} attempts\", retries);
+            tracing::debug!(\"Node initialization completed after {{}} attempts\", retries);
         }}
         
         Ok(Self {{
@@ -262,7 +262,8 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
             node_manager: Some(Box::new(node_manager)),
             rpc,
         }})
-    }}"
+    }}
+"
     ).unwrap();
     Ok(())
 }
