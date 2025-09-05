@@ -734,6 +734,11 @@ impl TestConfig {
         File::create(&lib_rs).with_context(|| format!("Failed to create lib.rs at {lib_rs:?}"))?;
 
     let version_nodots = target_version.as_str().replace('.', "");
+    let version_capitalized = if let Some(stripped) = version_nodots.strip_prefix('v') {
+        format!("V{}", stripped)
+    } else {
+        version_nodots.to_uppercase()
+    };
 
     writeln!(
         file,
@@ -750,7 +755,7 @@ impl TestConfig {
      pub mod types;\n\n\
      // Re-exports for ergonomic access\n\
      pub use config::Config;\n\
-     pub use client_trait::client_trait::BitcoinClient{version_nodots};\n\
+     pub use client_trait::client_trait::BitcoinClient{version_capitalized};\n\
      pub use node::BitcoinNodeManager;\n\
      pub use bitcoin::Network;\n\
      pub use node::test_config::TestConfig;\n\
