@@ -19,24 +19,6 @@ pub mod doc_comment;
 pub mod response_type;
 pub use response_type::ResponseTypeCodeGenerator;
 
-/// Sub-crate generates: **`rpc_client`**
-///
-/// Generates the transport-layer client code: async RPC method wrappers
-/// that handle parameter serialization and response deserialization.
-pub mod rpc_client;
-
-/// Sub-crate generates: **`rpc_method_macro`**
-///
-/// Generates `macro_rules!` definitions for version-scoped client wrappers.
-/// Downstream crates can write:
-///
-/// ```rust,ignore
-/// impl_client_latest__getblockchaininfo!();
-/// ```
-///
-/// to obtain a fully-typed `fn getblockchaininfo(&self) -> ...` method on their `Client`.
-pub mod rpc_method_macro;
-
 /// Sub-crate generates: **`client_trait`**
 ///
 /// Generates the client trait that defines the interface for Bitcoin RPC clients.

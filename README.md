@@ -36,7 +36,6 @@ See [`docs/architecture.mmd`](docs/architecture.mmd) for a full system diagram.
 
 The project is organized into several focused crates:
 
-- [`rpc-api/`](./rpc-api/): JSON model of RPC methods and parameters
 - [`codegen/`](./codegen/): Emits Rust modules and client implementations
 - [`pipeline/`](./pipeline/): Coordinates the end-to-end code generation workflow
 - [`bitcoin-rpc-midas/`](https://github.com/nervana21/bitcoin-rpc-midas): The final generated Rust client library (output of the codegen pipeline).  

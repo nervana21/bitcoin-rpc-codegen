@@ -1,7 +1,3 @@
-## Crate Naming
-
-The crate is named `rpc-api` due to name clashing with the name `core`.
-
 ## Port Selection in BitcoinNodeManager
 
 ### Context

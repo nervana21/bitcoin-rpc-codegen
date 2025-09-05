@@ -1,7 +1,6 @@
 flowchart LR
   API_JSON["api.json"]:::api --> Types["types"]:::core
   
-  Types --> RPC_API["rpc-api"]:::api
   Types --> TypeConversion["type-conversion"]:::registry
   Types --> Codegen["codegen"]:::codegen
   Types --> Node["node"]:::node
@@ -10,7 +9,6 @@ flowchart LR
   Codegen --> Pipeline["pipeline"]:::pipeline
   Pipeline --> Midas["bitcoin‑rpc‑midas"]:::midas
 
-  RPC_API --> Node
   Node --> Pipeline
 
   classDef api       fill:#d0e1ff,stroke:#2255aa,color:#000;

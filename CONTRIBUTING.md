@@ -79,7 +79,6 @@ By contributing, you agree that your contributions will be licensed under its MI
 
 The project is organized into several focused crates:
 
-- [`rpc_api/`](./rpc-api/): JSON model of RPC methods and parameters
 - [`codegen/`](./codegen/): Emits Rust modules and client implementations
 - [`pipeline/`](./pipeline/): Coordinates the end-to-end code generation workflow
 - [`bitcoin-rpc-midas/`](https://github.com/nervana21/bitcoin-rpc-midas): The final generated Rust client library (output of the codegen pipeline).  

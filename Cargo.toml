@@ -7,7 +7,6 @@ members = [
     "logging",
     "node",
     "pipeline",
-    "rpc-api",
     "transport",
     "type-conversion",
 ]
