@@ -1,9 +1,9 @@
-//! Sub-crate: **`type_registry`**
+//! Sub-crate: **`type_conversion`**
 //!
-//! Central registry for mapping Bitcoin RPC types to Rust types.
+//! Central conversion system for mapping Bitcoin RPC types to Rust types.
 //! Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
 
-use rpc_api::{ApiArgument, ApiResult};
+use types::{ApiArgument, ApiResult};
 
 /// Categories for RPC types based on their semantic meaning and usage patterns.
 /// This enum provides a systematic way to categorize and map JSON-RPC types to Rust types.
@@ -675,3 +675,6 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         exact: false,
     },
 ];
+
+// Re-export types that downstream crates need
+pub use types::{ApiMethod, parse_api_json, version, Version, VersionError};

@@ -2,7 +2,7 @@
 
 use crate::{utils::capitalize, CodeGenerator};
 use rpc_api::ApiMethod;
-use type_registry::TypeRegistry;
+use type_conversion::TypeRegistry;
 
 use std::fmt::Write;
 

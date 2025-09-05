@@ -8,5 +8,5 @@ members = [
     "pipeline",
     "rpc-api",
     "transport",
-    "type-registry",
+    "type-conversion",
 ]

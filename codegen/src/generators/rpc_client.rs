@@ -15,7 +15,7 @@ use crate::utils::camel_to_snake_case;
 use crate::CodeGenerator;
 use rpc_api::{ApiArgument, ApiMethod, ApiResult};
 use std::fmt::Write as _;
-use type_registry::TypeRegistry;
+use type_conversion::TypeRegistry;
 
 fn camel(s: &str) -> String {
     let mut out = String::new();

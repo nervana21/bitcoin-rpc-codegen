@@ -21,7 +21,7 @@
 use crate::generators::doc_comment::format_doc_comment;
 use crate::utils::capitalize;
 use rpc_api::ApiMethod;
-use type_registry::TypeRegistry;
+use type_conversion::TypeRegistry;
 
 /// Generates a client-side macro implementation for an RPC method
 pub fn generate_client_macro(method: &ApiMethod, version: &str) -> String {

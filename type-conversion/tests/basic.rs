@@ -1,5 +1,5 @@
-use rpc_api::{ApiArgument, ApiResult};
-use type_registry::{RpcCategory, TypeRegistry};
+use types::{ApiArgument, ApiResult};
+use type_conversion::{RpcCategory, TypeRegistry};
 
 #[test]
 fn test_categorization() {
@@ -782,7 +782,7 @@ fn test_category_descriptions() {
 }
 
 #[test]
-fn test_type_registry_default() {
+fn test_type_conversion_default() {
     // Test that TypeRegistry implements Default
     let registry1 = TypeRegistry::new();
     let registry2 = TypeRegistry;

@@ -4,7 +4,7 @@ use rpc_api::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
 
 use super::utils::camel;
-use type_registry::TypeRegistry;
+use type_conversion::TypeRegistry;
 
 /// Generates Rust struct definitions for RPC method response types.
 ///
