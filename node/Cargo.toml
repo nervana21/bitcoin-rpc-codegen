@@ -24,4 +24,4 @@ types = { path = "../types" }
 
 [dev-dependencies]
 tokio-test = "0.4"
-tracing-subscriber = "0.3"
+tracing-subscriber = "0.3.20"
