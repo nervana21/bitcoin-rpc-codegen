@@ -11,8 +11,9 @@ use codegen::{
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
 use regex::Regex;
-use rpc_api::parse_api_json;
-use rpc_api::version::DEFAULT_VERSION;
+use types::parse_api_json;
+use types::version::DEFAULT_VERSION;
+use types::Version;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
@@ -135,7 +136,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         })?;
 
     let version_str = extract_version_from_filename(filename)?;
-    let target_version = rpc_api::Version::from(version_str.as_str());
+    let target_version = Version::from(version_str.as_str());
 
     write_cargo_toml(&crate_root, target_version)
         .with_context(|| format!("Failed to write Cargo.toml in: {crate_root:?}"))?;
@@ -207,7 +208,7 @@ fn find_project_root() -> Result<PathBuf> {
 fn generate_into(
     out_dir: &Path,
     input_path: &Path,
-    target_version: rpc_api::Version,
+    target_version: Version,
 ) -> Result<()> {
     println!(
         "[diagnostic] generate_into received out_dir: {out_dir:?}, input_path: {input_path:?}, target_version: {target_version}"
@@ -794,7 +795,7 @@ impl TestConfig {
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
-fn write_cargo_toml(root: &Path, target_version: rpc_api::Version) -> Result<()> {
+fn write_cargo_toml(root: &Path, target_version: Version) -> Result<()> {
     println!(
         "[diagnostic] writing Cargo.toml at {:?}",
         root.join("Cargo.toml")
@@ -853,7 +854,7 @@ tracing = "0.1"
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of writing the README.md file
-fn write_readme(root: &Path, target_version: rpc_api::Version) -> Result<()> {
+fn write_readme(root: &Path, target_version: Version) -> Result<()> {
     println!(
         "[diagnostic] writing README.md at {:?}",
         root.join("README.md")

@@ -1,7 +1,7 @@
 // codegen/src/generators/batch_builder.rs
 
 use crate::{utils::capitalize, CodeGenerator};
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 use type_conversion::TypeRegistry;
 
 use std::fmt::Write;

@@ -1,5 +1,5 @@
 use codegen::{CodeGenerator, TransportCoreGenerator};
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 
 #[test]
 fn transport_core_generator_includes_wallet_fallback_logic() {

@@ -1,5 +1,5 @@
 use crate::CodeGenerator;
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 use std::fmt::Write as _;
 
 /// Code generator that creates the core transport layer for Bitcoin RPC communication

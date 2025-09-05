@@ -1,6 +1,7 @@
 //! Generate result structs for RPC method returns
 
-use rpc_api::{ApiMethod, ApiResult};
+use types::ApiMethod;
+use types::ApiResult;
 use std::fmt::Write as _;
 
 use super::utils::camel;

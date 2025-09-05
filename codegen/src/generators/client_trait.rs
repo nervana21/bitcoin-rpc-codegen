@@ -2,7 +2,7 @@
 
 use crate::utils::capitalize;
 use crate::CodeGenerator;
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 use type_conversion::TypeRegistry;
 
 /// Generator for creating Bitcoin RPC client traits for specific versions

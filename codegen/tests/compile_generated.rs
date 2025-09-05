@@ -1,6 +1,7 @@
 use codegen::{CodeGenerator, TransportCodeGenerator};
-use rpc_api::version::DEFAULT_VERSION;
-use rpc_api::{ApiMethod, ApiResult};
+use types::version::DEFAULT_VERSION;
+use types::ApiMethod;
+use types::ApiResult;
 
 #[test]
 fn transport_codegen_basic_functionality() {
@@ -40,7 +41,7 @@ fn transport_codegen_with_arguments() {
     let methods = vec![ApiMethod {
         name: "getblock".into(),
         description: "Returns information about the block with the given hash.".into(),
-        arguments: vec![rpc_api::ApiArgument {
+        arguments: vec![types::ApiArgument {
             names: vec!["blockhash".into()],
             type_: "string".into(),
             type_str: None,

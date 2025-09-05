@@ -2,7 +2,7 @@
 
 use bitcoin::Network;
 use config::{BitcoinConfig, Config};
-use rpc_api::version::DEFAULT_VERSION;
+use types::version::DEFAULT_VERSION;
 use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.

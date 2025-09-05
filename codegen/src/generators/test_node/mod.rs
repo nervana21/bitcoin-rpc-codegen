@@ -4,7 +4,7 @@
 //! split into logical units for better maintainability and testing.
 
 use crate::CodeGenerator;
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 
 pub mod emit_combined_client;
 pub mod emit_params;

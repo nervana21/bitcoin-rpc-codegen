@@ -1,6 +1,6 @@
 // codegen/src/utils.rs
 
-use rpc_api::ApiArgument;
+use types::ApiArgument;
 use type_conversion::TypeRegistry;
 
 /// Converts a camelCase string to snake_case

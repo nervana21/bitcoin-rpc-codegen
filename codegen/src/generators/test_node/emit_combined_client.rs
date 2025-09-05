@@ -2,7 +2,7 @@
 
 use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 
 use std::fmt::Write;
 

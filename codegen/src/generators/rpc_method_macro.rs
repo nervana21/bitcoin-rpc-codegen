@@ -20,7 +20,7 @@
 
 use crate::generators::doc_comment::format_doc_comment;
 use crate::utils::capitalize;
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 use type_conversion::TypeRegistry;
 
 /// Generates a client-side macro implementation for an RPC method
@@ -182,7 +182,7 @@ fn generate_args(method: &ApiMethod) -> (String, String) {
     (required_args.join(", "), optional_args.join("\n"))
 }
 
-fn get_return_type_from_results(results: &[rpc_api::ApiResult]) -> String {
+fn get_return_type_from_results(results: &[types::ApiResult]) -> String {
     if results.is_empty() {
         "()".to_string()
     } else {
@@ -190,7 +190,7 @@ fn get_return_type_from_results(results: &[rpc_api::ApiResult]) -> String {
     }
 }
 
-fn get_return_type(result: &rpc_api::ApiResult) -> String {
+fn get_return_type(result: &types::ApiResult) -> String {
     if result.type_.as_str() == "object" && !result.inner.is_empty() {
         generate_object_type(result)
     } else {
@@ -225,7 +225,7 @@ pub fn map_type_to_rust(type_str: &str) -> String {
     }
 }
 
-fn generate_object_type(result: &rpc_api::ApiResult) -> String {
+fn generate_object_type(result: &types::ApiResult) -> String {
     if result.inner.is_empty() || result.key_name == "object_dynamic" {
         "serde_json::Value".to_string()
     } else {

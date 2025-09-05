@@ -1,6 +1,8 @@
 use codegen::generators::client_trait::{render_client_trait, ClientTraitGenerator};
 use codegen::CodeGenerator;
-use rpc_api::{ApiArgument, ApiMethod, ApiResult};
+use types::ApiArgument;
+use types::ApiMethod;
+use types::ApiResult;
 
 fn make_method(
     name: &str,

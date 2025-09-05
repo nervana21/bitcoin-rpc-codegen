@@ -1,6 +1,6 @@
 // codegen/src/doc_comment_generator.rs
 
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 
 /// Format documentation comments
 pub fn format_doc_comment(description: &str) -> String {
@@ -230,7 +230,7 @@ Result:
             name: "getblockcount".to_string(),
             description: "Returns the number of blocks".to_string(),
             arguments: vec![],
-            results: vec![rpc_api::ApiResult {
+            results: vec![types::ApiResult {
                 key_name: "count".to_string(),
                 type_: "number".to_string(),
                 description: "The current block count".to_string(),

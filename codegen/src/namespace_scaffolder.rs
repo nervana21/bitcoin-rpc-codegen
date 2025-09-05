@@ -30,7 +30,7 @@
 //! entire module hierarchy that stitches together code‑generated RPC clients and
 //! type definitions, eliminating the need to touch `mod.rs` files ever again.
 
-use rpc_api::Version;
+use types::Version;
 use std::{
     fs, io,
     path::{Path, PathBuf},

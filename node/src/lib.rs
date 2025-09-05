@@ -13,7 +13,7 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info};
 pub mod test_config;
 pub use config::{BitcoinConfig, Config};
-use rpc_api::Version;
+use types::Version;
 use std::process::Stdio;
 pub use test_config::TestConfig;
 

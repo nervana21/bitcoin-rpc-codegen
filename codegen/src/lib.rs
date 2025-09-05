@@ -12,8 +12,11 @@ pub mod generators;
 use crate::generators::doc_comment;
 use crate::generators::response_type;
 use anyhow::Result;
-use rpc_api::ApiMethod;
+use types::ApiMethod;
 use std::{fs, path::Path, process::Command};
+
+// Re-export items that pipeline needs
+pub use types::{parse_api_json, version, Version};
 
 /// Sub-crate: **`namespace_scaffolder`**
 ///

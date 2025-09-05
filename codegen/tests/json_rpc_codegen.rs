@@ -1,6 +1,7 @@
 use codegen::{CodeGenerator, TransportCodeGenerator};
-use rpc_api::version::DEFAULT_VERSION;
-use rpc_api::{ApiArgument, ApiMethod};
+use types::version::DEFAULT_VERSION;
+use types::ApiArgument;
+use types::ApiMethod;
 
 #[test]
 fn test_json_rpc_codegen_transport() {

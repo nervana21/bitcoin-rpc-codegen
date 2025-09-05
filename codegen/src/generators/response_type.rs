@@ -8,7 +8,7 @@
 
 use crate::utils::{camel_to_snake_case, capitalize};
 use anyhow::Result;
-use rpc_api::{ApiMethod, ApiResult};
+use types::{ApiMethod, ApiResult};
 use std::fmt::Write as _;
 use type_conversion::TypeRegistry;
 
@@ -292,7 +292,7 @@ fn serde_attrs_for_field(r: &ApiResult) -> String {
 mod tests {
     use super::*;
     use crate::CodeGenerator;
-    use rpc_api::ApiResult;
+    use types::ApiResult;
 
     fn create_test_method(name: &str, results: Vec<ApiResult>) -> ApiMethod {
         ApiMethod {
