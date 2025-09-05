@@ -1,6 +1,5 @@
 //! Utility functions for test node generation
 
-use std::fmt::Write as _;
 
 /// Capitalizes the first character of a string and converts snake_case/kebab-case to PascalCase.
 ///
@@ -31,19 +30,12 @@ pub fn camel(s: &str) -> String {
 /// for the test node client. The generated file is wrapped in `#[cfg(test)]` to ensure it's
 /// only available during testing, making it suitable for integration tests with Bitcoin nodes.
 pub fn generate_mod_rs() -> String {
-    let mut code = String::new();
-    writeln!(
-        code,
-        "//! Test node module for Bitcoin RPC testing
-#[cfg(test)]
+    "//! Test node module for Bitcoin RPC testing
 pub mod params;
 pub mod response;
 pub mod client;
 
 // re-export common clients
 pub use client::BitcoinTestClient;
-"
-    )
-    .unwrap();
-    code
+".to_string()
 }
