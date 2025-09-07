@@ -62,7 +62,7 @@ impl ModuleGenerator {
     /// 3. top‑level re‑export files (`client/mod.rs`, `types/mod.rs`)
     pub fn generate_all(&self) -> io::Result<()> {
         self.generate_types_mod_rs()?;
-        self.generate_top_level_modules()?;
+        self.generate_top_level_types_mod()?;
         Ok(())
     }
 
