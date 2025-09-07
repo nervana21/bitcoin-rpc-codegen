@@ -3,6 +3,7 @@
 use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
 use types::ApiMethod;
+use types::Version;
 
 use std::fmt::Write;
 
@@ -18,7 +19,7 @@ use crate::generators::test_node::versions::get_helpers_for_version;
 pub fn generate_combined_client(
     client_name: &str,
     methods: &[ApiMethod],
-    version: &str,
+    version: &Version,
 ) -> std::io::Result<String> {
     let mut code = String::new();
 
@@ -26,7 +27,7 @@ pub fn generate_combined_client(
     emit_node_manager_trait(&mut code)?;
     emit_struct_definition(&mut code, client_name)?;
     emit_node_manager_impl(&mut code)?;
-    let helpers = get_helpers_for_version(version);
+    let helpers = get_helpers_for_version(version.as_str());
     helpers.emit_wallet_options_struct(&mut code)?;
     writeln!(code, "impl {client_name} {{").unwrap();
     emit_constructors(&mut code)?;
@@ -64,9 +65,8 @@ pub fn generate_combined_client(
 ///
 /// # Returns
 /// * `std::io::Result<()>` - Success or failure of writing to the code buffer
-pub fn emit_imports(code: &mut String, version: &str) -> std::io::Result<()> {
-    // Convert the version to lowercase for types module import
-    let version_lowercase = version.to_lowercase();
+pub fn emit_imports(code: &mut String, version: &Version) -> std::io::Result<()> {
+    let version_lowercase = version.as_module_name();
 
     writeln!(
         code,

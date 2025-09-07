@@ -1,5 +1,5 @@
 use codegen::{CodeGenerator, TransportCodeGenerator};
-use types::version::DEFAULT_VERSION;
+use types::Version;
 use types::ApiMethod;
 use types::ApiResult;
 
@@ -21,7 +21,7 @@ fn transport_codegen_basic_functionality() {
         }],
     }];
 
-    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(Version::default());
     let files = gen.generate(&methods);
 
     // Verify basic code generation
@@ -51,7 +51,7 @@ fn transport_codegen_with_arguments() {
         results: vec![],
     }];
 
-    let gen = TransportCodeGenerator::new(DEFAULT_VERSION.as_str_lowercase());
+    let gen = TransportCodeGenerator::new(Version::default());
     let files = gen.generate(&methods);
 
     // Verify argument handling

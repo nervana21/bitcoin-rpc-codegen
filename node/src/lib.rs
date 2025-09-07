@@ -28,7 +28,7 @@ impl Default for NodeState {
     fn default() -> Self {
         Self {
             is_running: false,
-            version: Version::V28,
+            version: Version::from_string("v29").unwrap(),
         }
     }
 }

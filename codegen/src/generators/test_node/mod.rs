@@ -5,6 +5,7 @@
 
 use crate::CodeGenerator;
 use types::ApiMethod;
+use types::Version;
 
 pub mod emit_combined_client;
 pub mod emit_params;
@@ -45,7 +46,7 @@ pub mod versions;
 /// This abstraction layer enables developers to focus on test logic rather than RPC mechanics,
 /// while maintaining type safety and proper error handling throughout the test suite.
 pub struct TestNodeGenerator {
-    version: String,
+    version: Version,
 }
 
 impl TestNodeGenerator {
@@ -54,10 +55,8 @@ impl TestNodeGenerator {
     /// The `version` string determines which RPC methods and structures are used when generating
     /// type-safe test clients and associated modules. This allows test code to stay in sync with
     /// version-specific behavior in Bitcoin Core.
-    pub fn new(version: impl Into<String>) -> Self {
-        Self {
-            version: version.into(),
-        }
+    pub fn new(version: Version) -> Self {
+        Self { version }
     }
 }
 

@@ -2,7 +2,7 @@
 
 use bitcoin::Network;
 use config::{BitcoinConfig, Config};
-use types::version::DEFAULT_VERSION;
+use types::Version;
 use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
@@ -133,7 +133,7 @@ impl Default for TestConfig {
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
             network: Network::Regtest,
-            core_version: Some(DEFAULT_VERSION.as_number()),
+            core_version: Some(Version::from_string("v29.1").unwrap().as_number()),
         }
     }
 }

@@ -73,11 +73,11 @@ pub trait VersionedClientHelpers {
 /// Returns the appropriate version-specific helpers for the given version string.
 ///
 /// This function accepts version strings in multiple formats:
-/// - "v28", "V28" -> V28Helpers
-/// - "v29", "V29" -> V29Helpers
+/// - "v28", "V28", "v28.0", "v28.1" -> V28Helpers
+/// - "v29", "V29", "v29.0", "v29.1" -> V29Helpers
 ///
 /// # Arguments
-/// * `version` - The version string (e.g., "V29", "v29", "29")
+/// * `version` - The version string (e.g., "V29", "v29", "29", "v29.1")
 ///
 /// # Returns
 /// * `Box<dyn VersionedClientHelpers>` - The appropriate helpers for the version
@@ -86,7 +86,10 @@ pub trait VersionedClientHelpers {
 /// * Panics if the version is not supported
 pub fn get_helpers_for_version(version: &str) -> Box<dyn VersionedClientHelpers> {
     println!("[dispatch] using version: {version}");
-    match version.trim_start_matches('v').trim_start_matches('V') {
+    let version_clean = version.trim_start_matches('v').trim_start_matches('V');
+    let major_version = version_clean.split('.').next().unwrap_or(version_clean);
+    
+    match major_version {
         "28" => Box::new(V28Helpers),
         "29" => Box::new(V29Helpers),
         _ => panic!("Unsupported version: {version}"),
@@ -98,16 +101,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn version_dispatch_works() {
-        let _ = get_helpers_for_version("v28");
-        let _ = get_helpers_for_version("28");
-        let _ = get_helpers_for_version("V29");
-        let _ = get_helpers_for_version("29");
+    fn test_version_dispatch() {
+        // Test that v29.1 maps to V29Helpers (the main new functionality)
+        let _helpers = get_helpers_for_version("v29.1");
+        
+        // Test other v29 formats
+        let _helpers = get_helpers_for_version("v29");
+        let _helpers = get_helpers_for_version("V29");
+        let _helpers = get_helpers_for_version("29");
+        let _helpers = get_helpers_for_version("v29.0");
+        
+        // Test v28 formats
+        let _helpers = get_helpers_for_version("v28");
+        let _helpers = get_helpers_for_version("V28");
+        let _helpers = get_helpers_for_version("28");
+        let _helpers = get_helpers_for_version("v28.1");
     }
 
     #[test]
-    #[should_panic(expected = "Unsupported version")]
-    fn unsupported_version_panics() {
-        let _ = get_helpers_for_version("invalid");
+    #[should_panic(expected = "Unsupported version: invalid")]
+    fn test_unsupported_version_panics() {
+        get_helpers_for_version("invalid");
+    }
+    
+    #[test]
+    #[should_panic(expected = "Unsupported version: v30.1")]
+    fn test_unsupported_major_version_panics() {
+        get_helpers_for_version("v30.1");
     }
 }

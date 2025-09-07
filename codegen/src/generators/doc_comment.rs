@@ -123,9 +123,7 @@ pub fn format_struct_field(field_name: &str, field_type: &str, description: &str
 pub fn generate_example_docs(method: &ApiMethod, version: &str) -> String {
     let mut docs = String::new();
     docs.push_str("//! This file is auto-generated. Do not edit manually.\n");
-    docs.push_str("//! Generated for Bitcoin Core version: ");
-    docs.push_str(version);
-    docs.push_str("\n\n");
+    docs.push_str(&format!("//! Generated from Bitcoin Core {}\n\n", version));
 
     if !method.description.trim().is_empty() {
         for line in method.description.lines().filter(|l| !l.trim().is_empty()) {
@@ -139,7 +137,7 @@ pub fn generate_example_docs(method: &ApiMethod, version: &str) -> String {
     docs.push_str("\n/// # Example\n");
     docs.push_str("/// ```rust\n");
     docs.push_str("/// use bitcoin_rpc_codegen::client::");
-    docs.push_str(version);
+    docs.push_str(&version.replace(".", "_"));
     docs.push_str("::");
     docs.push_str(&method.name);
     docs.push_str(";\n///\n");

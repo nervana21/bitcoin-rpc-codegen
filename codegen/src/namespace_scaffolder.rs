@@ -121,7 +121,7 @@ impl ModuleGenerator {
             writeln!(
                 types_mod_rs,
                 "pub mod {}_types;",
-                version.as_str_lowercase()
+                version.as_module_name()
             )
             .map_err(io::Error::other)?;
         }
@@ -131,7 +131,7 @@ impl ModuleGenerator {
             writeln!(
                 types_mod_rs,
                 "pub use self::{}_types::*;",
-                version.as_str_lowercase()
+                version.as_module_name()
             )
             .map_err(io::Error::other)?;
         }
@@ -153,7 +153,7 @@ fn generate_versioned_mod_rs(
     use std::fmt::Write;
 
     let mod_rs_content = versions.iter().fold(String::new(), |mut output, version| {
-        let _ = writeln!(output, "{}", mod_template.replace("{}", version.as_str()));
+        let _ = writeln!(output, "{}", mod_template.replace("{}", &version.as_module_name()));
         output
     });
 

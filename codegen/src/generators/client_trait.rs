@@ -31,7 +31,7 @@ impl CodeGenerator for ClientTraitGenerator {
             self.version
                 .trim_start_matches('v')
                 .trim_start_matches('V')
-                .replace('.', "")
+                .replace('.', "_")
         );
         let mod_rs = format!(
             "//! Auto-generated module for BitcoinClient{version_no}\n\
@@ -56,7 +56,7 @@ pub fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str)
         version
             .trim_start_matches('v')
             .trim_start_matches('V')
-            .replace('.', "")
+            .replace('.', "_")
     );
     out = out.replace("{{VERSION}}", version);
     out = out.replace("{{VERSION_NODOTS}}", &version_no);

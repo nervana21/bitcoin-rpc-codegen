@@ -9,6 +9,7 @@
 use crate::utils::{camel_to_snake_case, capitalize};
 use anyhow::Result;
 use types::{ApiMethod, ApiResult};
+use types::Version;
 use std::fmt::Write as _;
 use type_conversion::TypeRegistry;
 
@@ -140,7 +141,7 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
             }
         }
 
-        vec![(format!("{}_types.rs", self.version.to_lowercase()), out)]
+        vec![(format!("{}_types.rs", Version::from_string(&self.version).unwrap().as_module_name()), out)]
     }
 }
 
@@ -389,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_response_type_generator_mixed_methods() {
-        let generator = ResponseTypeCodeGenerator::new("test");
+        let generator = ResponseTypeCodeGenerator::new("v29.1");
 
         let methods = vec![
             // Void method (should be skipped)
@@ -421,7 +422,7 @@ mod tests {
 
         let result = generator.generate(&methods);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].0, "test_types.rs");
+        assert_eq!(result[0].0, "v29_1_types.rs");
 
         let output = &result[0].1;
         // Should not contain void method

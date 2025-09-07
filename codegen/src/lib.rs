@@ -107,14 +107,14 @@ pub fn write_generated<P: AsRef<Path>>(
 /// 3. A call to `transport.send_request(method_name, &params).await`.
 /// 4. Deserialization of the raw response into a typed `Response` struct (or raw `Value`).
 pub struct TransportCodeGenerator {
-    version: String,
+    version: Version,
 }
 
 impl TransportCodeGenerator {
     /// Create a new TransportCodeGenerator with the specified Bitcoin Core version
-    pub fn new(version: &str) -> Self {
+    pub fn new(version: Version) -> Self {
         Self {
-            version: version.to_string(),
+            version,
         }
     }
 }
@@ -160,7 +160,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 /* ---------- docs + types ---------- */
-                let docs_md = doc_comment::generate_example_docs(m, &self.version)
+                let docs_md = doc_comment::generate_example_docs(m, &self.version.as_doc_version())
                     .trim_end()
                     .to_string();
                 let response_struct = response_type::build_return_type(m)
