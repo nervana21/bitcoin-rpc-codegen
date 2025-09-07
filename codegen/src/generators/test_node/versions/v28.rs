@@ -17,7 +17,6 @@ impl VersionedClientHelpers for V28Helpers {
          /// - conf_target: The confirmation target in blocks\n\
          /// - estimate_mode: The fee estimate mode (\"economical\" or \"conservative\")\n\
          /// ```\n\
-         \n\
          pub async fn send_to_address_with_conf_target(\n\
          &self,\n\
          address: String,\n\
