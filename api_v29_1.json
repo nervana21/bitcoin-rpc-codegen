@@ -554,7 +554,7 @@
               "names": [
                 "fee_rate"
               ],
-              "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 1.000 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
+              "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
               "oneline_description": "",
               "also_positional": false,
               "type_str": [
@@ -1050,7 +1050,8 @@
         "inputs",
         "outputs",
         "locktime",
-        "replaceable"
+        "replaceable",
+        "version"
       ],
       "arguments": [
         {
@@ -1221,6 +1222,20 @@
           "default": true,
           "hidden": false,
           "type": "boolean"
+        },
+        {
+          "names": [
+            "version"
+          ],
+          "description": "Transaction version",
+          "oneline_description": "",
+          "also_positional": false,
+          "type_str": [
+          ],
+          "required": false,
+          "default": 2,
+          "hidden": false,
+          "type": "number"
         }
       ],
       "results": [
@@ -1243,7 +1258,8 @@
         "inputs",
         "outputs",
         "locktime",
-        "replaceable"
+        "replaceable",
+        "version"
       ],
       "arguments": [
         {
@@ -1414,6 +1430,20 @@
           "default": true,
           "hidden": false,
           "type": "boolean"
+        },
+        {
+          "names": [
+            "version"
+          ],
+          "description": "Transaction version",
+          "oneline_description": "",
+          "also_positional": false,
+          "type_str": [
+          ],
+          "required": false,
+          "default": 2,
+          "hidden": false,
+          "type": "number"
         }
       ],
       "results": [
@@ -10180,6 +10210,14 @@
               "condition": ""
             },
             {
+              "type": "amount",
+              "optional": false,
+              "description": "Minimum feerate of packages selected for block inclusion in BTC/kvB",
+              "skip_type_check": false,
+              "key_name": "blockmintxfee",
+              "condition": ""
+            },
+            {
               "type": "string",
               "optional": false,
               "description": "current network name (main, test, testnet4, signet, regtest)",
@@ -13616,7 +13654,7 @@
             {
               "type": "number",
               "optional": false,
-              "description": "the wallet version",
+              "description": "(DEPRECATED) only related to unsupported legacy wallet, returns the latest version 169900 for backwards compatibility",
               "skip_type_check": false,
               "key_name": "walletversion",
               "condition": ""
@@ -16010,7 +16048,7 @@
                 {
                   "type": "boolean",
                   "optional": false,
-                  "description": "Whether we have the private keys to spend this output",
+                  "description": "(DEPRECATED) Always true",
                   "skip_type_check": false,
                   "key_name": "spendable",
                   "condition": ""
@@ -16836,7 +16874,7 @@
               "names": [
                 "fee_rate"
               ],
-              "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 1.000 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
+              "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
               "oneline_description": "",
               "also_positional": false,
               "type_str": [
@@ -17864,7 +17902,8 @@
         "estimate_mode",
         "replaceable",
         "solving_data",
-        "options"
+        "options",
+        "version"
       ],
       "arguments": [
         {
@@ -18452,6 +18491,20 @@
               ]
             }
           ]
+        },
+        {
+          "names": [
+            "version"
+          ],
+          "description": "Transaction version",
+          "oneline_description": "",
+          "also_positional": false,
+          "type_str": [
+          ],
+          "required": false,
+          "default": 2,
+          "hidden": false,
+          "type": "number"
         }
       ],
       "results": [
@@ -18519,6 +18572,7 @@
         "send_max",
         "minconf",
         "maxconf",
+        "version",
         "conf_target",
         "estimate_mode",
         "replaceable",
@@ -18831,6 +18885,20 @@
               "type_str": [
               ],
               "required": false,
+              "hidden": false,
+              "type": "number"
+            },
+            {
+              "names": [
+                "version"
+              ],
+              "description": "Transaction version",
+              "oneline_description": "",
+              "also_positional": false,
+              "type_str": [
+              ],
+              "required": false,
+              "default": 2,
               "hidden": false,
               "type": "number"
             },
@@ -21830,7 +21898,8 @@
         "replaceable",
         "solving_data",
         "options",
-        "bip32derivs"
+        "bip32derivs",
+        "version"
       ],
       "arguments": [
         {
@@ -22374,6 +22443,20 @@
           "default": true,
           "hidden": false,
           "type": "boolean"
+        },
+        {
+          "names": [
+            "version"
+          ],
+          "description": "Transaction version",
+          "oneline_description": "",
+          "also_positional": false,
+          "type_str": [
+          ],
+          "required": false,
+          "default": 2,
+          "hidden": false,
+          "type": "number"
         }
       ],
       "results": [

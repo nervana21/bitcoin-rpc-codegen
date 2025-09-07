@@ -19,10 +19,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
-/// The version of the generated bitcoin-rpc-midas crate
-pub const CRATE_VERSION: &str = "0.1.6";
-// TODO: update README.md with this version
-
 /// Extract version from filename
 ///
 /// This function extracts a Bitcoin Core version from the filename.

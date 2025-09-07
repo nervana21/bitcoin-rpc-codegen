@@ -56,7 +56,7 @@ optional features, so your `Cargo.toml` could look like this:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "0.1.6"
+bitcoin-rpc-midas = "29.1.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
