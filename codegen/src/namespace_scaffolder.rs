@@ -7,7 +7,6 @@
 //! and an output directory that already holds code‑generated sources like
 //!
 //! ```text
-//! client/<version>/*.rs
 //! types/<version>_types/*.rs
 //! ```
 //!
@@ -15,19 +14,20 @@
 //! can simply do:
 //!
 //! ```rust, ignore
-//! use generated::client::*; // re‑exports v28, v29, latest…
-//! use generated::types::*;  // ditto for all *_types
+//! use generated::types::*;  // re‑exports v28_types, v29_types, latest_types…
 //! ```
 //!
 //! Concretely it writes:
 //!
+//! 1. `types/<version>_types/mod.rs` – declares the per‑version type modules  
+//! 2. `types/mod.rs` – re‑export every version so callers
 //! 1. `client/<version>/mod.rs` – declares the per‑version RPC client modules  
 //! 2. `types/<version>_types/mod.rs` – declares the per‑version type modules  
 //! 3. `client/mod.rs` **and** `types/mod.rs` – re‑export every version so callers
 //!    don’t need to spell them out individually
 //!
 //! In short, **`ModuleGenerator` is a “namespace builder”**: it fabricates the
-//! entire module hierarchy that stitches together code‑generated RPC clients and
+//! entire module hierarchy that stitches together code‑generated type definitions,
 //! type definitions, eliminating the need to touch `mod.rs` files ever again.
 
 use types::Version;
@@ -57,9 +57,8 @@ impl ModuleGenerator {
 
     /// Convenience orchestrator – call this once and you'll get **all**
     /// `mod.rs` files written:
-    /// 1. `client/<version>/mod.rs`
-    /// 2. `types/<version>_types/mod.rs`
-    /// 3. top‑level re‑export files (`client/mod.rs`, `types/mod.rs`)
+    /// 1. `types/<version>_types/mod.rs`
+    /// 2. top‑level re‑export files (`types/mod.rs`)
     pub fn generate_all(&self) -> io::Result<()> {
         self.generate_types_mod_rs()?;
         self.generate_top_level_types_mod()?;
