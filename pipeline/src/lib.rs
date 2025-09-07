@@ -764,7 +764,7 @@ impl TestConfig {
      pub mod types;\n\n\
      // Re-exports for ergonomic access\n\
      pub use config::Config;\n\
-     pub use client_trait::client_trait::BitcoinClient{version_capitalized};\n\
+     pub use client_trait::client::BitcoinClient{version_capitalized};\n\
      pub use node::BitcoinNodeManager;\n\
      pub use bitcoin::Network;\n\
      pub use node::test_config::TestConfig;\n\

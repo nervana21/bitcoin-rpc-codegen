@@ -197,13 +197,13 @@ fn emit_transport_impl(code: &mut String) {
                         if let Some(error) = json.get(\"error\") {{
                             return Err(TransportError::Rpc(error.to_string()));
                         }}
-                        return Ok(json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))?);
+                        return json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()));
                     }} else {{
                         return Err(TransportError::Rpc(error.to_string()));
                     }}
                 }}
 
-                return Ok(json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))?);
+                return json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()));
             }}
 
             // No wallet configured → base URL
@@ -221,7 +221,7 @@ fn emit_transport_impl(code: &mut String) {
             if let Some(error) = json.get(\"error\") {{
                 return Err(TransportError::Rpc(error.to_string()));
             }}
-            Ok(json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))?)
+            json.get(\"result\").cloned().ok_or_else(|| TransportError::Rpc(\"No result field\".to_string()))
         }})
     }}
     

@@ -148,7 +148,7 @@ pub struct BatchBuilder {{
         let BatchBuilder {{tx, calls }} = self;
         // queue all calls into the transport
         for (method, params) in &calls {{
-            let _ = tx.send_request(method, params);
+            std::mem::drop(tx.send_request(method, params));
         }}
         let raw_results = tx.end_batch()
             .await

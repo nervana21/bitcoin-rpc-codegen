@@ -224,8 +224,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     /// ```
     pub async fn new_with_network(network: Network) -> Result<Self, TransportError> {{
         tracing::debug!(\"BitcoinTestClient::new_with_network({{:?}}) called\", network);
-        let mut config = TestConfig::default();
-        config.network = network;
+        let config = TestConfig {{ network, ..Default::default() }};
         let node_manager = BitcoinNodeManager::new_with_config(&config)?;
         Self::new_with_manager(node_manager).await
     }}
@@ -254,7 +253,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
         // Wait for node to be ready for RPC
         tracing::debug!(\"Creating transport with port {{}}\", node_manager.rpc_port());
         let transport = Arc::new(DefaultTransport::new(\n\
-            &format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
+            format!(\"http://127.0.0.1:{{}}\", node_manager.rpc_port()),
             Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),
         ));
         
@@ -357,7 +356,7 @@ pub fn emit_wallet_methods(code: &mut String) -> std::io::Result<()> {
                      // Update transport to use wallet endpoint\n\
                      let _new_transport = Arc::new(\n\
                          DefaultTransport::new(\n\
-                             &format!(\"http://127.0.0.1:{{}}\", self.node_manager.as_ref().unwrap().rpc_port()),\n\
+                             format!(\"http://127.0.0.1:{{}}\", self.node_manager.as_ref().unwrap().rpc_port()),\n\
                              Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string())),\n\
                          )\n\
                          .with_wallet(wallet_name.clone())\n\

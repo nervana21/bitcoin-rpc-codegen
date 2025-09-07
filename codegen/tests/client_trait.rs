@@ -22,10 +22,10 @@ fn make_method(
 fn generate_no_methods() {
     let gen = ClientTraitGenerator::new("v29");
     let files = gen.generate(&[]);
-    assert!(files.iter().any(|(name, _)| name == "client_trait.rs"));
+    assert!(files.iter().any(|(name, _)| name == "client.rs"));
     let trait_file = files
         .iter()
-        .find(|(name, _)| name == "client_trait.rs")
+        .find(|(name, _)| name == "client.rs")
         .unwrap();
     assert!(trait_file.1.contains("pub trait BitcoinClientV29"));
 }
@@ -54,7 +54,7 @@ fn generate_single_method() {
     let files = gen.generate(&[method]);
     let trait_file = files
         .iter()
-        .find(|(name, _)| name == "client_trait.rs")
+        .find(|(name, _)| name == "client.rs")
         .unwrap();
     assert!(trait_file.1.contains("async fn getblock"));
     assert!(trait_file.1.contains("/// Get a block."));
@@ -91,7 +91,7 @@ fn generate_optional_and_reserved_arg() {
     let files = gen.generate(&[method]);
     let trait_file = files
         .iter()
-        .find(|(name, _)| name == "client_trait.rs")
+        .find(|(name, _)| name == "client.rs")
         .unwrap();
     assert!(trait_file.1.contains("r#_type: Option<String>"));
     assert!(trait_file.1.contains("_foo: Option<u64>"));

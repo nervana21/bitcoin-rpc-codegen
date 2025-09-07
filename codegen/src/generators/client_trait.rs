@@ -35,12 +35,12 @@ impl CodeGenerator for ClientTraitGenerator {
         );
         let mod_rs = format!(
             "//! Auto-generated module for BitcoinClient{version_no}\n\
-             pub mod client_trait;\n\
-             pub use self::client_trait::BitcoinClient{version_no};\n"
+             pub mod client;\n\
+             pub use self::client::BitcoinClient{version_no};\n"
         );
 
         vec![
-            ("client_trait.rs".into(), client_trait),
+            ("client.rs".into(), client_trait),
             ("mod.rs".into(), mod_rs),
         ]
     }
