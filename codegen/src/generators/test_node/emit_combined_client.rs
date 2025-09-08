@@ -24,9 +24,7 @@ pub fn generate_combined_client(
     let mut code = String::new();
 
     emit_imports(&mut code, version)?;
-    emit_node_manager_trait(&mut code)?;
     emit_struct_definition(&mut code, client_name)?;
-    emit_node_manager_impl(&mut code)?;
     let helpers = get_helpers_for_version(version.as_str());
     helpers.emit_wallet_options_struct(&mut code)?;
     writeln!(code, "impl {client_name} {{").unwrap();
@@ -86,37 +84,6 @@ use bitcoin::Network;"
     Ok(())
 }
 
-/// Generates the NodeManager trait definition for Bitcoin node lifecycle management.
-///
-/// This function emits a trait that abstracts the core operations needed to manage
-/// a Bitcoin node's lifecycle in a test environment. The trait provides:
-/// - Asynchronous start/stop operations for node lifecycle control
-/// - RPC port access for network communication
-/// - Type erasure support for dynamic dispatch
-///
-/// The trait is designed to be implemented by concrete node managers (like BitcoinNodeManager)
-/// and used by the combined test client to abstract away the specific node implementation
-/// details while providing a consistent interface for node management.
-///
-/// # Arguments
-/// * `code` - The string buffer to append the trait definition to
-///
-/// # Returns
-/// * `std::io::Result<()>` - Success or failure of writing to the code buffer
-pub fn emit_node_manager_trait(code: &mut String) -> std::io::Result<()> {
-    writeln!(
-        code,
-        "/// Trait for managing a Bitcoin node's lifecycle
-pub trait NodeManager: Send + Sync + std::fmt::Debug + std::any::Any {{
-    fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;
-    fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>>;
-    fn rpc_port(&self) -> u16;
-    fn as_any(&self) -> &dyn std::any::Any;
-}}\n"
-    )
-    .unwrap();
-    Ok(())
-}
 
 /// Generates the struct definition for the combined Bitcoin test client.
 ///
@@ -139,49 +106,6 @@ pub fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::
     Ok(())
 }
 
-/// Generates the implementation for the NodeManager trait for Bitcoin node lifecycle management.
-///
-/// This function emits the implementation of the NodeManager trait for the BitcoinNodeManager struct.
-/// The implementation provides the concrete methods for starting and stopping the node,
-/// accessing the RPC port, and providing type erasure.
-///
-pub fn emit_node_manager_impl(code: &mut String) -> std::io::Result<()> {
-    writeln!(
-        code,
-        "impl NodeManager for BitcoinNodeManager {{\n\
-             fn start(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>> {{\n\
-                 tracing::debug!(\"NodeManager::start called on BitcoinNodeManager\");\n\
-                 Box::pin(async move {{\n\
-                     tracing::debug!(\"Inside NodeManager::start async block\");\n\
-                     let result = self.start_internal().await;\n\
-                     tracing::debug!(\"NodeManager::start result: {{:?}}\", result);\n\
-                     result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
-                 }})\n\
-             }}\n\
-             \n\
-             fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TransportError>> + Send + '_>> {{\n\
-                 tracing::debug!(\"NodeManager::stop called on BitcoinNodeManager\");\n\
-                 Box::pin(async move {{\n\
-                     tracing::debug!(\"Inside NodeManager::stop async block\");\n\
-                     let result = self.stop_internal().await;\n\
-                     tracing::debug!(\"NodeManager::stop result: {{:?}}\", result);\n\
-                     result.map_err(|e| TransportError::Rpc(e.to_string()))\n\
-                 }})\n\
-             }}\n\
-             \n\
-             fn rpc_port(&self) -> u16 {{\n\
-                 tracing::debug!(\"NodeManager::rpc_port called on BitcoinNodeManager\");\n\
-                 self.rpc_port\n\
-             }}\n\
-             \n\
-             fn as_any(&self) -> &dyn std::any::Any {{\n\
-                 tracing::debug!(\"NodeManager::as_any called on BitcoinNodeManager\");\n\
-                 self\n\
-             }}\n\
-         }}\n"
-    ).unwrap();
-    Ok(())
-}
 
 /// Generates the constructors for the combined Bitcoin test client.
 ///
