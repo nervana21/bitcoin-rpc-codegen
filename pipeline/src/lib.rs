@@ -395,7 +395,7 @@ pub use node::test_config::TestConfig;
      pub use client_trait::client::BitcoinClient{version_capitalized};\n\
      pub use node::BitcoinNodeManager;\n\
      pub use bitcoin::Network;\n\
-     pub use node::test_config::TestConfig;\n\
+     pub use node::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use types::*;\n\
      pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
