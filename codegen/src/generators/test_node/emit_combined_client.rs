@@ -75,7 +75,7 @@ use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
 use crate::types::{version_lowercase}_types::*;
 use serde_json::Value;
 
-use crate::node::{{BitcoinNodeManager, TestConfig}};
+use crate::node::{{BitcoinNodeManager, TestConfig, NodeManager as NodeManagerTrait}};
 
 use bitcoin::Amount;
 use bitcoin::Network;"
@@ -97,7 +97,7 @@ pub fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::
         "#[derive(Debug)]\n\
          pub struct {client_name} {{\n\
              transport: Arc<DefaultTransport>,\n\
-             node_manager: Option<Box<dyn NodeManager>>,\n\
+             node_manager: Option<Box<dyn NodeManagerTrait>>,\n\
              /// A thin RPC wrapper around the transport, with batching built in\n\
              rpc: RpcClient,\n\
          }}\n"
@@ -167,7 +167,7 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     ///     Ok(())
     /// }}
     /// ```
-    pub async fn new_with_manager<M: NodeManager + 'static>(mut node_manager: M) -> Result<Self, TransportError> {{
+    pub async fn new_with_manager<M: NodeManagerTrait + 'static>(node_manager: M) -> Result<Self, TransportError> {{
         tracing::debug!(\"BitcoinTestClient::new_with_manager called\");
         // Start the node
         tracing::debug!(\"Calling node_manager.start()\");
@@ -341,7 +341,7 @@ pub fn emit_node_manager_accessor(code: &mut String) -> std::io::Result<()> {
         code,
         "    /// Returns a reference to the node manager if one exists.\n\
          /// This can be used to access node configuration and control the node lifecycle.\n\
-         pub fn node_manager(&self) -> Option<&dyn NodeManager> {{\n\
+         pub fn node_manager(&self) -> Option<&dyn NodeManagerTrait> {{\n\
          self.node_manager.as_deref()\n\
          }}\n"
     )
