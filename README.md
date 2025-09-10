@@ -22,7 +22,7 @@ These features are intended to make Bitcoin Core RPCs easier to integrate, test,
 
 This project uses a **semantic compression** approach: rather than hand-coding interfaces for a changing protocol, it models the RPC surface as structured data and generates type-safe Rust clients from that schema. This reduces duplication while maintaining fidelity to upstream behavior.
 
-A key advantage is that **all generated code is derived from a single source of truth**: [`api_v29.json`](api_v29.json). By using this unified schema, consistency is ensured not only across this codebase, but also across any project or tool that adopts the same description. This approach makes it easy to reason about the full RPC surface in one place and simplifies updates as upstream changes.
+A key advantage is that **all generated code is derived from a single source of truth**: [`api_v29_1.json`](api_v29_1.json). By using this unified schema, consistency is ensured not only across this codebase, but also across any project or tool that adopts the same description. This approach makes it easy to reason about the full RPC surface in one place and simplifies updates as upstream changes.
 
 The architecture aims to reduce complexity and treat code duplication, version mismatches, and inconsistencies as issues to be addressed in the generator.
 
