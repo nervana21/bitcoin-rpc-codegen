@@ -147,6 +147,9 @@ impl NodeManager for BitcoinNodeManager {
         let mut child_guard = self.child.lock().await;
         *child_guard = Some(child);
 
+        info!("Waiting for Bitcoin node to initialize...");
+        tokio::time::sleep(Duration::from_millis(150)).await;
+
         // Wait for node to be ready
         let deadline = Instant::now() + Duration::from_secs(10);
         let mut attempts = 0;
