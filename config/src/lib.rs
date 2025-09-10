@@ -41,8 +41,6 @@ pub struct BitcoinConfig {
     pub username: String,
     /// RPC password
     pub password: String,
-    /// Bitcoin Core version; `None` to auto-detect
-    pub core_version: Option<u32>,
     /// Bitcoin network to use
     pub network: Option<Network>,
 }
@@ -125,7 +123,6 @@ impl Default for Config {
                 port: 18443,
                 username: "rpcuser".to_string(),
                 password: "rpcpassword".to_string(),
-                core_version: None,
                 network: None,
             },
             logging: LoggingConfig {
@@ -183,7 +180,6 @@ mod tests {
             port = 8332
             username = "testuser"
             password = "testpass"
-            core_version = 25
             
             [logging]
             level = "debug"
@@ -200,7 +196,6 @@ mod tests {
         assert_eq!(loaded_config2.bitcoin.port, 8332);
         assert_eq!(loaded_config2.bitcoin.username, "testuser");
         assert_eq!(loaded_config2.bitcoin.password, "testpass");
-        assert_eq!(loaded_config2.bitcoin.core_version, Some(25));
         assert_eq!(loaded_config2.logging.level, "debug");
         assert_eq!(
             loaded_config2.logging.file,
@@ -337,7 +332,6 @@ mod tests {
         assert_eq!(config.bitcoin.port, 18443);
         assert_eq!(config.bitcoin.username, "rpcuser");
         assert_eq!(config.bitcoin.password, "rpcpassword");
-        assert_eq!(config.bitcoin.core_version, None);
         assert_eq!(config.logging.level, "info");
         assert_eq!(config.logging.file, None);
         assert_eq!(config.codegen.input_path, PathBuf::from("api.json"));

@@ -13,7 +13,6 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info};
 pub mod test_config;
 pub use config::{BitcoinConfig, Config};
-use types::Version;
 use std::process::Stdio;
 pub use test_config::TestConfig;
 
@@ -21,7 +20,6 @@ pub use test_config::TestConfig;
 #[derive(Debug, Default, Clone)]
 pub struct NodeState {
     pub is_running: bool,
-    pub version: Version,
 }
 
 /// Configuration for port selection behavior

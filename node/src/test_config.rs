@@ -2,7 +2,6 @@
 
 use bitcoin::Network;
 use config::{BitcoinConfig, Config};
-use types::Version;
 use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
@@ -42,8 +41,6 @@ pub struct TestConfig {
     pub rpc_password: String,
     /// Which Bitcoin network to run against.
     pub network: Network,
-    /// Bitcoin Core version; `None` to auto-detect
-    pub core_version: Option<u32>,
 }
 
 impl TestConfig {
@@ -108,7 +105,6 @@ impl TestConfig {
                 port: self.rpc_port,
                 username: self.rpc_username,
                 password: self.rpc_password,
-                core_version: self.core_version,
                 network: Some(self.network),
             },
             ..Config::default()
@@ -122,7 +118,6 @@ impl TestConfig {
             rpc_username: config.bitcoin.username.clone(),
             rpc_password: config.bitcoin.password.clone(),
             network: config.bitcoin.network.unwrap_or(Network::Regtest), // Use config network if available
-            core_version: config.bitcoin.core_version,
         }
     }
 }
@@ -134,7 +129,6 @@ impl Default for TestConfig {
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
             network: Network::Regtest,
-            core_version: Some(Version::from_string("v29.1").unwrap().as_number()),
         }
     }
 }
