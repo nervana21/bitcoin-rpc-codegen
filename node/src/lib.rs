@@ -13,7 +13,6 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info};
 pub mod test_config;
 pub use config::{BitcoinConfig, Config};
-use types::Version;
 use std::process::Stdio;
 pub use test_config::TestConfig;
 
@@ -21,14 +20,12 @@ pub use test_config::TestConfig;
 #[derive(Debug, Clone)]
 pub struct NodeState {
     pub is_running: bool,
-    pub version: Version,
 }
 
 impl Default for NodeState {
     fn default() -> Self {
         Self {
             is_running: false,
-            version: Version::from_string("v29").unwrap(),
         }
     }
 }
