@@ -101,19 +101,33 @@ impl NodeManager for BitcoinNodeManager {
 
         let datadir = self._datadir.as_ref().unwrap().path();
         let mut cmd = Command::new("bitcoind");
-        cmd.args([
-            &format!("-chain={}", self.config.as_chain_str()),
+        
+        let chain = format!("-chain={}", self.config.as_chain_str());
+        let data_dir = format!("-datadir={}", datadir.display());
+        let rpc_port = format!("-rpcport={}", self.rpc_port);
+        let rpc_bind = format!("-rpcbind=127.0.0.1:{}", self.rpc_port);
+        let rpc_user = format!("-rpcuser={}", self.config.rpc_username);
+        let rpc_password = format!("-rpcpassword={}", self.config.rpc_password);
+        
+        let mut args = vec![
+            &chain,
             "-listen=0",
-            &format!("-datadir={}", datadir.display()),
-            &format!("-rpcport={}", self.rpc_port),
-            &format!("-rpcbind=127.0.0.1:{}", self.rpc_port),
+            &data_dir,
+            &rpc_port,
+            &rpc_bind,
             "-rpcallowip=127.0.0.1",
             "-fallbackfee=0.0002",
             "-server=1",
             "-prune=1",
-            &format!("-rpcuser={}", self.config.rpc_username),
-            &format!("-rpcpassword={}", self.config.rpc_password),
-        ]);
+            &rpc_user,
+            &rpc_password,
+        ];
+        
+        for arg in &self.config.extra_args {
+            args.push(arg);
+        }
+        
+        cmd.args(&args);
 
         // Capture both stdout and stderr for better error reporting
         cmd.stderr(Stdio::piped());
@@ -250,5 +264,23 @@ impl Default for BitcoinNodeManager {
     fn default() -> Self {
         Self::new_with_config(&TestConfig::default())
             .expect("Failed to create default BitcoinNodeManager")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extra_args() {
+        let config = TestConfig {
+            extra_args: vec!["-debug=1".to_string()],
+            ..TestConfig::default()
+        };
+
+        let node_manager = BitcoinNodeManager::new_with_config(&config)
+            .expect("Failed to create node manager with extra args");
+
+        assert_eq!(node_manager.config.extra_args[0], "-debug=1");
     }
 }

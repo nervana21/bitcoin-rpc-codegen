@@ -41,6 +41,8 @@ pub struct TestConfig {
     pub rpc_password: String,
     /// Which Bitcoin network to run against.
     pub network: Network,
+    /// Extra command-line arguments to pass to bitcoind
+    pub extra_args: Vec<String>,
 }
 
 impl TestConfig {
@@ -118,6 +120,7 @@ impl TestConfig {
             rpc_username: config.bitcoin.username.clone(),
             rpc_password: config.bitcoin.password.clone(),
             network: config.bitcoin.network.unwrap_or(Network::Regtest), // Use config network if available
+            extra_args: vec![],
         }
     }
 }
@@ -129,6 +132,7 @@ impl Default for TestConfig {
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
             network: Network::Regtest,
+            extra_args: vec![],
         }
     }
 }
