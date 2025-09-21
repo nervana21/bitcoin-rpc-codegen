@@ -1,8 +1,9 @@
 // transport/tests/transport.rs
 
+use std::sync::Arc;
+
 use mockito::Server;
 use serde_json::json;
-use std::sync::Arc;
 use transport::{BatchTransport, Transport, TransportError, TransportTrait};
 
 #[test]
@@ -35,9 +36,7 @@ fn send_request_rpc_error() {
 
     let tx = Transport::new(server.url());
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let err = rt
-        .block_on(tx.send_request("bar", &[] as &[u8]))
-        .unwrap_err();
+    let err = rt.block_on(tx.send_request("bar", &[] as &[u8])).unwrap_err();
 
     match err {
         TransportError::Rpc(s) => {
@@ -52,9 +51,7 @@ fn test_connection_error() {
     let tx = Transport::new("http://127.0.0.1:0");
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    let err = rt
-        .block_on(tx.send_request("foo", &[] as &[u8]))
-        .unwrap_err();
+    let err = rt.block_on(tx.send_request("foo", &[] as &[u8])).unwrap_err();
 
     match err {
         TransportError::Http(0, _) => {}
@@ -118,13 +115,7 @@ fn call_method_with_type_deserialization() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let result: TestResult = rt.block_on(tx.call("test_method", &[] as &[u8])).unwrap();
 
-    assert_eq!(
-        result,
-        TestResult {
-            name: "test".to_string(),
-            value: 42,
-        }
-    );
+    assert_eq!(result, TestResult { name: "test".to_string(), value: 42 });
 }
 
 #[test]
@@ -139,9 +130,7 @@ fn missing_result_error() {
 
     let tx = Transport::new(server.url());
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let err = rt
-        .block_on(tx.send_request("foo", &[] as &[u8]))
-        .unwrap_err();
+    let err = rt.block_on(tx.send_request("foo", &[] as &[u8])).unwrap_err();
 
     match err {
         TransportError::MissingResult => {}
@@ -161,17 +150,11 @@ fn serialization_error() {
 
     let tx = Transport::new(server.url());
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let err = rt
-        .block_on(tx.send_request("foo", &[] as &[u8]))
-        .unwrap_err();
+    let err = rt.block_on(tx.send_request("foo", &[] as &[u8])).unwrap_err();
 
     match err {
         TransportError::Http(0, reqwest_error) => {
-            assert!(
-                reqwest_error.is_decode(),
-                "Expected a decode error, got: {:?}",
-                reqwest_error
-            );
+            assert!(reqwest_error.is_decode(), "Expected a decode error, got: {:?}", reqwest_error);
         }
         other => panic!("expected Http(0, _) error, got {:?}", other),
     }
@@ -189,9 +172,7 @@ fn transport_trait_send_request() {
 
     let tx = Arc::new(Transport::new(server.url()));
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let result = rt
-        .block_on(tx.send_request("foo", &[] as &[serde_json::Value]))
-        .unwrap();
+    let result = rt.block_on(tx.send_request("foo", &[] as &[serde_json::Value])).unwrap();
 
     assert_eq!(result, json!("trait_test"));
 }

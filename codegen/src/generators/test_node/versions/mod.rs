@@ -88,7 +88,7 @@ pub fn get_helpers_for_version(version: &str) -> Box<dyn VersionedClientHelpers>
     println!("[dispatch] using version: {version}");
     let version_clean = version.trim_start_matches('v').trim_start_matches('V');
     let major_version = version_clean.split('.').next().unwrap_or(version_clean);
-    
+
     match major_version {
         "28" => Box::new(V28Helpers),
         "29" => Box::new(V29Helpers),
@@ -104,13 +104,13 @@ mod tests {
     fn test_version_dispatch() {
         // Test that v29.1 maps to V29Helpers (the main new functionality)
         let _helpers = get_helpers_for_version("v29.1");
-        
+
         // Test other v29 formats
         let _helpers = get_helpers_for_version("v29");
         let _helpers = get_helpers_for_version("V29");
         let _helpers = get_helpers_for_version("29");
         let _helpers = get_helpers_for_version("v29.0");
-        
+
         // Test v28 formats
         let _helpers = get_helpers_for_version("v28");
         let _helpers = get_helpers_for_version("V28");
@@ -120,13 +120,9 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Unsupported version: invalid")]
-    fn test_unsupported_version_panics() {
-        get_helpers_for_version("invalid");
-    }
-    
+    fn test_unsupported_version_panics() { get_helpers_for_version("invalid"); }
+
     #[test]
     #[should_panic(expected = "Unsupported version: v30.1")]
-    fn test_unsupported_major_version_panics() {
-        get_helpers_for_version("v30.1");
-    }
+    fn test_unsupported_major_version_panics() { get_helpers_for_version("v30.1"); }
 }

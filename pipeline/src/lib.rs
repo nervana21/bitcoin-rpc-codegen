@@ -11,13 +11,13 @@ use codegen::{
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
 };
 use regex::Regex;
-use types::parse_api_json;
-use types::Version;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use bitcoin_rpc_types::Version;
+use types::parse_api_json;
 
 /// Extract version from filename
 ///
@@ -46,12 +46,12 @@ fn extract_version_from_filename(filename: &str) -> Result<String> {
                 filename
             )
         })?;
-    
+
     let major = &caps[1];
     let minor = caps.get(2).map(|m| m.as_str()).unwrap_or("0");
-    
+
     let version = format!("v{}.{}", major, minor);
-    
+
     Ok(version)
 }
 
@@ -83,18 +83,17 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     println!("[diagnostic] project root directory: {project_root:?}");
 
     let input_path = match input_path {
-        Some(path) => {
+        Some(path) =>
             if path.is_absolute() {
                 path.clone()
             } else {
                 project_root.join(path)
-            }
-        }
+            },
         None => {
             let version = Version::default().as_number();
             let base_path = project_root.join(format!("api_v{}.json", version));
             let alt_path = project_root.join(format!("api_v{}_1.json", version));
-            
+
             // Try the _1 suffix first, then fall back to the base version
             if alt_path.exists() {
                 alt_path
@@ -134,15 +133,9 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
         .with_context(|| format!("Failed to copy template files to {src_dir:?}"))?;
 
     // Extract version early to pass to functions that need it
-    let filename = input_path
-        .file_name()
-        .and_then(|f| f.to_str())
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "Could not extract filename from input path: {:?}",
-                input_path
-            )
-        })?;
+    let filename = input_path.file_name().and_then(|f| f.to_str()).ok_or_else(|| {
+        anyhow::anyhow!("Could not extract filename from input path: {:?}", input_path)
+    })?;
 
     let version_str = extract_version_from_filename(filename)?;
     let target_version = Version::from_string(&version_str)?;
@@ -210,11 +203,7 @@ fn find_project_root() -> Result<PathBuf> {
 /// * `out_dir` - The output directory to write generated code to
 /// * `input_path` - Path to the input JSON file
 /// * `target_version` - The Bitcoin Core version being targeted
-pub fn generate_into(
-    out_dir: &Path,
-    input_path: &Path,
-    target_version: &Version,
-) -> Result<()> {
+pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version) -> Result<()> {
     println!(
         "[diagnostic] generate_into received out_dir: {out_dir:?}, input_path: {input_path:?}, target_version: {target_version:?}"
     );
@@ -296,25 +285,13 @@ pub use node::test_config::TestConfig;
             "structured JSON",
         )
     } else {
-        return Err(anyhow::anyhow!(
-            "Only JSON files are supported. Please provide a .json file."
-        ));
+        return Err(anyhow::anyhow!("Only JSON files are supported. Please provide a .json file."));
     };
-    println!(
-        "[diagnostic] loaded {} methods from {}",
-        norm.len(),
-        src_desc
-    );
+    println!("[diagnostic] loaded {} methods from {}", norm.len(), src_desc);
 
     println!("[pipeline] generating code for version: {}", target_version.as_str());
-    println!(
-        "[pipeline] target_version.major(): {}",
-        target_version.major()
-    );
-    println!(
-        "[pipeline] target_version.minor(): {}",
-        target_version.minor()
-    );
+    println!("[pipeline] target_version.major(): {}", target_version.major());
+    println!("[pipeline] target_version.minor(): {}", target_version.minor());
 
     // 3) Transport layer
     println!("[diagnostic] generating transport code");
@@ -438,10 +415,7 @@ pub use node::test_config::TestConfig;
 ///
 /// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
 fn write_cargo_toml(root: &Path) -> Result<()> {
-    println!(
-        "[diagnostic] writing Cargo.toml at {:?}",
-        root.join("Cargo.toml")
-    );
+    println!("[diagnostic] writing Cargo.toml at {:?}", root.join("Cargo.toml"));
 
     let version = Version::default().crate_version();
     let toml = format!(
@@ -479,8 +453,7 @@ tracing = "0.1"
 
 [workspace]
 "#,
-        version,
-        version
+        version, version
     );
 
     fs::write(root.join("Cargo.toml"), toml)
@@ -499,10 +472,7 @@ tracing = "0.1"
 ///
 /// Returns `Result<()>` indicating success or failure of writing the README.md file
 fn write_readme(root: &Path, target_version: &Version) -> Result<()> {
-    println!(
-        "[diagnostic] writing README.md at {:?}",
-        root.join("README.md")
-    );
+    println!("[diagnostic] writing README.md at {:?}", root.join("README.md"));
 
     let version = Version::default().crate_version();
     let readme = format!(
@@ -591,10 +561,7 @@ This library communicates directly with `bitcoind`.
 
 /// Write the CONTRIBUTING.md file for the generated crate
 fn write_contributing(root: &Path) -> Result<()> {
-    println!(
-        "[diagnostic] writing CONTRIBUTING.md at {:?}",
-        root.join("CONTRIBUTING.md")
-    );
+    println!("[diagnostic] writing CONTRIBUTING.md at {:?}", root.join("CONTRIBUTING.md"));
     let contributing = r#"# Contributing to Bitcoin RPC Code Generator
 
 We love your input! We want to make contributing to Bitcoin RPC Code Generator as easy and transparent as possible, whether it's:
@@ -704,10 +671,7 @@ Thank you for contributing to the Bitcoin RPC Code Generator!
 
 /// Write the LICENSE.md file for the generated crate
 fn write_license(root: &Path) -> Result<()> {
-    println!(
-        "[diagnostic] writing LICENSE.md at {:?}",
-        root.join("LICENSE.md")
-    );
+    println!("[diagnostic] writing LICENSE.md at {:?}", root.join("LICENSE.md"));
     let license = r#"MIT License
 
 Copyright (c) 2025 Bitcoin RPC Code Generator

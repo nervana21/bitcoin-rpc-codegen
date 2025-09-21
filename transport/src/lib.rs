@@ -13,7 +13,8 @@
 use base64::Engine;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::{json, Value};
 use thiserror::Error;
 
@@ -71,10 +72,7 @@ impl Transport {
     /// # Parameters
     /// - `url`: The HTTP endpoint of the Bitcoin Core JSON‑RPC server.
     pub fn new<U: Into<String>>(url: U) -> Self {
-        Transport {
-            client: Client::new(),
-            url: url.into(),
-        }
+        Transport { client: Client::new(), url: url.into() }
     }
 
     /// Create a new transport with HTTP basic authentication.
@@ -89,17 +87,11 @@ impl Transport {
     pub fn new_with_auth<U: Into<String>>(url: U, rpcuser: &str, rpcpass: &str) -> Self {
         let mut headers = HeaderMap::new();
         let auth = base64::engine::general_purpose::STANDARD.encode(format!("{rpcuser}:{rpcpass}"));
-        headers.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&format!("Basic {auth}")).unwrap(),
-        );
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Basic {auth}")).unwrap());
 
         let client = Client::builder().default_headers(headers).build().unwrap();
 
-        Transport {
-            client,
-            url: url.into(),
-        }
+        Transport { client, url: url.into() }
     }
 
     /// Send a JSON‑RPC request with given `method` and `params`, returning the raw `result` field.
@@ -126,14 +118,7 @@ impl Transport {
             "id": 1,
         });
 
-        let resp: Value = self
-            .client
-            .post(&self.url)
-            .json(&req_body)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let resp: Value = self.client.post(&self.url).json(&req_body).send().await?.json().await?;
 
         if let Some(err) = resp.get("error") {
             Err(TransportError::Rpc(err.to_string()))
@@ -155,14 +140,8 @@ impl Transport {
     /// # Errors
     /// Returns `TransportError` if the HTTP request fails or the response cannot be parsed.
     pub async fn send_batch(&self, bodies: &[Value]) -> Result<Vec<Value>, TransportError> {
-        let resp: Vec<Value> = self
-            .client
-            .post(&self.url)
-            .json(bodies)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let resp: Vec<Value> =
+            self.client.post(&self.url).json(bodies).send().await?.json().await?;
 
         Ok(resp)
     }
@@ -238,9 +217,7 @@ impl TransportTrait for Transport {
         Box::pin(self.send_batch(bodies))
     }
 
-    fn url(&self) -> &str {
-        &self.url
-    }
+    fn url(&self) -> &str { &self.url }
 }
 
 /// Batch transport

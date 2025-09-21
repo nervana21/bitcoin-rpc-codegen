@@ -6,12 +6,10 @@
 //! Extracts fields in one pass, centralizes serde attrs, and names
 //! things consistently.  
 
-use crate::utils::{camel_to_snake_case, capitalize};
-use anyhow::Result;
-use types::{ApiMethod, ApiResult};
-use types::Version;
 use std::fmt::Write as _;
 use type_conversion::TypeRegistry;
+
+use crate::utils::{camel_to_snake_case, capitalize};
 
 /* --------------------------------------------------------------------- */
 /*  Primitive → Rust helpers                                             */
@@ -80,11 +78,7 @@ fn sanitize_doc_comment(comment: &str) -> String {
         .lines()
         .map(|line| {
             // Escape any special characters in doc comments
-            line.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", " ")
-                .trim()
-                .to_string()
+            line.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").trim().to_string()
         })
         .collect::<Vec<_>>()
         .join("\n    /// ")
@@ -119,11 +113,7 @@ impl ResponseTypeCodeGenerator {
     ///
     /// The provided `version` string is used to namespace or suffix generated types,
     /// ensuring compatibility with different versions of the RPC interface.
-    pub fn new(version: impl Into<String>) -> Self {
-        Self {
-            version: version.into(),
-        }
-    }
+    pub fn new(version: impl Into<String>) -> Self { Self { version: version.into() } }
 }
 
 impl crate::CodeGenerator for ResponseTypeCodeGenerator {
@@ -141,7 +131,10 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
             }
         }
 
-        vec![(format!("{}_types.rs", Version::from_string(&self.version).unwrap().as_module_name()), out)]
+        vec![(
+            format!("{}_types.rs", Version::from_string(&self.version).unwrap().as_module_name()),
+            out,
+        )]
     }
 }
 
@@ -167,13 +160,7 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
             } else {
                 format!("Option<{}>", field.ty)
             };
-            writeln!(
-                &mut buf,
-                "    {}pub {}: {},",
-                serde_attrs_for(&field),
-                field.name,
-                ty
-            )?;
+            writeln!(&mut buf, "    {}pub {}: {},", serde_attrs_for(&field), field.name, ty)?;
         }
         writeln!(&mut buf, "}}\n")?;
     } else {
@@ -185,18 +172,8 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
                 for f in &r.inner {
                     let (ty, opt) = TypeRegistry.map_result_type(f);
                     let name = field_ident(f, 0);
-                    let ty = if opt {
-                        format!("Option<{ty}>")
-                    } else {
-                        ty.to_string()
-                    };
-                    writeln!(
-                        &mut buf,
-                        "    {}pub {}: {},",
-                        serde_attrs_for_field(f),
-                        name,
-                        ty
-                    )?;
+                    let ty = if opt { format!("Option<{ty}>") } else { ty.to_string() };
+                    writeln!(&mut buf, "    {}pub {}: {},", serde_attrs_for_field(f), name, ty)?;
                 }
                 writeln!(&mut buf, "}}\n")?;
             }
@@ -241,11 +218,7 @@ fn collect_fields(m: &ApiMethod) -> Vec<Field> {
                 if seen.insert(name.clone()) {
                     let (ty, _) = TypeRegistry.map_result_type(f);
                     let always = is_field_always_present(&name, &m.results);
-                    out.push(Field {
-                        name,
-                        ty: ty.to_string(),
-                        always_present: always,
-                    });
+                    out.push(Field { name, ty: ty.to_string(), always_present: always });
                 }
             }
         }
@@ -264,10 +237,7 @@ struct Field {
 /// Decide if a field is never optional.
 fn is_field_always_present(name: &str, results: &[ApiResult]) -> bool {
     results.iter().all(|r| {
-        r.type_ == "object"
-            && r.inner
-                .iter()
-                .any(|f| field_ident(f, 0) == name && f.required)
+        r.type_ == "object" && r.inner.iter().any(|f| field_ident(f, 0) == name && f.required)
     })
 }
 

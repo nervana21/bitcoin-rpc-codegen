@@ -13,9 +13,7 @@ pub struct ClientTraitGenerator {
 impl ClientTraitGenerator {
     /// Create a new generator targeting a specific Bitcoin Core RPC version
     pub fn new(version: impl Into<String>) -> Self {
-        ClientTraitGenerator {
-            version: version.into(),
-        }
+        ClientTraitGenerator { version: version.into() }
     }
 }
 
@@ -28,10 +26,7 @@ impl CodeGenerator for ClientTraitGenerator {
         // render mod.rs that re-exports the trait
         let version_no = format!(
             "V{}",
-            self.version
-                .trim_start_matches('v')
-                .trim_start_matches('V')
-                .replace('.', "_")
+            self.version.trim_start_matches('v').trim_start_matches('V').replace('.', "_")
         );
         let mod_rs = format!(
             "//! Auto-generated module for BitcoinClient{version_no}\n\
@@ -39,10 +34,7 @@ impl CodeGenerator for ClientTraitGenerator {
              pub use self::client::BitcoinClient{version_no};\n"
         );
 
-        vec![
-            ("client.rs".into(), client_trait),
-            ("mod.rs".into(), mod_rs),
-        ]
+        vec![("client.rs".into(), client_trait), ("mod.rs".into(), mod_rs)]
     }
 }
 
@@ -51,13 +43,8 @@ pub fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str)
     let mut out = template.to_owned();
 
     // 1) version substitutions
-    let version_no = format!(
-        "V{}",
-        version
-            .trim_start_matches('v')
-            .trim_start_matches('V')
-            .replace('.', "_")
-    );
+    let version_no =
+        format!("V{}", version.trim_start_matches('v').trim_start_matches('V').replace('.', "_"));
     out = out.replace("{{VERSION}}", version);
     out = out.replace("{{VERSION_NODOTS}}", &version_no);
 
@@ -138,11 +125,7 @@ impl<'a> MethodTemplate<'a> {
 
     /// Decide whether we return `()` or `FooResponse`
     fn return_type(&self) -> String {
-        let none = self
-            .method
-            .results
-            .first()
-            .is_none_or(|r| r.type_.eq_ignore_ascii_case("none"));
+        let none = self.method.results.first().is_none_or(|r| r.type_.eq_ignore_ascii_case("none"));
         if none {
             "()".into()
         } else {
@@ -185,7 +168,5 @@ impl<'a> MethodTemplate<'a> {
         )
     }
 
-    fn render(&self) -> String {
-        format!("{}\n{}", self.doc(), self.body())
-    }
+    fn render(&self) -> String { format!("{}\n{}", self.doc(), self.body()) }
 }

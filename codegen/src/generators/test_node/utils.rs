@@ -1,6 +1,5 @@
 //! Utility functions for test node generation
 
-
 /// Capitalizes the first character of a string and converts snake_case/kebab-case to PascalCase.
 ///
 /// This function takes a string and converts it to PascalCase by:
@@ -37,5 +36,6 @@ pub mod client;
 
 // re-export common clients
 pub use client::BitcoinTestClient;
-".to_string()
+"
+    .to_string()
 }

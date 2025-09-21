@@ -1,6 +1,9 @@
-use crate::CodeGenerator;
 use types::ApiMethod;
 use std::fmt::Write as _;
+
+use bitcoin_rpc_types::BtcMethod;
+
+use crate::CodeGenerator;
 
 /// Code generator that creates the core transport layer for Bitcoin RPC communication
 pub struct TransportCoreGenerator;
@@ -48,11 +51,9 @@ fn emit_error_enum(code: &mut String) {
 }
 
 fn emit_error_impls(code: &mut String) {
-    for (from, variant) in &[
-        ("reqwest::Error", "Http"),
-        ("serde_json::Error", "Json"),
-        ("anyhow::Error", "Rpc"),
-    ] {
+    for (from, variant) in
+        &[("reqwest::Error", "Http"), ("serde_json::Error", "Json"), ("anyhow::Error", "Rpc")]
+    {
         writeln!(
             code,
             "impl From<{from}> for TransportError {{\n\

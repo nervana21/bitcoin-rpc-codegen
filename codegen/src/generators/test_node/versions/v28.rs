@@ -1,5 +1,6 @@
-use super::VersionedClientHelpers;
 use std::fmt::Write;
+
+use super::VersionedClientHelpers;
 
 /// Bitcoin Core v28 API helper implementations
 pub struct V28Helpers;

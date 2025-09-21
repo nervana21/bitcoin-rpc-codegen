@@ -1,10 +1,9 @@
 // codegen/src/generators/batch_builder.rs
 
+use std::fmt::Write;
 use crate::{utils::capitalize, CodeGenerator};
 use types::ApiMethod;
 use type_conversion::TypeRegistry;
-
-use std::fmt::Write;
 
 /// Generates a fluent `BatchBuilder` with one method-per-RPC and an `.execute()` entrypoint.
 pub struct BatchBuilderGenerator;
