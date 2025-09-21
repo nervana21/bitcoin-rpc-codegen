@@ -1,9 +1,10 @@
 // config/src/lib.rs
 
+use std::path::{Path, PathBuf};
+
 use anyhow::Result;
 use bitcoin::Network;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 /// Errors that can occur when loading or saving configuration
@@ -125,10 +126,7 @@ impl Default for Config {
                 password: "rpcpassword".to_string(),
                 network: None,
             },
-            logging: LoggingConfig {
-                level: "info".to_string(),
-                file: None,
-            },
+            logging: LoggingConfig { level: "info".to_string(), file: None },
             codegen: CodegenConfig {
                 input_path: PathBuf::from("api.json"),
                 output_dir: Self::default_output_dir(),
@@ -139,9 +137,11 @@ impl Default for Config {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::fs;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     #[test]
     fn test_from_file() {
@@ -197,18 +197,9 @@ mod tests {
         assert_eq!(loaded_config2.bitcoin.username, "testuser");
         assert_eq!(loaded_config2.bitcoin.password, "testpass");
         assert_eq!(loaded_config2.logging.level, "debug");
-        assert_eq!(
-            loaded_config2.logging.file,
-            Some(PathBuf::from("debug.log"))
-        );
-        assert_eq!(
-            loaded_config2.codegen.input_path,
-            PathBuf::from("test_api.json")
-        );
-        assert_eq!(
-            loaded_config2.codegen.output_dir,
-            PathBuf::from("test_generated")
-        );
+        assert_eq!(loaded_config2.logging.file, Some(PathBuf::from("debug.log")));
+        assert_eq!(loaded_config2.codegen.input_path, PathBuf::from("test_api.json"));
+        assert_eq!(loaded_config2.codegen.output_dir, PathBuf::from("test_generated"));
 
         // Test file not found error
         let result = Config::from_file("nonexistent_file.toml");
@@ -264,10 +255,7 @@ mod tests {
     #[test]
     fn test_default_path() {
         let path = Config::default_path().unwrap();
-        assert!(path
-            .to_str()
-            .unwrap()
-            .ends_with("bitcoin-rpc-codegen/config.toml"));
+        assert!(path.to_str().unwrap().ends_with("bitcoin-rpc-codegen/config.toml"));
 
         // Test that the path contains the expected directory structure
         let path_str = path.to_str().unwrap();

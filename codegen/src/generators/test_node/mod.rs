@@ -55,9 +55,7 @@ impl TestNodeGenerator {
     /// The `version` string determines which RPC methods and structures are used when generating
     /// type-safe test clients and associated modules. This allows test code to stay in sync with
     /// version-specific behavior in Bitcoin Core.
-    pub fn new(version: Version) -> Self {
-        Self { version }
-    }
+    pub fn new(version: Version) -> Self { Self { version } }
 }
 
 impl CodeGenerator for TestNodeGenerator {

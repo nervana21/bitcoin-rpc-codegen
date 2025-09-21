@@ -84,16 +84,13 @@ impl RpcCategory {
     }
 
     /// Check if this category should be treated as optional by default
-    pub fn is_optional_by_default(&self) -> bool {
-        matches!(self, RpcCategory::Dummy)
-    }
+    pub fn is_optional_by_default(&self) -> bool { matches!(self, RpcCategory::Dummy) }
 
     /// Get serde attributes for this category (if any)
     pub fn serde_attributes(&self) -> Option<&'static str> {
         match self {
-            RpcCategory::BitcoinAmount => {
-                Some("#[serde(deserialize_with = \"amount_from_btc_float\")]")
-            }
+            RpcCategory::BitcoinAmount =>
+                Some("#[serde(deserialize_with = \"amount_from_btc_float\")]"),
             _ => None,
         }
     }
@@ -108,9 +105,8 @@ impl RpcCategory {
             RpcCategory::BitcoinBlockHash => "Bitcoin block hashes",
             RpcCategory::BitcoinAmount => "Bitcoin amounts with satoshi precision",
             RpcCategory::BitcoinAddress => "Bitcoin addresses (P2PKH, P2SH, Bech32, etc.)",
-            RpcCategory::HashOrHeight => {
-                "Union type that can be either a block hash (string) or height (number)"
-            }
+            RpcCategory::HashOrHeight =>
+                "Union type that can be either a block hash (string) or height (number)",
             RpcCategory::Port => "Network port numbers (0-65535)",
             RpcCategory::SmallInteger => "Small bounded integers (u32)",
             RpcCategory::LargeInteger => "Large integers for counts, heights, timestamps (u64)",
@@ -128,10 +124,7 @@ impl RpcCategory {
 
 /// Normalize names by lowercasing and stripping `_`, `-`, and spaces.
 fn normalize(name: &str) -> String {
-    name.chars()
-        .filter(|c| !matches!(c, '_' | '-' | ' '))
-        .flat_map(|c| c.to_lowercase())
-        .collect()
+    name.chars().filter(|c| !matches!(c, '_' | '-' | ' ')).flat_map(|c| c.to_lowercase()).collect()
 }
 
 /// A registry of type mappings for JSON RPC types to Rust types.
@@ -147,9 +140,7 @@ impl TypeRegistry {
     ///
     /// This constructor is provided for completeness, but the `TypeRegistry`
     /// is a stateless singleton and does not need to be instantiated.
-    pub fn new() -> Self {
-        TypeRegistry
-    }
+    pub fn new() -> Self { TypeRegistry }
 
     /// Categorize an RPC type based on its JSON schema type and field name
     pub fn categorize(&self, rpc_type: &str, field: &str) -> RpcCategory {
@@ -192,11 +183,7 @@ impl TypeRegistry {
         }
 
         // Use description as fallback when key_name is empty
-        let name = if result.key_name.is_empty() {
-            &result.description
-        } else {
-            &result.key_name
-        };
+        let name = if result.key_name.is_empty() { &result.description } else { &result.key_name };
         let (ty, is_opt) = self.map(&result.type_, name);
         (ty, is_opt || !result.required)
     }
@@ -220,11 +207,7 @@ impl TypeRegistry {
     /// Get the category for a result type
     pub fn categorize_result(&self, result: &ApiResult) -> RpcCategory {
         // Use description as fallback when key_name is empty
-        let name = if result.key_name.is_empty() {
-            &result.description
-        } else {
-            &result.key_name
-        };
+        let name = if result.key_name.is_empty() { &result.description } else { &result.key_name };
         self.categorize(&result.type_, name)
     }
 
@@ -235,9 +218,7 @@ impl TypeRegistry {
 }
 
 impl Default for TypeRegistry {
-    fn default() -> Self {
-        TypeRegistry::new()
-    }
+    fn default() -> Self { TypeRegistry::new() }
 }
 
 /// A mapping rule that categorizes RPC types based on their JSON schema type and field name patterns

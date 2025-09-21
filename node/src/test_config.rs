@@ -1,8 +1,9 @@
 // node/src/test_config.rs
 
+use std::env;
+
 use bitcoin::Network;
 use config::{BitcoinConfig, Config};
-use std::env;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
 /// This struct is the single source of truth for test‑node settings: RPC port, username, and password.

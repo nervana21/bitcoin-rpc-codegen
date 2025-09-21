@@ -1,19 +1,19 @@
 // node/src/lib.rs
 
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
 use anyhow::Result;
 use async_trait::async_trait;
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
 use tempfile::TempDir;
 use tokio::io::AsyncBufReadExt;
 use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info};
 pub mod test_config;
-pub use config::{BitcoinConfig, Config};
 use std::process::Stdio;
+
+pub use config::{BitcoinConfig, Config};
 pub use test_config::TestConfig;
 
 /// Represents the state of a Bitcoin node
@@ -54,9 +54,7 @@ pub struct BitcoinNodeManager {
 }
 
 impl BitcoinNodeManager {
-    pub fn new() -> Result<Self> {
-        Self::new_with_config(&TestConfig::default())
-    }
+    pub fn new() -> Result<Self> { Self::new_with_config(&TestConfig::default()) }
 
     pub fn new_with_config(config: &TestConfig) -> Result<Self> {
         let datadir = TempDir::new()?;
@@ -86,9 +84,7 @@ impl BitcoinNodeManager {
         })
     }
 
-    pub fn rpc_port(&self) -> u16 {
-        self.rpc_port
-    }
+    pub fn rpc_port(&self) -> u16 { self.rpc_port }
 }
 
 #[async_trait]
@@ -101,14 +97,14 @@ impl NodeManager for BitcoinNodeManager {
 
         let datadir = self._datadir.as_ref().unwrap().path();
         let mut cmd = Command::new("bitcoind");
-        
+
         let chain = format!("-chain={}", self.config.as_chain_str());
         let data_dir = format!("-datadir={}", datadir.display());
         let rpc_port = format!("-rpcport={}", self.rpc_port);
         let rpc_bind = format!("-rpcbind=127.0.0.1:{}", self.rpc_port);
         let rpc_user = format!("-rpcuser={}", self.config.rpc_username);
         let rpc_password = format!("-rpcpassword={}", self.config.rpc_password);
-        
+
         let mut args = vec![
             &chain,
             "-listen=0",
@@ -122,11 +118,11 @@ impl NodeManager for BitcoinNodeManager {
             &rpc_user,
             &rpc_password,
         ];
-        
+
         for arg in &self.config.extra_args {
             args.push(arg);
         }
-        
+
         cmd.args(&args);
 
         // Capture both stdout and stderr for better error reporting
@@ -188,13 +184,10 @@ impl NodeManager for BitcoinNodeManager {
                 .send()
                 .await
             {
-                Ok(response) => {
+                Ok(response) =>
                     if response.status().is_success() {
                         state.is_running = true;
-                        info!(
-                            "Bitcoin node started successfully on port {}",
-                            self.rpc_port
-                        );
+                        info!("Bitcoin node started successfully on port {}", self.rpc_port);
                         return Ok(());
                     } else {
                         debug!(
@@ -202,8 +195,7 @@ impl NodeManager for BitcoinNodeManager {
                             response.status(),
                             attempts
                         );
-                    }
-                }
+                    },
                 Err(e) => {
                     debug!("Failed to connect to RPC (attempt {}): {}", attempts, e);
                 }
@@ -237,23 +229,14 @@ impl NodeManager for BitcoinNodeManager {
         Ok(())
     }
 
-    async fn get_state(&self) -> Result<NodeState> {
-        Ok(self.state.read().await.clone())
-    }
+    async fn get_state(&self) -> Result<NodeState> { Ok(self.state.read().await.clone()) }
 
-    fn rpc_port(&self) -> u16 {
-        self.rpc_port
-    }
+    fn rpc_port(&self) -> u16 { self.rpc_port }
 }
 
 impl Drop for BitcoinNodeManager {
     fn drop(&mut self) {
-        if let Some(mut child) = self
-            .child
-            .try_lock()
-            .ok()
-            .and_then(|mut guard| guard.take())
-        {
+        if let Some(mut child) = self.child.try_lock().ok().and_then(|mut guard| guard.take()) {
             std::mem::drop(child.kill());
             std::mem::drop(child.wait());
         }

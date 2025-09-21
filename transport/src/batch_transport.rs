@@ -1,11 +1,12 @@
 // transport/src/batch_transport.rs
 
-use super::{TransportError, TransportTrait};
-
-use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+
+use serde_json::{json, Value};
 use thiserror::Error;
+
+use super::{TransportError, TransportTrait};
 
 /// Errors that can occur during batch operations
 #[derive(Debug, Error)]
@@ -57,11 +58,7 @@ pub struct BatchRequest {
 impl BatchTransport {
     /// Create a new batch transport that wraps the given transport
     pub fn new(inner: Arc<dyn TransportTrait>) -> Self {
-        Self {
-            inner,
-            batch: Arc::new(Mutex::new(None)),
-            next_id: AtomicU64::new(0),
-        }
+        Self { inner, batch: Arc::new(Mutex::new(None)), next_id: AtomicU64::new(0) }
     }
 
     /// Begin collecting requests into a batch.
@@ -107,11 +104,7 @@ impl BatchTransport {
 
         // 3) Fire the HTTP request (this re-uses your auth'd DefaultTransport behind the scenes,
         //    so you don't need to think about headers or basic_auth here)
-        let resp = self
-            .inner
-            .send_batch(&batch_json)
-            .await
-            .map_err(BatchError::Transport)?;
+        let resp = self.inner.send_batch(&batch_json).await.map_err(BatchError::Transport)?;
 
         // 4) Parse the array of responses
         let arr: Vec<Value> = resp;
@@ -129,9 +122,7 @@ impl BatchTransport {
     }
 
     /// Check if a batch is currently in progress.
-    pub fn is_batching(&self) -> bool {
-        self.batch.lock().unwrap().is_some()
-    }
+    pub fn is_batching(&self) -> bool { self.batch.lock().unwrap().is_some() }
 }
 
 impl TransportTrait for BatchTransport {
@@ -184,7 +175,5 @@ impl TransportTrait for BatchTransport {
         Box::pin(self.inner.send_batch(bodies))
     }
 
-    fn url(&self) -> &str {
-        self.inner.url()
-    }
+    fn url(&self) -> &str { self.inner.url() }
 }

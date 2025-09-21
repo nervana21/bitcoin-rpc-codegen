@@ -31,10 +31,8 @@
 //! type definitions, eliminating the need to touch `mod.rs` files ever again.
 
 use types::Version;
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 /// **`ModuleGenerator`**  
 /// Builds the *module scaffolding* that glues all the code‑generated files
@@ -51,9 +49,7 @@ pub struct ModuleGenerator {
 
 impl ModuleGenerator {
     /// Create a new generator for the given `versions` and output directory.
-    pub fn new(versions: Vec<Version>, out_dir: PathBuf) -> Self {
-        Self { versions, out_dir }
-    }
+    pub fn new(versions: Vec<Version>, out_dir: PathBuf) -> Self { Self { versions, out_dir } }
 
     /// Convenience orchestrator – call this once and you'll get **all**
     /// `mod.rs` files written:
@@ -83,22 +79,14 @@ impl ModuleGenerator {
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(
-                types_mod_rs,
-                "pub mod {}_types;",
-                version.as_module_name()
-            )
-            .map_err(io::Error::other)?;
+            writeln!(types_mod_rs, "pub mod {}_types;", version.as_module_name())
+                .map_err(io::Error::other)?;
         }
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(
-                types_mod_rs,
-                "pub use self::{}_types::*;",
-                version.as_module_name()
-            )
-            .map_err(io::Error::other)?;
+            writeln!(types_mod_rs, "pub use self::{}_types::*;", version.as_module_name())
+                .map_err(io::Error::other)?;
         }
 
         let types_mod_path = self.out_dir.join("types").join("mod.rs");

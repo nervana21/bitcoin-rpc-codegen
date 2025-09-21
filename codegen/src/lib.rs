@@ -9,8 +9,6 @@
 
 pub mod generators;
 
-use crate::generators::doc_comment;
-use crate::generators::response_type;
 use anyhow::Result;
 use types::ApiMethod;
 use std::{fs, path::Path, process::Command};
@@ -63,11 +61,7 @@ pub trait CodeGenerator {
 
 #[allow(unused)]
 fn format_with_rustfmt(path: &Path) {
-    if let Ok(status) = Command::new("rustfmt")
-        .arg("--edition=2021")
-        .arg(path)
-        .status()
-    {
+    if let Ok(status) = Command::new("rustfmt").arg("--edition=2021").arg(path).status() {
         if !status.success() {
             eprintln!("[warn] rustfmt failed on {path:?}");
         }
@@ -112,11 +106,7 @@ pub struct TransportCodeGenerator {
 
 impl TransportCodeGenerator {
     /// Create a new TransportCodeGenerator with the specified Bitcoin Core version
-    pub fn new(version: Version) -> Self {
-        Self {
-            version,
-        }
-    }
+    pub fn new(version: Version) -> Self { Self { version } }
 }
 
 impl CodeGenerator for TransportCodeGenerator {
@@ -163,9 +153,8 @@ impl CodeGenerator for TransportCodeGenerator {
                 let docs_md = doc_comment::generate_example_docs(m, &self.version.as_doc_version())
                     .trim_end()
                     .to_string();
-                let response_struct = response_type::build_return_type(m)
-                    .unwrap_or_default()
-                    .unwrap_or_default();
+                let response_struct =
+                    response_type::build_return_type(m).unwrap_or_default().unwrap_or_default();
                 let ok_ty = if response_struct.is_empty() {
                     "Value".into()
                 } else {

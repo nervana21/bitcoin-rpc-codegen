@@ -2,10 +2,8 @@
 
 use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
-use types::ApiMethod;
 use std::fmt::Write as _;
-
-use super::utils::camel;
+use crate::utils::capitalize;
 
 /// Generates Rust parameter structs for Bitcoin RPC methods that require arguments.
 ///
@@ -37,18 +35,11 @@ pub fn generate_params_code(methods: &[ApiMethod]) -> String {
             continue;
         }
         writeln!(code, "{}", doc_comment::format_doc_comment(&m.description)).unwrap();
-        writeln!(
-            code,
-            "#[derive(Debug, Serialize)]\npub struct {}Params {{",
-            camel(&m.name)
-        )
-        .unwrap();
+        writeln!(code, "#[derive(Debug, Serialize)]\npub struct {}Params {{", capitalize(&m.name))
+            .unwrap();
         for p in &m.arguments {
-            let field = if p.names[0] == "type" {
-                "_type"
-            } else {
-                &camel_to_snake_case(&p.names[0])
-            };
+            let field =
+                if p.names[0] == "type" { "_type" } else { &camel_to_snake_case(&p.names[0]) };
             let ty = rust_type_for_argument(&p.names[0], &p.type_);
             writeln!(code, "    pub {field}: {ty},").unwrap();
         }

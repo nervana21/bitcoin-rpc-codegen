@@ -1,13 +1,11 @@
 //! Generate combined client with constructors and lifecycle helpers
 
-use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
-use types::ApiMethod;
-use types::Version;
 
 use std::fmt::Write;
 
 use super::utils::camel;
+use crate::generators::doc_comment;
 use crate::generators::test_node::versions::get_helpers_for_version;
 
 /// Generates a complete Rust client struct and implementation for a collection of Bitcoin RPC methods.
@@ -84,7 +82,6 @@ use bitcoin::Network;"
     Ok(())
 }
 
-
 /// Generates the struct definition for the combined Bitcoin test client.
 ///
 /// This function emits a struct that contains the necessary components for the test client:
@@ -105,7 +102,6 @@ pub fn emit_struct_definition(code: &mut String, client_name: &str) -> std::io::
     .unwrap();
     Ok(())
 }
-
 
 /// Generates the constructors for the combined Bitcoin test client.
 ///
@@ -409,10 +405,7 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> s
         };
 
         let (param_list, params_code) = if m.arguments.is_empty() {
-            (
-                String::new(),
-                "        self.transport.call(\"{}\", &[]).await".to_string(),
-            )
+            (String::new(), "        self.transport.call(\"{}\", &[]).await".to_string())
         } else {
             let param_list = m
                 .arguments
