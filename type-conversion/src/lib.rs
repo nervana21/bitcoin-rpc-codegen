@@ -248,6 +248,7 @@ struct CategoryRule {
     exact: bool,
 }
 
+#[rustfmt::skip]
 const CATEGORY_RULES: &[CategoryRule] = &[
     // Primitives (no pattern needed)
     CategoryRule {
