@@ -1,4 +1,3 @@
-use types::ApiMethod;
 use std::fmt::Write as _;
 
 use bitcoin_rpc_types::BtcMethod;
@@ -9,7 +8,7 @@ use crate::CodeGenerator;
 pub struct TransportCoreGenerator;
 
 impl CodeGenerator for TransportCoreGenerator {
-    fn generate(&self, _methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, _methods: &[BtcMethod]) -> Vec<(String, String)> {
         let mut code = String::new();
 
         emit_imports(&mut code);

@@ -1,6 +1,6 @@
 // codegen/src/doc_comment_generator.rs
 
-use types::ApiMethod;
+use bitcoin_rpc_types::BtcMethod;
 
 /// Format documentation comments
 pub fn format_doc_comment(description: &str) -> String {
@@ -120,7 +120,7 @@ pub fn format_struct_field(field_name: &str, field_type: &str, description: &str
 }
 
 /// Generate example usage documentation for an RPC method
-pub fn generate_example_docs(method: &ApiMethod, version: &str) -> String {
+pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
     let mut docs = String::new();
     docs.push_str("//! This file is auto-generated. Do not edit manually.\n");
     docs.push_str(&format!("//! Generated from Bitcoin Core {}\n\n", version));

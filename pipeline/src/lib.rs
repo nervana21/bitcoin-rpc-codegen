@@ -9,6 +9,7 @@ use codegen::generators::{BatchBuilderGenerator, ClientTraitGenerator, ResponseT
 use codegen::{
     generators::test_node::TestNodeGenerator, namespace_scaffolder::ModuleGenerator,
     write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
+    load_api_methods_from_file,
 };
 use regex::Regex;
 use std::fmt::Write as _;
@@ -17,7 +18,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 use bitcoin_rpc_types::Version;
-use types::parse_api_json;
 
 /// Extract version from filename
 ///
@@ -278,10 +278,8 @@ pub use node::test_config::TestConfig;
         .is_some_and(|e| e.eq_ignore_ascii_case("json"))
     {
         println!("[diagnostic] parsing JSON at {input_path:?}");
-        let json = fs::read_to_string(input_path)
-            .with_context(|| format!("Failed to read JSON file: {input_path:?}"))?;
         (
-            parse_api_json(&json).context("Failed to parse API JSON")?,
+            load_api_methods_from_file(input_path).context("Failed to parse API JSON")?,
             "structured JSON",
         )
     } else {
@@ -374,7 +372,7 @@ pub use node::test_config::TestConfig;
      pub use bitcoin::Network;\n\
      pub use node::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
-     pub use types::*;\n\
+     pub use bitcoin_rpc_types::*;\n\
      pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
     )?;
 
@@ -439,6 +437,7 @@ documentation = "https://docs.rs/bitcoin-rpc-midas"
 anyhow = "1.0"
 async-trait = "0.1"
 bitcoin = {{ version = "0.32.6", features = ["rand", "serde"] }}
+bitcoin-rpc-types = {{ path = "../bitcoin-rpc-types" }}
 node = {{ path = "../node" }}
 reqwest = {{ version = "0.12.15", default-features = false, features = [
     "json",

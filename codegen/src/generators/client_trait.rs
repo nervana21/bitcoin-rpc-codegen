@@ -1,8 +1,9 @@
 // codegen/src/generators/client_trait.rs
 
+use bitcoin_rpc_types::BtcMethod;
+
 use crate::utils::capitalize;
 use crate::CodeGenerator;
-use types::ApiMethod;
 use type_conversion::TypeRegistry;
 
 /// Generator for creating Bitcoin RPC client traits for specific versions
@@ -18,7 +19,7 @@ impl ClientTraitGenerator {
 }
 
 impl CodeGenerator for ClientTraitGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)> {
         // render client_trait.rs
         let template = include_str!("../../../templates/client_trait.rs");
         let client_trait = render_client_trait(template, methods, &self.version);
@@ -39,7 +40,7 @@ impl CodeGenerator for ClientTraitGenerator {
 }
 
 /// Render the client trait
-pub fn render_client_trait(template: &str, methods: &[ApiMethod], version: &str) -> String {
+pub fn render_client_trait(template: &str, methods: &[BtcMethod], version: &str) -> String {
     let mut out = template.to_owned();
 
     // 1) version substitutions
@@ -69,15 +70,14 @@ fn build_imports() -> String {
         .join("\n")
 }
 
-/// Tiny DSL to turn one ApiMethod into its doc-comment + fn
+/// Tiny DSL to turn one BtcMethod into its doc-comment + fn
 pub struct MethodTemplate<'a> {
-    method: &'a ApiMethod,
+    method: &'a BtcMethod,
 }
 
 impl<'a> MethodTemplate<'a> {
-    /// Create a new MethodTemplate for the given ApiMethod
-    pub fn new(method: &'a ApiMethod) -> Self {
-        MethodTemplate { method }
+    /// Create a new MethodTemplate for the given BtcMethod
+    pub fn new(method: &'a BtcMethod) -> Self { MethodTemplate { method } }
     }
 
     /// Render the /// doc lines
