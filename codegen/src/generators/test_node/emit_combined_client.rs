@@ -4,6 +4,8 @@ use crate::utils::{camel_to_snake_case, rust_type_for_argument};
 
 use std::fmt::Write;
 
+use bitcoin_rpc_types::{BtcMethod, Version};
+
 use super::utils::camel;
 use crate::generators::doc_comment;
 use crate::generators::test_node::versions::get_helpers_for_version;
@@ -16,7 +18,7 @@ use crate::generators::test_node::versions::get_helpers_for_version;
 /// - Handles parameter serialization to JSON values
 pub fn generate_combined_client(
     client_name: &str,
-    methods: &[ApiMethod],
+    methods: &[BtcMethod],
     version: &Version,
 ) -> std::io::Result<String> {
     let mut code = String::new();
@@ -392,7 +394,7 @@ pub fn emit_batch_method(code: &mut String) -> std::io::Result<()> {
 ///
 /// # Returns
 /// * `std::io::Result<()>` - Success or failure of writing to the code buffer
-pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[ApiMethod]) -> std::io::Result<()> {
+pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[BtcMethod]) -> std::io::Result<()> {
     for m in methods {
         let method_snake = camel_to_snake_case(&m.name);
         let doc_comment = doc_comment::format_doc_comment(&m.description);

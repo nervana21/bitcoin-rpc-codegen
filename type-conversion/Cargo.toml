@@ -6,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 serde_json = "1.0"
-types = { path = "../types" }
+bitcoin-rpc-types = { path = "../bitcoin-rpc-types" }

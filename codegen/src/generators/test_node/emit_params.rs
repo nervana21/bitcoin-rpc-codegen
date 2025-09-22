@@ -1,5 +1,6 @@
 //! Generate parameter structs for RPC method calls
 
+use bitcoin_rpc_types::BtcMethod;
 use crate::generators::doc_comment;
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
 use std::fmt::Write as _;
@@ -27,7 +28,7 @@ use crate::utils::capitalize;
 /// # Returns
 ///
 /// A `String` containing the complete Rust code for all parameter structs
-pub fn generate_params_code(methods: &[ApiMethod]) -> String {
+pub fn generate_params_code(methods: &[BtcMethod]) -> String {
     let mut code =
         String::from("//! Parameter structs for RPC method calls\nuse serde::Serialize;\n\n");
     for m in methods {

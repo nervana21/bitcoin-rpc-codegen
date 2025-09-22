@@ -2,14 +2,14 @@
 
 use std::fmt::Write;
 use crate::{utils::capitalize, CodeGenerator};
-use types::ApiMethod;
+use bitcoin_rpc_types::BtcMethod;
 use type_conversion::TypeRegistry;
 
 /// Generates a fluent `BatchBuilder` with one method-per-RPC and an `.execute()` entrypoint.
 pub struct BatchBuilderGenerator;
 
 impl CodeGenerator for BatchBuilderGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)> {
         let mut code = String::new();
 
         // Imports

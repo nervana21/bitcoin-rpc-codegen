@@ -30,9 +30,10 @@
 //! entire module hierarchy that stitches together code‑generated type definitions,
 //! type definitions, eliminating the need to touch `mod.rs` files ever again.
 
-use types::Version;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
+
+use bitcoin_rpc_types::Version;
 
 /// **`ModuleGenerator`**  
 /// Builds the *module scaffolding* that glues all the code‑generated files

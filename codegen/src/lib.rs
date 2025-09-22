@@ -1,6 +1,6 @@
 //! Code generation utilities for Bitcoin Core JSON-RPC.
 //!
-//! This crate turns `ApiMethod` descriptors into ready-to`cargo check` Rust modules.
+//! This crate turns `BtcMethod` descriptors into ready-to`cargo check` Rust modules.
 //! It focuses solely on code generation: parsing API metadata, scaffolding module hierarchies,
 //! generating transport-layer clients, strongly-typed response structs, and test-node helpers.
 //!
@@ -10,11 +10,21 @@
 pub mod generators;
 
 use anyhow::Result;
-use types::ApiMethod;
-use std::{fs, path::Path, process::Command};
+use bitcoin_rpc_types::{ApiDefinition, BtcMethod};
+use std::fs;
+use std::path::Path;
+use std::process::Command;
 
-// Re-export items that pipeline needs
-pub use types::{parse_api_json, version, Version};
+use crate::generators::doc_comment;
+use crate::generators::response_type;
+
+pub use bitcoin_rpc_types::Version;
+
+/// Load API methods from a JSON file using the new schema system
+pub fn load_api_methods_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<BtcMethod>> {
+    let api_def = ApiDefinition::from_file(path)?;
+    Ok(api_def.rpcs.into_values().collect())
+}
 
 /// Sub-crate: **`namespace_scaffolder`**
 ///
@@ -48,15 +58,13 @@ pub mod utils;
 /// pairs and may optionally perform post-generation validation.
 ///
 /// This trait is used by the `TransportCodeGenerator` to produce the transport-layer
-/// client code for each `ApiMethod`.
+/// client code for each `BtcMethod`.
 pub trait CodeGenerator {
     /// Generate Rust source files for the provided API methods.
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)>;
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)>;
 
     /// Optional validation step after generation (default is no-op).
-    fn validate(&self, _methods: &[ApiMethod]) -> Result<()> {
-        Ok(())
-    }
+    fn validate(&self, _methods: &[BtcMethod]) -> Result<()> { Ok(()) }
 }
 
 #[allow(unused)]
@@ -95,7 +103,7 @@ pub fn write_generated<P: AsRef<Path>>(
 /// Emits async JSON-RPC transport wrappers for Bitcoin Core RPC methods.
 ///
 /// `TransportCodeGenerator` implements the `CodeGenerator` trait to produce, for each
-/// `ApiMethod`, a self-contained Rust source file containing:
+/// `BtcMethod`, a self-contained Rust source file containing:
 /// 1. An `async fn` that accepts a `&dyn TransportTrait` and JSON-serializable parameters.
 /// 2. Logic to serialize those parameters into a `Vec<serde_json::Value>`.
 /// 3. A call to `transport.send_request(method_name, &params).await`.
@@ -110,7 +118,7 @@ impl TransportCodeGenerator {
 }
 
 impl CodeGenerator for TransportCodeGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)> {
         use utils::capitalize;
 
         methods

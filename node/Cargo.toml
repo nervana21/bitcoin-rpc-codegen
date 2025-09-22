@@ -20,7 +20,7 @@ tokio = { version = "1.36", features = ["full"] }
 tracing = "0.1"
 
 config = { path = "../config" }
-types = { path = "../types" }
+bitcoin-rpc-types = { path = "../bitcoin-rpc-types" }
 
 [dev-dependencies]
 tokio-test = "0.4"

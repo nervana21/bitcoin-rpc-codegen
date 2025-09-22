@@ -5,7 +5,7 @@
 /// Sub-crate generates: **`doc_comment`**
 ///
 /// Produces Rust-doc comments and Markdown "Example:" blocks.
-/// Transforms each `ApiMethod` into triple-slash doc comments injected into generated files.
+/// Transforms each `BtcMethod` into triple-slash doc comments injected into generated files.
 pub mod doc_comment;
 
 /// Sub-crate generates: **`response_type`**

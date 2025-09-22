@@ -6,7 +6,9 @@
 //! Extracts fields in one pass, centralizes serde attrs, and names
 //! things consistently.  
 
+use anyhow::Result;
 use std::fmt::Write as _;
+use bitcoin_rpc_types::{BtcMethod, BtcResult, Version};
 use type_conversion::TypeRegistry;
 
 use crate::utils::{camel_to_snake_case, capitalize};
@@ -15,7 +17,7 @@ use crate::utils::{camel_to_snake_case, capitalize};
 /*  Primitive → Rust helpers                                             */
 /* --------------------------------------------------------------------- */
 
-fn field_ident(res: &ApiResult, idx: usize) -> String {
+fn field_ident(res: &BtcResult, idx: usize) -> String {
     if !res.key_name.is_empty() {
         // Remove angle brackets and other invalid characters for Rust identifiers
         let sanitized = res.key_name.replace(['<', '>'], "").replace('-', "_");
@@ -117,7 +119,7 @@ impl ResponseTypeCodeGenerator {
 }
 
 impl crate::CodeGenerator for ResponseTypeCodeGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)> {
         let mut out = String::from(
             "//! Generated RPC response types\n\
              use serde::{Deserialize, Serialize};\n\n",
@@ -139,7 +141,7 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
 }
 
 /// Build a single response type, or return `Ok(None)` to skip.
-pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
+pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
     if is_void(method) {
         return Ok(None);
     }
@@ -151,7 +153,74 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
     writeln!(&mut buf, "/// {doc}")?;
     writeln!(&mut buf, "#[derive(Debug, Deserialize, Serialize)]")?;
 
-    if is_multi_variant(method) {
+    if has_conditional_results(method) {
+        // Results with conditions → enum with variants
+        writeln!(&mut buf, "#[serde(untagged)]")?;
+        writeln!(&mut buf, "pub enum {struct_name} {{")?;
+
+        // Track used variant names to avoid duplicates
+        let mut used_names = std::collections::HashSet::new();
+
+        for (i, result) in method.results.iter().enumerate() {
+            if result.type_ == "none" {
+                continue;
+            }
+
+            let mut variant_name = if !result.condition.is_empty() {
+                // Extract meaningful name from condition
+                extract_variant_name(&result.condition, i)
+            } else {
+                format!("Variant{}", i + 1)
+            };
+
+            // Ensure unique variant names
+            let original_name = variant_name.clone();
+            let mut counter = 1;
+            while used_names.contains(&variant_name) {
+                variant_name = format!("{}{}", original_name, counter);
+                counter += 1;
+            }
+            used_names.insert(variant_name.clone());
+
+            match &result.type_[..] {
+                "object" if !result.inner.is_empty() => {
+                    // Check if this is a map-like structure (single inner object with key_name)
+                    if result.inner.len() == 1 && !result.inner[0].key_name.is_empty() {
+                        // This is a map structure - use serde_json::Value for dynamic keys
+                        writeln!(&mut buf, "    {variant_name}(serde_json::Value),")?;
+                    } else {
+                        // Regular object structure
+                        writeln!(&mut buf, "    {variant_name} {{")?;
+                        for f in &result.inner {
+                            let (ty, opt) = TypeRegistry.map_result_type(f);
+                            let name = field_ident(f, 0);
+                            let ty = if opt { format!("Option<{ty}>") } else { ty.to_string() };
+                            writeln!(
+                                &mut buf,
+                                "        {}{}: {},",
+                                serde_attrs_for_field(f),
+                                name,
+                                ty
+                            )?;
+                        }
+                        writeln!(&mut buf, "    }},")?;
+                    }
+                }
+                "array" if !result.inner.is_empty() => {
+                    // Array type - get element type from inner field
+                    let (element_ty, _) = TypeRegistry.map_result_type(&result.inner[0]);
+                    let array_ty = format!("Vec<{element_ty}>");
+                    writeln!(&mut buf, "    {variant_name}({array_ty}),")?;
+                }
+                _ => {
+                    // primitive → transparent wrapper
+                    let (ty, _) = TypeRegistry.map_result_type(result);
+                    writeln!(&mut buf, "    {variant_name}({ty}),")?;
+                }
+            }
+        }
+        writeln!(&mut buf, "}}\n")?;
+    } else if is_multi_variant(method) {
         // multiple object shapes or primitives → flattened struct with optional fields
         writeln!(&mut buf, "pub struct {struct_name} {{")?;
         for field in collect_fields(method) {
@@ -192,22 +261,66 @@ pub fn build_return_type(method: &ApiMethod) -> Result<Option<String>> {
 // Helpers
 
 /// Void = no results or all `type == "none"`.
-fn is_void(m: &ApiMethod) -> bool {
+fn is_void(m: &BtcMethod) -> bool {
     m.results.is_empty() || m.results.iter().all(|r| r.type_ == "none")
 }
 
 /// Multi-variant = more than one non‐none result.
-fn is_multi_variant(m: &ApiMethod) -> bool {
+fn is_multi_variant(m: &BtcMethod) -> bool {
     m.results.iter().filter(|r| r.type_ != "none").count() > 1
 }
 
-/// Name for both struct and file.
-fn response_struct_name(m: &ApiMethod) -> String {
-    format!("{}Response", capitalize(&m.name))
+/// Check if results have conditions that should generate an enum
+fn has_conditional_results(m: &BtcMethod) -> bool {
+    m.results.iter().any(|r| !r.condition.is_empty())
 }
 
+/// Extract a meaningful variant name from a condition string
+fn extract_variant_name(condition: &str, fallback_idx: usize) -> String {
+    // Common patterns in Bitcoin RPC conditions
+    if condition.contains("verbosity = 0")
+        || condition.contains("verbose = false")
+        || condition.contains("not set or set to 0")
+    {
+        if condition.contains("mempool_sequence") {
+            "RawWithSequence".to_string()
+        } else {
+            "Raw".to_string()
+        }
+    } else if condition.contains("verbosity = 1")
+        || condition.contains("verbose = true")
+        || condition.contains("set to 1")
+    {
+        "Verbose".to_string()
+    } else if condition.contains("verbosity = 2") {
+        "Detailed".to_string()
+    } else if condition.contains("verbosity = 3") {
+        "Full".to_string()
+    } else if condition.contains("accepted") {
+        "Accepted".to_string()
+    } else if condition.contains("not accepted") {
+        "Rejected".to_string()
+    } else if condition.contains("found") {
+        "Found".to_string()
+    } else if condition.contains("not found") {
+        "NotFound".to_string()
+    } else if condition.contains("start") {
+        "Started".to_string()
+    } else if condition.contains("abort") {
+        "Aborted".to_string()
+    } else if condition.contains("status") {
+        "Status".to_string()
+    } else {
+        // Fallback to generic name
+        format!("Variant{}", fallback_idx + 1)
+    }
+}
+
+/// Name for both struct and file.
+fn response_struct_name(m: &BtcMethod) -> String { format!("{}Response", capitalize(&m.name)) }
+
 /// Gather every possible field exactly once, preserving order.
-fn collect_fields(m: &ApiMethod) -> Vec<Field> {
+fn collect_fields(m: &BtcMethod) -> Vec<Field> {
     let mut seen = std::collections::HashSet::new();
     let mut out = Vec::new();
 
@@ -235,7 +348,7 @@ struct Field {
 }
 
 /// Decide if a field is never optional.
-fn is_field_always_present(name: &str, results: &[ApiResult]) -> bool {
+fn is_field_always_present(name: &str, results: &[BtcResult]) -> bool {
     results.iter().all(|r| {
         r.type_ == "object" && r.inner.iter().any(|f| field_ident(f, 0) == name && f.required)
     })
@@ -250,11 +363,29 @@ fn serde_attrs_for(field: &Field) -> String {
     }
 }
 
-/// Render serde attrs for a single `ApiResult`.
-fn serde_attrs_for_field(r: &ApiResult) -> String {
+/// Render serde attrs for a single `BtcResult`.
+fn serde_attrs_for_field(r: &BtcResult) -> String {
+    let mut attrs = Vec::new();
+    
+    // Add field name mapping if the JSON field name differs from the Rust field name
+    if !r.key_name.is_empty() {
+        let rust_field_name = field_ident(r, 0);
+        let json_field_name = r.key_name.replace(['<', '>'], "").replace('-', "_");
+        
+        // Only add rename if the names are different
+        if rust_field_name != json_field_name {
+            attrs.push(format!("#[serde(rename = \"{}\")]", json_field_name));
+        }
+    }
+    
+    // Add optional field handling
     if !r.required {
-        "#[serde(skip_serializing_if = \"Option::is_none\")]\n    ".into()
-    } else {
+        attrs.push("#[serde(skip_serializing_if = \"Option::is_none\")]".to_string());
+    }
+    
+    if attrs.is_empty() {
         "".into()
+    } else {
+        format!("{}\n    ", attrs.join("\n    "))
     }
 }

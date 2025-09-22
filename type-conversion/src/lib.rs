@@ -3,7 +3,7 @@
 //! Central conversion system for mapping Bitcoin RPC types to Rust types.
 //! Provides `TypeRegistry` and `TypeMapping` for canonical type conversions.
 
-use types::{ApiArgument, ApiResult};
+use bitcoin_rpc_types::{BtcArgument, BtcResult};
 
 /// Categories for RPC types based on their semantic meaning and usage patterns.
 /// This enum provides a systematic way to categorize and map JSON-RPC types to Rust types.
@@ -176,7 +176,7 @@ impl TypeRegistry {
     }
 
     /// For results, respect the `optional` flag on ApiResult
-    pub fn map_result_type(&self, result: &ApiResult) -> (&'static str, bool) {
+    pub fn map_result_type(&self, result: &BtcResult) -> (&'static str, bool) {
         // Special case: ALL result fields of "amount" type should be Float
         if result.type_ == "amount" {
             return ("f64", !result.required);
@@ -189,7 +189,7 @@ impl TypeRegistry {
     }
 
     /// For arguments
-    pub fn map_argument_type(&self, arg: &ApiArgument) -> (&'static str, bool) {
+    pub fn map_argument_type(&self, arg: &BtcArgument) -> (&'static str, bool) {
         // Always use the first name - no special handling for unnamed fields in arguments
         let field = &arg.names[0];
 
@@ -205,14 +205,14 @@ impl TypeRegistry {
     }
 
     /// Get the category for a result type
-    pub fn categorize_result(&self, result: &ApiResult) -> RpcCategory {
+    pub fn categorize_result(&self, result: &BtcResult) -> RpcCategory {
         // Use description as fallback when key_name is empty
         let name = if result.key_name.is_empty() { &result.description } else { &result.key_name };
         self.categorize(&result.type_, name)
     }
 
     /// Get the category for an argument type
-    pub fn categorize_argument(&self, arg: &ApiArgument) -> RpcCategory {
+    pub fn categorize_argument(&self, arg: &BtcArgument) -> RpcCategory {
         self.categorize(&arg.type_, &arg.names[0])
     }
 }
@@ -658,5 +658,4 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     },
 ];
 
-// Re-export types that downstream crates need
-pub use types::{ApiMethod, parse_api_json, version, Version, VersionError};
+pub use bitcoin_rpc_types::{BtcMethod, Version, VersionError};

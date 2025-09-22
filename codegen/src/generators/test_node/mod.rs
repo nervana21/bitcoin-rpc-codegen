@@ -3,9 +3,9 @@
 //! This module contains the modularized test node generator components,
 //! split into logical units for better maintainability and testing.
 
+use bitcoin_rpc_types::{BtcMethod, Version};
+
 use crate::CodeGenerator;
-use types::ApiMethod;
-use types::Version;
 
 pub mod emit_combined_client;
 pub mod emit_params;
@@ -59,7 +59,7 @@ impl TestNodeGenerator {
 }
 
 impl CodeGenerator for TestNodeGenerator {
-    fn generate(&self, methods: &[ApiMethod]) -> Vec<(String, String)> {
+    fn generate(&self, methods: &[BtcMethod]) -> Vec<(String, String)> {
         let params_code = emit_params::generate_params_code(methods);
         let result_code = emit_results::generate_result_code(methods);
 
