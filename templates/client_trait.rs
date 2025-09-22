@@ -5,6 +5,8 @@ use crate::transport::{TransportTrait, TransportExt, TransportError};
 use serde::{de::DeserializeOwned, Deserialize, ser::SerializeSeq};
 {{IMPORTS}}
 
+{{PARAM_STRUCTS}}
+
 #[doc = r#"A versioned client trait for Bitcoin Core {{VERSION}}"#]
 #[async_trait]
 pub trait BitcoinClient{{VERSION_NODOTS}}: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
