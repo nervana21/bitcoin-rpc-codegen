@@ -18,19 +18,10 @@ use std::process::Stdio;
 pub use test_config::TestConfig;
 
 /// Represents the state of a Bitcoin node
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct NodeState {
     pub is_running: bool,
     pub version: Version,
-}
-
-impl Default for NodeState {
-    fn default() -> Self {
-        Self {
-            is_running: false,
-            version: Version::from_string("v29").unwrap(),
-        }
-    }
 }
 
 /// Configuration for port selection behavior

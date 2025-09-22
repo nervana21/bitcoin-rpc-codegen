@@ -78,6 +78,7 @@ impl TestConfig {
     /// - `RPC_USER`: overrides `rpc_username`
     /// - `RPC_PASS`: overrides `rpc_password`
     /// - `RPC_NETWORK`: one of `regtest`, `testnet|test`, `signet`, `mainnet|main|bitcoin`, `testnet4`
+    #[allow(clippy::field_reassign_with_default)]
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
         if let Ok(port_str) = env::var("RPC_PORT") {
