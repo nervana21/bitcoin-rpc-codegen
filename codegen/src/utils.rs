@@ -5,6 +5,11 @@ use type_conversion::TypeRegistry;
 
 /// Converts a camelCase string to snake_case
 pub fn camel_to_snake_case(s: &str) -> String {
+    // This requires special handling because otherwise, it would be converted to "script_pub_key".
+    if s == "scriptPubKey" {
+        return "script_pubkey".to_string();
+    }
+    
     let mut out = String::new();
     for (i, ch) in s.chars().enumerate() {
         if ch.is_ascii_uppercase() {
