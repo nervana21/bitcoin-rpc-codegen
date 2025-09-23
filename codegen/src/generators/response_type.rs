@@ -8,7 +8,8 @@
 
 use anyhow::Result;
 use std::fmt::Write as _;
-use bitcoin_rpc_types::{BtcMethod, BtcResult, Version};
+use bitcoin_rpc_types::{BtcMethod, BtcResult};
+use crate::Version;
 use type_conversion::TypeRegistry;
 
 use crate::utils::{camel_to_snake_case, capitalize};

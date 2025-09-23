@@ -8,6 +8,7 @@
 #![warn(missing_docs)]
 
 pub mod generators;
+pub mod versioning;
 
 use anyhow::Result;
 use bitcoin_rpc_types::{ApiDefinition, BtcMethod};
@@ -18,7 +19,7 @@ use std::process::Command;
 use crate::generators::doc_comment;
 use crate::generators::response_type;
 
-pub use bitcoin_rpc_types::Version;
+use crate::versioning::Version;
 
 /// Load API methods from a JSON file using the new schema system
 pub fn load_api_methods_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<BtcMethod>> {

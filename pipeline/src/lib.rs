@@ -17,7 +17,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
-use bitcoin_rpc_types::Version;
+use codegen::versioning::Version;
 
 /// Extract version from filename
 ///
@@ -90,16 +90,18 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
                 project_root.join(path)
             },
         None => {
-            let version = Version::default().as_number();
-            let base_path = project_root.join(format!("api_v{}.json", version));
-            let alt_path = project_root.join(format!("api_v{}_1.json", version));
+            let version = fs::read_dir(&project_root)?
+                .filter_map(|e| e.ok())
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .filter(|n| n.starts_with("api_v") && n.ends_with(".json"))
+                .filter_map(|n| extract_version_from_filename(&n).ok())
+                .filter_map(|s| Version::from_string(&s).ok())
+                .max()
+                .ok_or_else(|| anyhow::anyhow!("No api_v*.json files found in {:?}", project_root))?;
 
-            // Try the _1 suffix first, then fall back to the base version
-            if alt_path.exists() {
-                alt_path
-            } else {
-                base_path
-            }
+            let base_path = project_root.join(format!("api_v{}.json", version.as_number()));
+            let alt_path = project_root.join(format!("api_v{}_1.json", version.as_number()));
+            if alt_path.exists() { alt_path } else { base_path }
         }
     };
     println!("[diagnostic] resolved input path: {input_path:?}");

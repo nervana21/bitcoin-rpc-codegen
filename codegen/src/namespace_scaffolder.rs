@@ -33,7 +33,7 @@
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
-use bitcoin_rpc_types::Version;
+use crate::Version;
 
 /// **`ModuleGenerator`**  
 /// Builds the *module scaffolding* that glues all the code‑generated files

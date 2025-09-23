@@ -658,4 +658,4 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     },
 ];
 
-pub use bitcoin_rpc_types::{BtcMethod, Version, VersionError};
+pub use bitcoin_rpc_types::{BtcMethod};

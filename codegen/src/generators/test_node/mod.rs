@@ -3,7 +3,8 @@
 //! This module contains the modularized test node generator components,
 //! split into logical units for better maintainability and testing.
 
-use bitcoin_rpc_types::{BtcMethod, Version};
+use bitcoin_rpc_types::BtcMethod;
+use crate::Version;
 
 use crate::CodeGenerator;
 

@@ -1,10 +1,11 @@
 //! Generate combined client with constructors and lifecycle helpers
 
 use crate::utils::{camel_to_snake_case, rust_type_for_argument};
+use crate::Version;
 
 use std::fmt::Write;
 
-use bitcoin_rpc_types::{BtcMethod, Version};
+use bitcoin_rpc_types::BtcMethod;
 
 use super::utils::camel;
 use crate::generators::doc_comment;
