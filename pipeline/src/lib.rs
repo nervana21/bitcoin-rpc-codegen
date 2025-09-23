@@ -416,6 +416,7 @@ fn write_cargo_toml(root: &Path, target_version: &Version) -> Result<()> {
     println!("[diagnostic] writing Cargo.toml at {:?}", root.join("Cargo.toml"));
 
     let version = target_version.crate_version();
+    let bitcoin_version = target_version.as_doc_version();
     println!("[debug] Generated version: {}", version);
     let toml = format!(
         r#"[package]
@@ -452,7 +453,7 @@ tracing = "0.1"
 
 [workspace]
 "#,
-        version, version
+        version, bitcoin_version
     );
 
     fs::write(root.join("Cargo.toml"), toml)
