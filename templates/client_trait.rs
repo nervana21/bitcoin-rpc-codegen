@@ -1,4 +1,4 @@
-// codegen/templates/client_trait.rs
+// Generated client trait for Bitcoin Core {{VERSION}}
 
 use async_trait::async_trait;
 use crate::transport::{TransportTrait, TransportExt, TransportError};
