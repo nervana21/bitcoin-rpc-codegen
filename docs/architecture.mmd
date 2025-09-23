@@ -1,13 +1,13 @@
 flowchart LR
-  API_JSON["api.json"]:::api --> Types["types"]:::core
+  API_JSON["api.json"]:::api --> BitcoinRpcTypes["bitcoin-rpc-types"]:::core
   
-  Types --> TypeConversion["type-conversion"]:::registry
-  Types --> Codegen["codegen"]:::codegen
-  Types --> Node["node"]:::node
+  BitcoinRpcTypes --> TypeConversion["type-conversion"]:::registry
+  BitcoinRpcTypes --> Codegen["codegen"]:::codegen
+  BitcoinRpcTypes --> Node["node"]:::node
   
   TypeConversion --> Codegen
   Codegen --> Pipeline["pipeline"]:::pipeline
-  Pipeline --> Midas["bitcoin‑rpc‑midas"]:::midas
+  Pipeline --> BitcoinRpcMidas["bitcoin-rpc-midas"]:::midas
 
   Node --> Pipeline
 
