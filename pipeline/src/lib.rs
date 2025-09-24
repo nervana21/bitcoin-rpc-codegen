@@ -375,7 +375,9 @@ pub use node::test_config::TestConfig;
      pub use node::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use bitcoin_rpc_types::*;\n\
-     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
+     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n\n\
+     // Re-export individual transport functions for direct usage\n\
+     pub use transport::*;\n"
     )?;
 
     ModuleGenerator::new(vec![target_version.clone()], out_dir.to_path_buf())
@@ -797,18 +799,21 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
 
     // Add module declarations and re-exports for everything else
     for (name, _) in files {
-        if name.ends_with(".rs") {
-            let module_name = name.trim_end_matches(".rs");
-            // skip files we special-cased, plus `mod.rs` itself
-            if module_name != "mod"
-                && module_name != "core"
-                && module_name != "batch_transport"
-                && module_name != "batch_builder"
-                && module_name != "rpc_client"
-            {
-                writeln!(content, "pub mod {module_name};")?;
-                writeln!(content, "pub use {module_name}::*;")?;
-            }
+        let module_name = if name.ends_with(".rs") {
+            name.trim_end_matches(".rs")
+        } else {
+            name
+        };
+        
+        // skip files we special-cased, plus `mod.rs` itself
+        if module_name != "mod"
+            && module_name != "core"
+            && module_name != "batch_transport"
+            && module_name != "batch_builder"
+            && module_name != "rpc_client"
+        {
+            writeln!(content, "pub mod {module_name};")?;
+            writeln!(content, "pub use {module_name}::*;")?;
         }
     }
 

@@ -123,7 +123,7 @@ pub fn format_struct_field(field_name: &str, field_type: &str, description: &str
 pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
     let mut docs = String::new();
     docs.push_str("//! This file is auto-generated. Do not edit manually.\n");
-    docs.push_str(&format!("//! Generated from Bitcoin Core {}\n\n", version));
+    docs.push_str(&format!("//! Generated from Bitcoin Core v{}\n\n", version));
 
     if !method.description.trim().is_empty() {
         for line in method.description.lines().filter(|l| !l.trim().is_empty()) {
@@ -134,22 +134,42 @@ pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
     }
 
     // Add example usage
-    docs.push_str("\n/// # Example\n");
-    docs.push_str("/// ```rust\n");
-    docs.push_str("/// use bitcoin_rpc_codegen::client::");
-    docs.push_str(&version.replace(".", "_"));
-    docs.push_str("::");
-    docs.push_str(&method.name);
-    docs.push_str(";\n///\n");
-    docs.push_str("/// let client = Client::new(\"http://127.0.0.1:18443\", auth);\n");
-    docs.push_str("/// let result = client.");
-    docs.push_str(&method.name);
-    docs.push('(');
-    if !method.arguments.is_empty() {
-        docs.push_str("/* params */");
-    }
-    docs.push_str(").await?;\n");
-    docs.push_str("/// ```\n");
+    let params_comment = if !method.arguments.is_empty() { "/* params */" } else { "" };
+    let params_with_comma = if !method.arguments.is_empty() { ", /* params */" } else { "" };
+
+    docs.push_str(&format!(
+        "\n/// # Example: High-Level Client Usage (Recommended)
+/// ```rust
+/// use bitcoin_rpc_midas::*;
+///
+/// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
+/// let client = BitcoinTestClient::new().await?;
+/// let result = client.{name}({p1}).await?;
+/// # Ok(())
+/// # }}
+/// ```
+
+/// # Example: Advanced - Direct Transport Function Usage
+/// This approach is for advanced users who need direct control over the transport layer.
+/// Most users should prefer the high-level client approach above.
+/// ```rust
+/// use bitcoin_rpc_midas::transport::{name};
+/// use bitcoin_rpc_midas::transport::{{TransportTrait, DefaultTransport}};
+///
+/// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
+/// let transport = DefaultTransport::new(
+///     \"http://127.0.0.1:18443\".to_string(),
+///     Some((\"rpcuser\".to_string(), \"rpcpassword\".to_string()))
+/// );
+/// let result = {name}(&transport{p2}).await?;
+/// # Ok(())
+/// # }}
+/// ```
+",
+        name = method.name,
+        p1 = params_comment,
+        p2 = params_with_comma,
+    ));
 
     docs
 }
