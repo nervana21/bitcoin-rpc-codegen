@@ -64,7 +64,7 @@ pub fn render_client_trait(template: &str, methods: &[BtcMethod], version: &str)
 
 /// Bring in all the generated response types (e.g. `FooResponse`)
 fn build_imports() -> String {
-    ["crate::types::*", "std::future::Future"]
+    ["crate::responses::*", "std::future::Future"]
         .iter()
         .map(|p| format!("use {p};"))
         .collect::<Vec<_>>()

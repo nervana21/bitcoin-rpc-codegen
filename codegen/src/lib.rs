@@ -33,7 +33,7 @@ pub fn load_api_methods_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<BtcMeth
 /// Given schema versions (`v28`, `v29`, `latest`, etc.), it creates:
 ///
 /// - `generated/client/{versions}`
-/// - `generated/types/{versions}`
+/// - `generated/responses/{versions}`
 ///
 /// plus a top-level `mod.rs` that re-exports everything, so downstream crates can simply:
 ///

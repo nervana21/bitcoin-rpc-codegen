@@ -7,23 +7,23 @@
 //! and an output directory that already holds code‑generated sources like
 //!
 //! ```text
-//! types/<version>_types/*.rs
+//! responses/<version>_types/*.rs
 //! ```
 //!
 //! the generator creates **all** of the Rust namespaces so that downstream code
 //! can simply do:
 //!
 //! ```rust, ignore
-//! use generated::types::*;  // re‑exports v28_types, v29_types, latest_types…
+//! use generated::responses::*;  // re‑exports v28_types, v29_types, latest_types…
 //! ```
 //!
 //! Concretely it writes:
 //!
-//! 1. `types/<version>_types/mod.rs` – declares the per‑version type modules  
-//! 2. `types/mod.rs` – re‑export every version so callers
+//! 1. `responses/<version>_types/mod.rs` – declares the per‑version type modules  
+//! 2. `responses/mod.rs` – re‑export every version so callers
 //! 1. `client/<version>/mod.rs` – declares the per‑version RPC client modules  
-//! 2. `types/<version>_types/mod.rs` – declares the per‑version type modules  
-//! 3. `client/mod.rs` **and** `types/mod.rs` – re‑export every version so callers
+//! 2. `responses/<version>_types/mod.rs` – declares the per‑version type modules  
+//! 3. `client/mod.rs` **and** `responses/mod.rs` – re‑export every version so callers
 //!    don’t need to spell them out individually
 //!
 //! In short, **`ModuleGenerator` is a “namespace builder”**: it fabricates the
@@ -54,23 +54,23 @@ impl ModuleGenerator {
 
     /// Convenience orchestrator – call this once and you'll get **all**
     /// `mod.rs` files written:
-    /// 1. `types/<version>_types/mod.rs`
-    /// 2. top‑level re‑export files (`types/mod.rs`)
+    /// 1. `responses/<version>_responses/mod.rs`
+    /// 2. top‑level re‑export files (`responses/mod.rs`)
     pub fn generate_all(&self) -> io::Result<()> {
-        self.generate_types_mod_rs()?;
-        self.generate_top_level_types_mod()?;
+        self.generate_responses_mod_rs()?;
+        self.generate_top_level_responses_mod()?;
         Ok(())
     }
 
     /// Writes _one_ `mod.rs` that lives in  
-    /// `…/types/mod.rs` and declares `pub mod v28_types; pub mod v29_types; …`.
-    pub fn generate_types_mod_rs(&self) -> io::Result<()> {
-        generate_versioned_mod_rs(&self.versions, &self.out_dir, "types", "pub mod {}_types;")
+    /// `…/responses/mod.rs` and declares `pub mod v28_responses; pub mod v29_responses; …`.
+    pub fn generate_responses_mod_rs(&self) -> io::Result<()> {
+        generate_versioned_mod_rs(&self.versions, &self.out_dir, "responses", "pub mod {}_responses;")
     }
 
-    /// Creates the top‑level types module file that declares `pub mod` for each version
-    /// and then `pub use` every version so downstream crates can do `use generated::types::*`.
-    fn generate_top_level_types_mod(&self) -> io::Result<()> {
+    /// Creates the top‑level responses module file that declares `pub mod` for each version
+    /// and then `pub use` every version so downstream crates can do `use generated::responses::*`.
+    fn generate_top_level_responses_mod(&self) -> io::Result<()> {
         use std::fmt::Write;
 
         let mut types_mod_rs = String::new();
@@ -80,17 +80,17 @@ impl ModuleGenerator {
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub mod {}_types;", version.as_module_name())
+            writeln!(types_mod_rs, "pub mod {}_responses;", version.as_module_name())
                 .map_err(io::Error::other)?;
         }
         writeln!(types_mod_rs).map_err(io::Error::other)?;
 
         for version in &self.versions {
-            writeln!(types_mod_rs, "pub use self::{}_types::*;", version.as_module_name())
+            writeln!(types_mod_rs, "pub use self::{}_responses::*;", version.as_module_name())
                 .map_err(io::Error::other)?;
         }
 
-        let types_mod_path = self.out_dir.join("types").join("mod.rs");
+        let types_mod_path = self.out_dir.join("responses").join("mod.rs");
         fs::create_dir_all(types_mod_path.parent().unwrap())?;
         fs::write(&types_mod_path, types_mod_rs)?;
         Ok(())

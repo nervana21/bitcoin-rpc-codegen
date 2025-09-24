@@ -211,7 +211,7 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
     );
 
     // 1) Prepare module directories
-    let subdirs = ["transport", "types", "node", "client_trait"];
+    let subdirs = ["transport", "responses", "node", "client_trait"];
     for sub in &subdirs {
         let module_dir = out_dir.join(sub);
         println!("[diagnostic] creating module directory: {module_dir:?}");
@@ -327,11 +327,11 @@ pub use node::test_config::TestConfig;
     write_mod_rs(&out_dir.join("client_trait"), &client_trait_files)
         .context("Failed to write client_trait mod.rs")?;
 
-    // 4) Types
-    println!("[diagnostic] generating types code");
+    // 4) Response Types
+    println!("[diagnostic] generating response types code");
     let ty_files = ResponseTypeCodeGenerator::new(target_version.as_str()).generate(&norm);
-    write_generated(out_dir.join("types"), &ty_files).context("Failed to write types files")?;
-    write_mod_rs(&out_dir.join("types"), &ty_files).context("Failed to write types mod.rs")?;
+    write_generated(out_dir.join("responses"), &ty_files).context("Failed to write response types files")?;
+    write_mod_rs(&out_dir.join("responses"), &ty_files).context("Failed to write responses mod.rs")?;
 
     // 5) Test-node helpers
     println!("[diagnostic] generating test_node code");
@@ -366,7 +366,7 @@ pub use node::test_config::TestConfig;
      pub mod node;\n\
      pub mod test_node;\n\
      pub mod transport;\n\
-     pub mod types;\n\n\
+     pub mod responses;\n\n\
      // Re-exports for ergonomic access\n\
      pub use config::Config;\n\
      pub use client_trait::client::BitcoinClient{version_capitalized};\n\
@@ -374,10 +374,8 @@ pub use node::test_config::TestConfig;
      pub use bitcoin::Network;\n\
      pub use node::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
-     pub use bitcoin_rpc_types::*;\n\
-     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n\n\
-     // Re-export individual transport functions for direct usage\n\
-     pub use transport::*;\n"
+     pub use responses::*;\n\
+     pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
     )?;
 
     ModuleGenerator::new(vec![target_version.clone()], out_dir.to_path_buf())

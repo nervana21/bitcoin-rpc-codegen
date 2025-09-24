@@ -73,7 +73,7 @@ pub fn emit_imports(code: &mut String, version: &Version) -> std::io::Result<()>
 use std::sync::Arc;
 use crate::transport::core::{{TransportError, TransportExt}};
 use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
-use crate::types::{version_lowercase}_types::*;
+use crate::responses::{version_lowercase}_responses::*;
 use serde_json::Value;
 
 use crate::node::{{BitcoinNodeManager, TestConfig, NodeManager as NodeManagerTrait}};

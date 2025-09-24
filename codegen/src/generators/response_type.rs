@@ -135,7 +135,7 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
         }
 
         vec![(
-            format!("{}_types.rs", Version::from_string(&self.version).unwrap().as_module_name()),
+            format!("{}_responses.rs", Version::from_string(&self.version).unwrap().as_module_name()),
             out,
         )]
     }

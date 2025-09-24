@@ -19,7 +19,7 @@ impl CodeGenerator for BatchBuilderGenerator {
 use crate::transport::{{TransportTrait, TransportError, BatchTransport}};
 use serde_json::{{Value, json}};
 use serde::Deserialize;
-use crate::types::*;"
+use crate::responses::*;"
         )
         .unwrap();
 
