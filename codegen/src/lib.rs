@@ -116,6 +116,24 @@ pub struct TransportCodeGenerator {
 impl TransportCodeGenerator {
     /// Create a new TransportCodeGenerator with the specified Bitcoin Core version
     pub fn new(version: Version) -> Self { Self { version } }
+    
+    /// Generate conditional imports based on what is actually needed
+    fn generate_imports(has_parameters: bool, has_structured_response: bool) -> String {
+        let mut imports = vec![];
+        imports.push("use serde_json::Value;".to_string());
+        
+        if has_parameters {
+            imports.push("use serde_json::json;".to_string());
+        }
+        
+        if has_structured_response {
+            imports.push("use serde::{Deserialize, Serialize};".to_string());
+        }
+        
+        imports.push("use crate::transport::{TransportTrait, TransportError};".to_string());
+        
+        imports.join("\n")
+    }
 }
 
 impl CodeGenerator for TransportCodeGenerator {
@@ -171,12 +189,15 @@ impl CodeGenerator for TransportCodeGenerator {
                 };
 
                 /* ---------- source file ---------- */
+                let has_parameters = !m.arguments.is_empty();
+                let has_structured_response = !response_struct.is_empty();
+                let imports = Self::generate_imports(has_parameters, has_structured_response);
+                
                 let src = format!(
                     r#"{docs}
 
-use serde::{{Deserialize, Serialize}};
-use serde_json::{{Value, json}};
-use transport::{{TransportTrait, TransportError}};
+#[allow(unused_imports)]
+{imports}
 {resp_struct}
 
 /// Calls the `{rpc}` RPC method.
@@ -189,6 +210,7 @@ pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
 }}
 "#,
                     docs = docs_md,
+                    imports = imports,
                     resp_struct = response_struct,
                     rpc = m.name,
                     fn_name = &m.name,
