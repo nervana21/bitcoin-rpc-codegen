@@ -85,7 +85,6 @@ pub trait VersionedClientHelpers {
 /// # Panics
 /// * Panics if the version is not supported
 pub fn get_helpers_for_version(version: &str) -> Box<dyn VersionedClientHelpers> {
-    println!("[dispatch] using version: {version}");
     let version_clean = version.trim_start_matches('v').trim_start_matches('V');
     let major_version = version_clean.split('.').next().unwrap_or(version_clean);
 
