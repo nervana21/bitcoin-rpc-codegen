@@ -4,9 +4,8 @@
 //! split into logical units for better maintainability and testing.
 
 use bitcoin_rpc_types::BtcMethod;
-use crate::Version;
 
-use crate::CodeGenerator;
+use crate::{CodeGenerator, Version};
 
 pub mod emit_combined_client;
 pub mod emit_params;

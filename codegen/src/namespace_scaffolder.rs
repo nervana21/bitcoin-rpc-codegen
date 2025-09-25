@@ -65,7 +65,12 @@ impl ModuleGenerator {
     /// Writes _one_ `mod.rs` that lives in  
     /// `…/responses/mod.rs` and declares `pub mod v28_responses; pub mod v29_responses; …`.
     pub fn generate_responses_mod_rs(&self) -> io::Result<()> {
-        generate_versioned_mod_rs(&self.versions, &self.out_dir, "responses", "pub mod {}_responses;")
+        generate_versioned_mod_rs(
+            &self.versions,
+            &self.out_dir,
+            "responses",
+            "pub mod {}_responses;",
+        )
     }
 
     /// Creates the top‑level responses module file that declares `pub mod` for each version

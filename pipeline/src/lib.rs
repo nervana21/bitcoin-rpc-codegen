@@ -4,20 +4,22 @@
 //! This module provides the core functionality for generating a complete Bitcoin RPC client
 //! library, including transport layer, type definitions, and test node helpers.
 
-use anyhow::{Context, Result};
-use codegen::generators::{BatchBuilderGenerator, ClientTraitGenerator, ResponseTypeCodeGenerator};
-use codegen::{
-    generators::test_node::TestNodeGenerator, namespace_scaffolder::ModuleGenerator,
-    write_generated, CodeGenerator, TransportCodeGenerator, TransportCoreGenerator,
-    load_api_methods_from_file,
-};
-use regex::Regex;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+
+use anyhow::{Context, Result};
+use codegen::generators::test_node::TestNodeGenerator;
+use codegen::generators::{BatchBuilderGenerator, ClientTraitGenerator, ResponseTypeCodeGenerator};
+use codegen::namespace_scaffolder::ModuleGenerator;
 use codegen::versioning::Version;
+use codegen::{
+    load_api_methods_from_file, write_generated, CodeGenerator, TransportCodeGenerator,
+    TransportCoreGenerator,
+};
+use regex::Regex;
 
 /// Extract version from filename
 ///
@@ -188,7 +190,6 @@ fn find_project_root() -> Result<PathBuf> {
 /// * `input_path` - Path to the input JSON file
 /// * `target_version` - The Bitcoin Core version being targeted
 pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version) -> Result<()> {
-
     let subdirs = ["transport", "responses", "node", "client_trait"];
     for sub in &subdirs {
         let module_dir = out_dir.join(sub);
@@ -221,8 +222,7 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
     fs::create_dir_all(&test_node_dir)
         .with_context(|| format!("Failed to create test_node directory: {test_node_dir:?}"))?;
 
-    let norm = load_api_methods_from_file(input_path)
-        .context("Failed to parse API JSON")?;
+    let norm = load_api_methods_from_file(input_path).context("Failed to parse API JSON")?;
 
     let tx_files = TransportCodeGenerator::new(target_version.clone()).generate(&norm);
     write_generated(out_dir.join("transport"), &tx_files)
@@ -255,8 +255,10 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
         .context("Failed to write client_trait mod.rs")?;
 
     let ty_files = ResponseTypeCodeGenerator::new(target_version.as_str()).generate(&norm);
-    write_generated(out_dir.join("responses"), &ty_files).context("Failed to write response types files")?;
-    write_mod_rs(&out_dir.join("responses"), &ty_files).context("Failed to write responses mod.rs")?;
+    write_generated(out_dir.join("responses"), &ty_files)
+        .context("Failed to write response types files")?;
+    write_mod_rs(&out_dir.join("responses"), &ty_files)
+        .context("Failed to write responses mod.rs")?;
 
     let tn_files = TestNodeGenerator::new(target_version.clone()).generate(&norm);
 
@@ -334,7 +336,6 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
 ///
 /// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
 fn write_cargo_toml(root: &Path, target_version: &Version) -> Result<()> {
-
     let version = target_version.crate_version();
     let bitcoin_version = target_version.as_doc_version();
     let toml = format!(
@@ -391,7 +392,6 @@ tracing = "0.1"
 ///
 /// Returns `Result<()>` indicating success or failure of writing the README.md file
 fn write_readme(root: &Path, target_version: &Version) -> Result<()> {
-
     let version = target_version.crate_version();
     let readme = format!(
         r#"# Bitcoin-RPC-Midas
@@ -709,12 +709,8 @@ fn write_mod_rs(dir: &Path, files: &[(String, String)]) -> Result<()> {
 
     // Add module declarations and re-exports for everything else
     for (name, _) in files {
-        let module_name = if name.ends_with(".rs") {
-            name.trim_end_matches(".rs")
-        } else {
-            name
-        };
-        
+        let module_name = if name.ends_with(".rs") { name.trim_end_matches(".rs") } else { name };
+
         // skip files we special-cased, plus `mod.rs` itself
         if module_name != "mod"
             && module_name != "core"

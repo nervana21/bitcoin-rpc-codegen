@@ -6,13 +6,14 @@
 //! Extracts fields in one pass, centralizes serde attrs, and names
 //! things consistently.  
 
-use anyhow::Result;
 use std::fmt::Write as _;
+
+use anyhow::Result;
 use bitcoin_rpc_types::{BtcMethod, BtcResult};
-use crate::Version;
 use type_conversion::TypeRegistry;
 
 use crate::utils::{camel_to_snake_case, capitalize};
+use crate::Version;
 
 /* --------------------------------------------------------------------- */
 /*  Primitive → Rust helpers                                             */
@@ -135,7 +136,10 @@ impl crate::CodeGenerator for ResponseTypeCodeGenerator {
         }
 
         vec![(
-            format!("{}_responses.rs", Version::from_string(&self.version).unwrap().as_module_name()),
+            format!(
+                "{}_responses.rs",
+                Version::from_string(&self.version).unwrap().as_module_name()
+            ),
             out,
         )]
     }
@@ -367,23 +371,23 @@ fn serde_attrs_for(field: &Field) -> String {
 /// Render serde attrs for a single `BtcResult`.
 fn serde_attrs_for_field(r: &BtcResult) -> String {
     let mut attrs = Vec::new();
-    
+
     // Add field name mapping if the JSON field name differs from the Rust field name
     if !r.key_name.is_empty() {
         let rust_field_name = field_ident(r, 0);
         let json_field_name = r.key_name.replace(['<', '>'], "").replace('-', "_");
-        
+
         // Only add rename if the names are different
         if rust_field_name != json_field_name {
             attrs.push(format!("#[serde(rename = \"{}\")]", json_field_name));
         }
     }
-    
+
     // Add optional field handling
     if !r.required {
         attrs.push("#[serde(skip_serializing_if = \"Option::is_none\")]".to_string());
     }
-    
+
     if attrs.is_empty() {
         "".into()
     } else {

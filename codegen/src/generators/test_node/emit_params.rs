@@ -1,10 +1,11 @@
 //! Generate parameter structs for RPC method calls
 
-use bitcoin_rpc_types::BtcMethod;
-use crate::generators::doc_comment;
-use crate::utils::{camel_to_snake_case, rust_type_for_argument};
 use std::fmt::Write as _;
-use crate::utils::capitalize;
+
+use bitcoin_rpc_types::BtcMethod;
+
+use crate::generators::doc_comment;
+use crate::utils::{camel_to_snake_case, capitalize, rust_type_for_argument};
 
 /// Generates Rust parameter structs for Bitcoin RPC methods that require arguments.
 ///

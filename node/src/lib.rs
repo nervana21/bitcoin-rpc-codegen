@@ -256,10 +256,8 @@ mod tests {
 
     #[test]
     fn test_extra_args() {
-        let config = TestConfig {
-            extra_args: vec!["-debug=1".to_string()],
-            ..TestConfig::default()
-        };
+        let config =
+            TestConfig { extra_args: vec!["-debug=1".to_string()], ..TestConfig::default() };
 
         let node_manager = BitcoinNodeManager::new_with_config(&config)
             .expect("Failed to create node manager with extra args");

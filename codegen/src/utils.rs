@@ -9,7 +9,7 @@ pub fn camel_to_snake_case(s: &str) -> String {
     if s == "scriptPubKey" {
         return "script_pubkey".to_string();
     }
-    
+
     let mut out = String::new();
     for (i, ch) in s.chars().enumerate() {
         if ch.is_ascii_uppercase() {
@@ -69,39 +69,41 @@ pub fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
 }
 
 /// Check if a method requires argument reordering for Rust function signatures.
-/// 
-/// Some Bitcoin RPC methods have unusual argument ordering where optional parameters appear 
-/// before required ones (e.g., `prioritisetransaction`, `sendmany`, `walletcreatefundedpsbt`). 
+///
+/// Some Bitcoin RPC methods have unusual argument ordering where optional parameters appear
+/// before required ones (e.g., `prioritisetransaction`, `sendmany`, `walletcreatefundedpsbt`).
 /// This function identifies such cases for automatic reordering.
-/// 
+///
 /// # Returns
 /// `true` if the method requires argument reordering, `false` otherwise.
 pub fn needs_parameter_reordering(args: &[BtcArgument]) -> bool {
     if args.len() < 2 {
         return false;
     }
-    
+
     // Check if any required argument comes after an optional one
     args.windows(2).any(|window| !window[0].required && window[1].required)
 }
 
 /// Reorder arguments for Rust function signatures
-/// 
-/// Some Bitcoin RPC methods have unusual argument ordering where optional parameters appear 
-/// before required ones (e.g., `prioritisetransaction`, `sendmany`, `walletcreatefundedpsbt`). 
+///
+/// Some Bitcoin RPC methods have unusual argument ordering where optional parameters appear
+/// before required ones (e.g., `prioritisetransaction`, `sendmany`, `walletcreatefundedpsbt`).
 /// This function reorders arguments to create idiomatic Rust function signatures while maintaining
 /// compatibility with the Bitcoin Core JSON-RPC argument order.
-/// 
+///
 /// Used by `MethodTemplate::generate_param_struct()` to create parameter structs for methods
 /// that require argument reordering.
-pub fn reorder_arguments_for_rust_signature(args: &[BtcArgument]) -> (Vec<BtcArgument>, Vec<usize>) {
+pub fn reorder_arguments_for_rust_signature(
+    args: &[BtcArgument],
+) -> (Vec<BtcArgument>, Vec<usize>) {
     if args.len() < 2 {
         return (args.to_vec(), (0..args.len()).collect());
     }
 
     // Check if reordering is needed
     let needs_reordering = args.windows(2).any(|window| !window[0].required && window[1].required);
-    
+
     if !needs_reordering {
         return (args.to_vec(), (0..args.len()).collect());
     }
@@ -111,7 +113,7 @@ pub fn reorder_arguments_for_rust_signature(args: &[BtcArgument]) -> (Vec<BtcArg
     let mut optional_args = Vec::new();
     let mut required_indices = Vec::new();
     let mut optional_indices = Vec::new();
-    
+
     for (i, arg) in args.iter().enumerate() {
         if arg.required {
             required_args.push(arg.clone());
@@ -125,7 +127,7 @@ pub fn reorder_arguments_for_rust_signature(args: &[BtcArgument]) -> (Vec<BtcArg
     // Combine: required first, then optional
     let mut reordered_args = required_args;
     reordered_args.extend(optional_args);
-    
+
     // Create mapping from reordered position to original position
     // The mapping tells us: for each position in the reordered args, what was its original position
     let mut mapping = Vec::new();

@@ -10,15 +10,14 @@
 pub mod generators;
 pub mod versioning;
 
-use anyhow::Result;
-use bitcoin_rpc_types::{ApiDefinition, BtcMethod};
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-use crate::generators::doc_comment;
-use crate::generators::response_type;
+use anyhow::Result;
+use bitcoin_rpc_types::{ApiDefinition, BtcMethod};
 
+use crate::generators::{doc_comment, response_type};
 use crate::versioning::Version;
 
 /// Load API methods from a JSON file using the new schema system
@@ -116,22 +115,22 @@ pub struct TransportCodeGenerator {
 impl TransportCodeGenerator {
     /// Create a new TransportCodeGenerator with the specified Bitcoin Core version
     pub fn new(version: Version) -> Self { Self { version } }
-    
+
     /// Generate conditional imports based on what is actually needed
     fn generate_imports(has_parameters: bool, has_structured_response: bool) -> String {
         let mut imports = vec![];
         imports.push("use serde_json::Value;".to_string());
-        
+
         if has_parameters {
             imports.push("use serde_json::json;".to_string());
         }
-        
+
         if has_structured_response {
             imports.push("use serde::{Deserialize, Serialize};".to_string());
         }
-        
+
         imports.push("use crate::transport::{TransportTrait, TransportError};".to_string());
-        
+
         imports.join("\n")
     }
 }
@@ -192,7 +191,7 @@ impl CodeGenerator for TransportCodeGenerator {
                 let has_parameters = !m.arguments.is_empty();
                 let has_structured_response = !response_struct.is_empty();
                 let imports = Self::generate_imports(has_parameters, has_structured_response);
-                
+
                 let src = format!(
                     r#"{docs}
 

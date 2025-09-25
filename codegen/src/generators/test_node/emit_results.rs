@@ -2,10 +2,10 @@
 
 use std::fmt::Write as _;
 
-use super::utils::camel;
 use bitcoin_rpc_types::{BtcMethod, BtcResult};
-
 use type_conversion::TypeRegistry;
+
+use super::utils::camel;
 
 /// Generates Rust struct definitions for RPC method response types.
 ///

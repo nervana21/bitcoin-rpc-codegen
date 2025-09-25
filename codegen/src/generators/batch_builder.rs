@@ -1,9 +1,12 @@
 // codegen/src/generators/batch_builder.rs
 
 use std::fmt::Write;
-use crate::{utils::capitalize, CodeGenerator};
+
 use bitcoin_rpc_types::BtcMethod;
 use type_conversion::TypeRegistry;
+
+use crate::utils::capitalize;
+use crate::CodeGenerator;
 
 /// Generates a fluent `BatchBuilder` with one method-per-RPC and an `.execute()` entrypoint.
 pub struct BatchBuilderGenerator;

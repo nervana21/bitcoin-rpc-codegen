@@ -11,18 +11,15 @@ pub const BUILD_VERSION: u32 = 0; // TODO: bump this
 pub struct Version {
     major: u32,
     minor: u32,
-    
+
     version_string: String,
 }
 
 impl Version {
     /// Construct a new Version from `major.minor`.
     pub fn new(major: u32, minor: u32) -> Self {
-        let version_string = if minor == 0 {
-            format!("v{}", major)
-        } else {
-            format!("v{}.{}", major, minor)
-        };
+        let version_string =
+            if minor == 0 { format!("v{}", major) } else { format!("v{}.{}", major, minor) };
         Self { major, minor, version_string }
     }
 
@@ -32,16 +29,16 @@ impl Version {
         let parts: Vec<&str> = s.split('.').collect();
 
         if parts.is_empty() || parts.len() > 2 {
-            return Err(VersionError::ParseError(format!(
-                "Invalid version format: '{}'", s
-            )));
+            return Err(VersionError::ParseError(format!("Invalid version format: '{}'", s)));
         }
 
-        let major = parts[0].parse::<u32>()
+        let major = parts[0]
+            .parse::<u32>()
             .map_err(|_| VersionError::ParseError(format!("Invalid major '{}'", parts[0])))?;
 
         let minor = if parts.len() > 1 {
-            parts[1].parse::<u32>()
+            parts[1]
+                .parse::<u32>()
                 .map_err(|_| VersionError::ParseError(format!("Invalid minor '{}'", parts[1])))?
         } else {
             0

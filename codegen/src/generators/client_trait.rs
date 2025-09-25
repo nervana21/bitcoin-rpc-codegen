@@ -1,10 +1,10 @@
 // codegen/src/generators/client_trait.rs
 
 use bitcoin_rpc_types::BtcMethod;
+use type_conversion::TypeRegistry;
 
 use crate::utils::capitalize;
 use crate::CodeGenerator;
-use type_conversion::TypeRegistry;
 
 /// Generator for creating Bitcoin RPC client traits for specific versions
 pub struct ClientTraitGenerator {
@@ -83,14 +83,15 @@ impl<'a> MethodTemplate<'a> {
     /// Generate parameter struct for methods that require argument reordering
     pub fn generate_param_struct(&self) -> Option<String> {
         use crate::utils::{needs_parameter_reordering, reorder_arguments_for_rust_signature};
-        
+
         if !needs_parameter_reordering(&self.method.arguments) {
             return None;
         }
 
-        let (reordered_args, param_mapping) = reorder_arguments_for_rust_signature(&self.method.arguments);
+        let (reordered_args, param_mapping) =
+            reorder_arguments_for_rust_signature(&self.method.arguments);
         let struct_name = format!("{}Params", capitalize(&self.method.name));
-        
+
         let mut fields = Vec::new();
         for arg in &reordered_args {
             let field_name = if arg.names[0] == "type" {
@@ -98,30 +99,24 @@ impl<'a> MethodTemplate<'a> {
             } else {
                 format!("_{}", arg.names[0])
             };
-            
+
             let (base_ty, _) = TypeRegistry.map_argument_type(arg);
-            let field_type = if !arg.required { 
-                format!("Option<{base_ty}>") 
-            } else { 
-                base_ty.to_string() 
-            };
-            
+            let field_type =
+                if !arg.required { format!("Option<{base_ty}>") } else { base_ty.to_string() };
+
             fields.push(format!("    pub {}: {},", field_name, field_type));
         }
-        
+
         // Generate custom serialization that converts struct to array in original order
         let mut serialize_fields = Vec::new();
         for (original_idx, _) in self.method.arguments.iter().enumerate() {
             let reordered_idx = param_mapping.iter().position(|&x| x == original_idx).unwrap();
             let arg = &reordered_args[reordered_idx];
-            let field_name = if arg.names[0] == "type" {
-                "r#_type"
-            } else {
-                &format!("_{}", arg.names[0])
-            };
+            let field_name =
+                if arg.names[0] == "type" { "r#_type" } else { &format!("_{}", arg.names[0]) };
             serialize_fields.push(format!("        seq.serialize_element(&self.{})?;", field_name));
         }
-        
+
         Some(format!(
             "#[derive(Debug, Clone, Deserialize)]\n\
             pub struct {} {{\n\
@@ -160,7 +155,7 @@ impl<'a> MethodTemplate<'a> {
     /// Build the `, name: Type, ...` part of the fn signature
     fn signature(&self) -> String {
         use crate::utils::needs_parameter_reordering;
-        
+
         // Check if this method requires argument reordering
         if needs_parameter_reordering(&self.method.arguments) {
             // Use a parameter struct for methods with ordering issues
@@ -183,8 +178,11 @@ impl<'a> MethodTemplate<'a> {
                         format!("_{}", arg.names[0])
                     };
                     let (base_ty, _) = TypeRegistry.map_argument_type(arg);
-                    let ty =
-                        if !arg.required { format!("Option<{base_ty}>") } else { base_ty.to_string() };
+                    let ty = if !arg.required {
+                        format!("Option<{base_ty}>")
+                    } else {
+                        base_ty.to_string()
+                    };
                     format!("{name}: {ty}")
                 })
                 .collect::<Vec<_>>();
@@ -209,7 +207,7 @@ impl<'a> MethodTemplate<'a> {
     /// Build the lines inside `vec![ ... ]`
     pub fn json_params(&self) -> String {
         use crate::utils::needs_parameter_reordering;
-        
+
         if needs_parameter_reordering(&self.method.arguments) {
             // For methods that require argument reordering, serialize from the parameter struct
             "            serde_json::json!(params),".to_string()
@@ -219,8 +217,11 @@ impl<'a> MethodTemplate<'a> {
                 .arguments
                 .iter()
                 .map(|arg| {
-                    let name =
-                        if arg.names[0] == "type" { "r#_type" } else { &format!("_{}", arg.names[0]) };
+                    let name = if arg.names[0] == "type" {
+                        "r#_type"
+                    } else {
+                        &format!("_{}", arg.names[0])
+                    };
                     format!("            serde_json::json!({name}),")
                 })
                 .collect::<Vec<_>>()
