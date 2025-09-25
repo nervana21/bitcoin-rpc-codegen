@@ -89,18 +89,17 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
                 project_root.join(path)
             },
         None => {
-            let version = fs::read_dir(&project_root)?
-                .filter_map(|e| e.ok())
-                .map(|e| e.file_name().to_string_lossy().into_owned())
-                .filter(|n| n.starts_with("api_v") && n.ends_with(".json"))
-                .filter_map(|n| extract_version_from_filename(&n).ok())
-                .filter_map(|s| Version::from_string(&s).ok())
-                .max()
-                .ok_or_else(|| anyhow::anyhow!("No api_v*.json files found in {:?}", project_root))?;
-
-            let base_path = project_root.join(format!("api_v{}.json", version.as_number()));
-            let alt_path = project_root.join(format!("api_v{}_1.json", version.as_number()));
-            if alt_path.exists() { alt_path } else { base_path }
+            let default = project_root.join("api_v29_1.json");
+            if default.exists() {
+                println!("[pipeline] no input provided; defaulting to api_v29_1.json");
+                default
+            } else {
+                return Err(anyhow::anyhow!(
+                    "No input file specified. Please provide a path to an API JSON file.\n\
+                     The filename must follow the pattern 'api_vXX.json' or 'api_vXX_X.json' where XX is the Bitcoin Core version and X is a single digit.\n\
+                     Examples: api_v28.json, api_v29.json, api_v29_1.json"
+                ));
+            }
         }
     };
 
@@ -242,18 +241,8 @@ pub use node::test_config::TestConfig;
     fs::create_dir_all(&test_node_dir)
         .with_context(|| format!("Failed to create test_node directory: {test_node_dir:?}"))?;
 
-    let (norm, src_desc) = if input_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("json"))
-    {
-        (
-            load_api_methods_from_file(input_path).context("Failed to parse API JSON")?,
-            "structured JSON",
-        )
-    } else {
-        return Err(anyhow::anyhow!("Only JSON files are supported. Please provide a .json file."));
-    };
+    let norm = load_api_methods_from_file(input_path)
+        .context("Failed to parse API JSON")?;
 
     let tx_files = TransportCodeGenerator::new(target_version.clone()).generate(&norm);
     write_generated(out_dir.join("transport"), &tx_files)
