@@ -76,7 +76,8 @@ use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
 use crate::responses::{version_lowercase}_responses::*;
 use serde_json::Value;
 
-use crate::node::{{BitcoinNodeManager, TestConfig, NodeManager as NodeManagerTrait}};
+use crate::node::{{BitcoinNodeManager, NodeManager as NodeManagerTrait}};
+use crate::test_config::TestConfig;
 
 use bitcoin::Amount;
 use bitcoin::Network;"
@@ -157,7 +158,8 @@ pub fn emit_constructors(code: &mut String) -> std::io::Result<()> {
     /// The node manager must implement the `NodeManager` trait.
     /// ```no_run
     /// use bitcoin_rpc_midas::test_node::client::BitcoinTestClient;
-    /// use bitcoin_rpc_midas::node::{{BitcoinNodeManager, TestConfig}};
+    /// use bitcoin_rpc_midas::node::BitcoinNodeManager;
+    /// use bitcoin_rpc_midas::test_config::TestConfig;
     ///
     /// async fn example() -> Result<(), Box<dyn std::error::Error>> {{
     ///     let config = TestConfig::default();

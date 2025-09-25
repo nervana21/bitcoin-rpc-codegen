@@ -210,28 +210,10 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
     let node_dir = out_dir.join("node");
     let node_mod_rs = node_dir.join("mod.rs");
 
-    if !node_mod_rs.exists() { //TODO remove this!
-        fs::write(
-            &node_mod_rs,
-            r#"
-// Auto-generated `node` module
-pub mod bitcoin_node_manager;
-pub mod test_config;
-
-pub use bitcoin_node_manager::BitcoinNodeManager;
-pub use test_config::TestConfig;
-"#,
-        )
-        .with_context(|| format!("Failed to write node/mod.rs at {node_mod_rs:?}"))?;
-    }
-
-    let node_mod_content = r#"//! Node module - local node manager and re-exports
-
-pub use node::{BitcoinNodeManager, NodeManager, NodeState};
-pub use crate::test_config::TestConfig;
-"#;
-
-    fs::write(&node_mod_rs, node_mod_content)
+    let project_root = find_project_root()?;
+    let node_impl_src = std::fs::read_to_string(project_root.join("templates/node.rs"))
+        .with_context(|| "Failed to read templates/node.rs")?;
+    std::fs::write(&node_mod_rs, node_impl_src)
         .with_context(|| format!("Failed to write node/mod.rs at {node_mod_rs:?}"))?;
 
     // Create test_node directory without writing mod.rs
