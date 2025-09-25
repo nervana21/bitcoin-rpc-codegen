@@ -136,6 +136,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
 
     let version_str = extract_version_from_filename(filename)?;
     let target_version = Version::from_string(&version_str)?;
+    println!("Generating midas client for Bitcoin Core {}", version_str);
 
     write_cargo_toml(&crate_root, &target_version)
         .with_context(|| format!("Failed to write Cargo.toml in: {crate_root:?}"))?;
