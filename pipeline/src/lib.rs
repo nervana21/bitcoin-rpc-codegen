@@ -225,12 +225,10 @@ pub use test_config::TestConfig;
         .with_context(|| format!("Failed to write node/mod.rs at {node_mod_rs:?}"))?;
     }
 
-    let node_mod_content = r#"//! Node module - re-exports from the node crate
-//! 
-//! This module re-exports types from the node crate.
+    let node_mod_content = r#"//! Node module - local node manager and re-exports
 
 pub use node::{BitcoinNodeManager, NodeManager, NodeState};
-pub use node::test_config::TestConfig;
+pub use crate::test_config::TestConfig;
 "#;
 
     fs::write(&node_mod_rs, node_mod_content)
@@ -304,6 +302,7 @@ pub use node::test_config::TestConfig;
      pub mod config;\n\
      pub mod client_trait;\n\
      pub mod node;\n\
+     pub mod test_config;\n\
      pub mod test_node;\n\
      pub mod transport;\n\
      pub mod responses;\n\n\
@@ -312,7 +311,7 @@ pub use node::test_config::TestConfig;
      pub use client_trait::client::BitcoinClient{version_capitalized};\n\
      pub use node::BitcoinNodeManager;\n\
      pub use bitcoin::Network;\n\
-     pub use node::TestConfig;\n\
+     pub use test_config::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use responses::*;\n\
      pub use transport::{{\n    DefaultTransport,\n    TransportError,\n    RpcClient,\n    BatchBuilder,\n}};\n"
@@ -774,4 +773,4 @@ fn copy_templates_to(dst_dir: &Path) -> Result<()> {
 }
 
 /// Template files to be copied to the generated crate
-const TEMPLATE_FILES: &[&str] = &["config.rs"];
+const TEMPLATE_FILES: &[&str] = &["config.rs", "test_config.rs"];
