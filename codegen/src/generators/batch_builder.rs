@@ -2,8 +2,8 @@
 
 use std::fmt::Write;
 
+use bitcoin_rpc_conversions::TypeRegistry;
 use bitcoin_rpc_types::BtcMethod;
-use type_conversion::TypeRegistry;
 
 use crate::utils::capitalize;
 use crate::CodeGenerator;
@@ -48,10 +48,8 @@ pub struct BatchResults {{
                 writeln!(code, "    pub {field_name}: (),").unwrap();
             } else {
                 // For non-void methods, always use Option<T> since we may not call every method in a batch
-                // TODO: Remove the superfluous Option wrapper by making only batched methods Option<T>,
-                // or switch to a per-batch struct that only includes the fields that are actually queued (more involved).
                 let response_type = if m.results.len() == 1 {
-                    let (ty, _) = TypeRegistry.map_result_type(&m.results[0]);
+                    let (ty, _) = TypeRegistry::map_result_type(&m.results[0]);
                     if ty == "()" {
                         "()".to_string()
                     } else {

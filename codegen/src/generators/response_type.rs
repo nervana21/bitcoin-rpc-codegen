@@ -9,8 +9,8 @@
 use std::fmt::Write as _;
 
 use anyhow::Result;
+use bitcoin_rpc_conversions::TypeRegistry;
 use bitcoin_rpc_types::{BtcMethod, BtcResult};
-use type_conversion::TypeRegistry;
 
 use crate::utils::{camel_to_snake_case, capitalize};
 use crate::Version;
@@ -197,7 +197,7 @@ pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
                         // Regular object structure
                         writeln!(&mut buf, "    {variant_name} {{")?;
                         for f in &result.inner {
-                            let (ty, opt) = TypeRegistry.map_result_type(f);
+                            let (ty, opt) = TypeRegistry::map_result_type(f);
                             let name = field_ident(f, 0);
                             let ty = if opt { format!("Option<{ty}>") } else { ty.to_string() };
                             writeln!(
@@ -213,13 +213,13 @@ pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
                 }
                 "array" if !result.inner.is_empty() => {
                     // Array type - get element type from inner field
-                    let (element_ty, _) = TypeRegistry.map_result_type(&result.inner[0]);
+                    let (element_ty, _) = TypeRegistry::map_result_type(&result.inner[0]);
                     let array_ty = format!("Vec<{element_ty}>");
                     writeln!(&mut buf, "    {variant_name}({array_ty}),")?;
                 }
                 _ => {
                     // primitive → transparent wrapper
-                    let (ty, _) = TypeRegistry.map_result_type(result);
+                    let (ty, _) = TypeRegistry::map_result_type(result);
                     writeln!(&mut buf, "    {variant_name}({ty}),")?;
                 }
             }
@@ -244,7 +244,7 @@ pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
             "object" if !r.inner.is_empty() => {
                 writeln!(&mut buf, "pub struct {struct_name} {{")?;
                 for f in &r.inner {
-                    let (ty, opt) = TypeRegistry.map_result_type(f);
+                    let (ty, opt) = TypeRegistry::map_result_type(f);
                     let name = field_ident(f, 0);
                     let ty = if opt { format!("Option<{ty}>") } else { ty.to_string() };
                     writeln!(&mut buf, "    {}pub {}: {},", serde_attrs_for_field(f), name, ty)?;
@@ -253,7 +253,7 @@ pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
             }
             _ => {
                 // primitive or array → transparent wrapper
-                let (ty, _) = TypeRegistry.map_result_type(r);
+                let (ty, _) = TypeRegistry::map_result_type(r);
                 writeln!(&mut buf, "#[serde(transparent)]")?;
                 writeln!(&mut buf, "pub struct {struct_name}(pub {ty});\n")?;
             }
@@ -334,7 +334,7 @@ fn collect_fields(m: &BtcMethod) -> Vec<Field> {
             for f in &r.inner {
                 let name = field_ident(f, 0);
                 if seen.insert(name.clone()) {
-                    let (ty, _) = TypeRegistry.map_result_type(f);
+                    let (ty, _) = TypeRegistry::map_result_type(f);
                     let always = is_field_always_present(&name, &m.results);
                     out.push(Field { name, ty: ty.to_string(), always_present: always });
                 }

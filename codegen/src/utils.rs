@@ -1,7 +1,7 @@
 // codegen/src/utils.rs
 
+use bitcoin_rpc_conversions::TypeRegistry;
 use bitcoin_rpc_types::BtcArgument;
-use type_conversion::TypeRegistry;
 
 /// Converts a camelCase string to snake_case
 pub fn camel_to_snake_case(s: &str) -> String {
@@ -51,7 +51,7 @@ pub fn capitalize(s: &str) -> String {
 /// # Returns
 /// A `String` representing the Rust type for the argument, possibly wrapped in `Option<>`.
 pub fn rust_type_for_argument(param_name: &str, api_ty: &str) -> String {
-    let (base_ty, is_option) = TypeRegistry::new().map_argument_type(&BtcArgument {
+    let (base_ty, is_option) = TypeRegistry::map_argument_type(&BtcArgument {
         type_: api_ty.to_string(),
         names: vec![param_name.to_string()],
         type_str: None,

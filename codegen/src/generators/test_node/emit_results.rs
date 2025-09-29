@@ -2,8 +2,8 @@
 
 use std::fmt::Write as _;
 
+use bitcoin_rpc_conversions::TypeRegistry;
 use bitcoin_rpc_types::{BtcMethod, BtcResult};
-use type_conversion::TypeRegistry;
 
 use super::utils::camel;
 
@@ -44,7 +44,7 @@ pub fn generate_result_code(methods: &[BtcMethod]) -> String {
 /// # Returns
 /// A `String` representing the Rust type for the result, possibly wrapped in `Option<>`.
 fn rust_type_for_result(result: &BtcResult) -> String {
-    let (base_ty, is_option) = TypeRegistry::new().map_result_type(result);
+    let (base_ty, is_option) = TypeRegistry::map_result_type(result);
     if is_option {
         format!("Option<{base_ty}>")
     } else {

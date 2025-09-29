@@ -1,7 +1,7 @@
 // codegen/src/generators/client_trait.rs
 
+use bitcoin_rpc_conversions::TypeRegistry;
 use bitcoin_rpc_types::BtcMethod;
-use type_conversion::TypeRegistry;
 
 use crate::utils::capitalize;
 use crate::CodeGenerator;
@@ -100,7 +100,7 @@ impl<'a> MethodTemplate<'a> {
                 format!("_{}", arg.names[0])
             };
 
-            let (base_ty, _) = TypeRegistry.map_argument_type(arg);
+            let (base_ty, _) = TypeRegistry::map_argument_type(arg);
             let field_type =
                 if !arg.required { format!("Option<{base_ty}>") } else { base_ty.to_string() };
 
@@ -177,7 +177,7 @@ impl<'a> MethodTemplate<'a> {
                     } else {
                         format!("_{}", arg.names[0])
                     };
-                    let (base_ty, _) = TypeRegistry.map_argument_type(arg);
+                    let (base_ty, _) = TypeRegistry::map_argument_type(arg);
                     let ty = if !arg.required {
                         format!("Option<{base_ty}>")
                     } else {

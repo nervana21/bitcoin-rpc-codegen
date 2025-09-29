@@ -10,8 +10,8 @@ serde_json = "1.0"
 thiserror = "2.0.12"
 serde = { version = "1.0", features = ["derive"] }
 
+bitcoin-rpc-conversions = { path = "../../conversions" }
 bitcoin-rpc-types = "0.1.0"
-type-conversion = { path = "../type-conversion" }
 
 [dev-dependencies]
 tempfile = "3.5.0"

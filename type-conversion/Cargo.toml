@@ -1,9 +1,0 @@
-[package]
-name = "type-conversion"
-version = "0.1.0"
-license = "MIT"
-edition = "2021"
-
-[dependencies]
-serde_json = "1.0"
-bitcoin-rpc-types = "0.1.0"
