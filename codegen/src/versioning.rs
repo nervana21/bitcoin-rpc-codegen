@@ -4,7 +4,7 @@
 use thiserror::Error;
 
 /// Midas build number component of the generated crate version (e.g., 29.1.{BUILD_VERSION}).
-pub const BUILD_VERSION: u32 = 1; // TODO: bump this
+pub const BUILD_VERSION: u32 = 2;
 
 /// Bitcoin Core version representation
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
