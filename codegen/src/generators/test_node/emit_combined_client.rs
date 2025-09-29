@@ -74,6 +74,7 @@ use crate::transport::core::{{TransportError, TransportExt}};
 use crate::transport::{{DefaultTransport, RpcClient, BatchBuilder}};
 use crate::responses::{version_lowercase}_responses::*;
 use serde_json::Value;
+use bitcoin_rpc_types::HashOrHeight;
 
 use crate::node::{{BitcoinNodeManager, NodeManager as NodeManagerTrait}};
 use crate::test_config::TestConfig;

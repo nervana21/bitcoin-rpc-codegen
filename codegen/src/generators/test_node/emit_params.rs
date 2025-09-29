@@ -30,8 +30,9 @@ use crate::utils::{camel_to_snake_case, capitalize, rust_type_for_argument};
 ///
 /// A `String` containing the complete Rust code for all parameter structs
 pub fn generate_params_code(methods: &[BtcMethod]) -> String {
-    let mut code =
-        String::from("//! Parameter structs for RPC method calls\nuse serde::Serialize;\n\n");
+    let mut code = String::from(
+        "//! Parameter structs for RPC method calls\nuse serde::Serialize;\nuse bitcoin_rpc_types::HashOrHeight;\n\n",
+    );
     for m in methods {
         if m.arguments.is_empty() {
             continue;
