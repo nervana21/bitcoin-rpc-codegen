@@ -192,9 +192,15 @@ impl CodeGenerator for TransportCodeGenerator {
                 let has_structured_response = !response_struct.is_empty();
                 let imports = Self::generate_imports(has_parameters, has_structured_response);
 
+                // Add clippy allow for too many arguments if needed
+                let clippy_allow = if m.arguments.len() > 7 {
+                    "#[allow(clippy::too_many_arguments)]\n"
+                } else {
+                    ""
+                };
+
                 let src = format!(
                     r#"{docs}
-
 #[allow(unused_imports)]
 {imports}
 {resp_struct}
@@ -202,7 +208,7 @@ impl CodeGenerator for TransportCodeGenerator {
 /// Calls the `{rpc}` RPC method.
 ///
 /// Generated transport wrapper for JSON-RPC.
-pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
+{clippy_allow}pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
     let params = {params_vec};
     let raw = transport.send_request("{rpc}", &params).await?;
     {handler}

@@ -450,10 +450,15 @@ pub fn emit_delegated_rpc_methods(code: &mut String, methods: &[BtcMethod]) -> s
             (param_list, params_code)
         };
 
+        // Add clippy allow for too many arguments if needed
+        let clippy_allow =
+            if m.arguments.len() > 7 { "    #[allow(clippy::too_many_arguments)]\n" } else { "" };
+
         writeln!(
             code,
-            "{}\n    pub async fn {}(&self{}{}) -> Result<{}, TransportError> {{\n{}\n    }}\n",
+            "{}\n{}    pub async fn {}(&self{}{}) -> Result<{}, TransportError> {{\n{}\n    }}\n",
             doc_comment,
+            clippy_allow,
             method_snake,
             if param_list.is_empty() { "" } else { ", " },
             param_list,

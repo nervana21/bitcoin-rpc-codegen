@@ -237,8 +237,15 @@ impl<'a> MethodTemplate<'a> {
         let json = self.json_params();
         let rpc = &self.method.name;
 
+        // Add clippy allow for too many arguments if needed
+        let clippy_allow = if self.method.arguments.len() > 7 {
+            "#[allow(clippy::too_many_arguments)]\n    "
+        } else {
+            ""
+        };
+
         format!(
-            "    async fn {name}(&self{sig}) -> Result<{ret}, TransportError> {{
+            "{clippy_allow}async fn {name}(&self{sig}) -> Result<{ret}, TransportError> {{
         let params = vec![
 {json}
         ];

@@ -128,9 +128,16 @@ pub struct BatchBuilder {{
                 format!("vec![{elems}]")
             };
 
+            // Add clippy allow for too many arguments if needed
+            let clippy_allow = if m.arguments.len() > 7 {
+                "    #[allow(clippy::too_many_arguments)]\n"
+            } else {
+                ""
+            };
+
             writeln!(
                 code,
-                r#"    /// Queue a `{name}` RPC call
+                r#"{clippy_allow}    /// Queue a `{name}` RPC call
     pub fn {name}(mut self{args_list}) -> Self {{
         self.calls.push(("{name}", {params}));
         self

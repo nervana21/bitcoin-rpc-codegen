@@ -161,6 +161,7 @@ pub fn build_return_type(method: &BtcMethod) -> Result<Option<String>> {
     if has_conditional_results(method) {
         // Results with conditions → enum with variants
         writeln!(&mut buf, "#[serde(untagged)]")?;
+        writeln!(&mut buf, "#[allow(clippy::large_enum_variant)]")?;
         writeln!(&mut buf, "pub enum {struct_name} {{")?;
 
         // Track used variant names to avoid duplicates

@@ -138,7 +138,7 @@ pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
     let params_with_comma = if !method.arguments.is_empty() { ", /* params */" } else { "" };
 
     docs.push_str(&format!(
-        "\n/// # Example: High-Level Client Usage (Recommended)
+        "/// # Example: High-Level Client Usage (Recommended)
 /// ```rust
 /// use bitcoin_rpc_midas::*;
 ///
@@ -148,7 +148,6 @@ pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
 /// # Ok(())
 /// # }}
 /// ```
-
 /// # Example: Advanced - Direct Transport Function Usage
 /// This approach is for advanced users who need direct control over the transport layer.
 /// Most users should prefer the high-level client approach above.
@@ -164,12 +163,11 @@ pub fn generate_example_docs(method: &BtcMethod, version: &str) -> String {
 /// let result = {name}(&transport{p2}).await?;
 /// # Ok(())
 /// # }}
-/// ```
-",
+/// ```",
         name = method.name,
         p1 = params_comment,
         p2 = params_with_comma,
     ));
 
-    docs
+    docs.trim_end().to_string()
 }

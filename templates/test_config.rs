@@ -116,7 +116,7 @@ impl TestConfig {
         // Extract port from URL, defaulting to 0 if parsing fails
         let rpc_port = config.rpc_url
             .split(':')
-            .last()
+            .next_back()
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
             
