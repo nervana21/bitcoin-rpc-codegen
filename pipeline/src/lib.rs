@@ -351,7 +351,7 @@ license = "MIT OR Apache-2.0"
 description = "Generated client for Bitcoin Core v{}."
 readme = "README.md"
 keywords = ["bitcoin", "rpc", "codegen", "integration-testing"]
-categories = ["cryptography::cryptocurrencies", "development-tools::testing"]
+categories = ["cryptography", "data-structures", "api-bindings"]
 repository = "https://github.com/nervana21/bitcoin-rpc-midas"
 homepage = "https://github.com/nervana21/bitcoin-rpc-midas"
 documentation = "https://docs.rs/bitcoin-rpc-midas"
@@ -395,7 +395,7 @@ tracing = "0.1"
 fn write_readme(root: &Path, target_version: &Version) -> Result<()> {
     let version = target_version.crate_version();
     let readme = format!(
-        r#"# Bitcoin-RPC-Midas
+        r#"# bitcoin-rpc-midas
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
