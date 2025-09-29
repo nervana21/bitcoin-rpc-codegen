@@ -1,20 +1,27 @@
 flowchart LR
-  API_JSON["api.json"]:::api --> BitcoinRpcTypes["bitcoin-rpc-types"]:::core
+  subgraph BitcoinCore["Bitcoin Core"]
+    API_JSON["api.json"]:::api
+  end
+
+  API_JSON --> BitcoinRpcTypes["bitcoin-rpc-types"]:::core
   
-  BitcoinRpcTypes --> TypeConversion["type-conversion"]:::registry
+  BitcoinRpcTypes --> BitcoinRpcConversions["bitcoin-rpc-conversions"]:::conversions
   BitcoinRpcTypes --> Codegen["codegen"]:::codegen
   BitcoinRpcTypes --> Node["node"]:::node
   
-  TypeConversion --> Codegen
+  BitcoinRpcConversions --> Codegen
   Codegen --> Pipeline["pipeline"]:::pipeline
   Pipeline --> BitcoinRpcMidas["bitcoin-rpc-midas"]:::midas
 
   Node --> Pipeline
 
-  classDef api       fill:#d0e1ff,stroke:#2255aa,color:#000;
-  classDef core      fill:#e1f5fe,stroke:#01579b,color:#000;
-  classDef registry  fill:#f3e5f5,stroke:#4a148c,color:#000;
-  classDef codegen   fill:#ffd9d9,stroke:#aa2222,color:#000;
-  classDef pipeline  fill:#fad5ff,stroke:#aa44aa,color:#000;
-  classDef midas     fill:#c9f5ff,stroke:#228899,color:#000;
-  classDef node      fill:#e8f5e8,stroke:#228822,color:#000;
+  classDef bitcoinCore fill:#d9e6f2,stroke:#7aa0c4,color:#000;
+  classDef api         fill:#e5f1fa,stroke:#4f88b7,color:#000;
+  classDef core        fill:#e5faf1,stroke:#4fb78e,color:#000;
+  classDef conversions fill:#f5e5fa,stroke:#9b4fb7,color:#000;
+  classDef codegen     fill:#fae5e5,stroke:#b74f4f,color:#000;
+  classDef pipeline    fill:#f5e5fa,stroke:#b74fb7,color:#000;
+  classDef midas       fill:#e5fafa,stroke:#4fb7b7,color:#000;
+  classDef node        fill:#f0fae5,stroke:#7ab74f,color:#000;
+
+  class BitcoinCore bitcoinCore;
