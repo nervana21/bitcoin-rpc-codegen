@@ -356,7 +356,7 @@ struct Field {
 /// Decide if a field is never optional.
 fn is_field_always_present(name: &str, results: &[BtcResult]) -> bool {
     results.iter().all(|r| {
-        r.type_ == "object" && r.inner.iter().any(|f| field_ident(f, 0) == name && f.required)
+        r.type_ == "object" && r.inner.iter().any(|f| field_ident(f, 0) == name && f.required())
     })
 }
 
@@ -385,7 +385,7 @@ fn serde_attrs_for_field(r: &BtcResult) -> String {
     }
 
     // Add optional field handling
-    if !r.required {
+    if !r.required() {
         attrs.push("#[serde(skip_serializing_if = \"Option::is_none\")]".to_string());
     }
 
