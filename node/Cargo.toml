@@ -19,7 +19,7 @@ thiserror = "2.0.12"
 tokio = { version = "1.36", features = ["full"] }
 tracing = "0.1"
 
-bitcoin-rpc-types = "0.1.2"
+bitcoin-rpc-types = { path = "../../types" }
 config = { path = "../config" }
 
 [dev-dependencies]
