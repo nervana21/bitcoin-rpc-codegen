@@ -5,13 +5,13 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.100"
 regex = "1.0"
 
 codegen = { path = "../codegen" }
 bitcoin-rpc-types = { path = "../../types" }
 
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 
 [lib]
