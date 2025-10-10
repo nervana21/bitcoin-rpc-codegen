@@ -19,42 +19,34 @@ use codegen::{
     load_api_methods_from_file, write_generated, CodeGenerator, TransportCodeGenerator,
     TransportCoreGenerator,
 };
-use regex::Regex;
+use serde_json::Value as JsonValue;
 
-/// Extract version from filename
-///
-/// This function extracts a Bitcoin Core version from the filename.
-/// It requires the filename to follow the pattern "api_vXX.json" or "api_vXX_X.json" where XX is a version number and X is a single digit.
-///
-/// # Arguments
-///
-/// * `filename` - The filename string (e.g., "api_v28.json", "api_v29_1.json")
-///
-/// # Returns
-///
-/// Returns `Result<String>` containing the extracted version string (e.g., "v28", "v29.1")
-///
-/// # Errors
-///
-/// Returns an error if the filename doesn't match the expected pattern.
-fn extract_version_from_filename(filename: &str) -> Result<String> {
-    let re = Regex::new(r"^api_v(\d+)(?:_(\d))?\.json$")?;
-    let caps = re
-        .captures(filename)
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "Input filename '{}' does not match expected pattern 'api_vXX.json' or 'api_vXX_X.json' where XX is a version number and X is a single digit. \
-                Examples: api_v28.json, api_v29.json, api_v29_1.json",
-                filename
-            )
-        })?;
+/// Extract version from JSON
+fn extract_version(input_path: &Path) -> Result<String> {
+    let bytes = fs::read(input_path).with_context(|| {
+        format!("Failed to read input file for version extraction: {input_path:?}")
+    })?;
+    let json: JsonValue = serde_json::from_slice(&bytes)
+        .with_context(|| format!("Failed to parse JSON from: {input_path:?}"))?;
 
-    let major = &caps[1];
-    let minor = caps.get(2).map(|m| m.as_str()).unwrap_or("0");
+    let v = json
+        .get("version")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow::anyhow!("Missing 'version' field in JSON"))?;
 
-    let version = format!("v{}.{}", major, minor);
+    let v = v.trim();
+    let v = if v.starts_with('v') { v.to_string() } else { format!("v{}", v) };
 
-    Ok(version)
+    // Normalize to major.minor (drop patch if present)
+    let parts: Vec<&str> = v.trim_start_matches('v').split('.').collect();
+    let normalized = match parts.as_slice() {
+        [maj] => format!("v{}", maj),
+        [maj, min] => format!("v{}.{}", maj, min),
+        [maj, min, _patch, ..] => format!("v{}.{}", maj, min),
+        _ => v,
+    };
+
+    Ok(normalized)
 }
 
 /// Generates a complete Bitcoin RPC client library structure and code.
@@ -74,8 +66,8 @@ fn extract_version_from_filename(filename: &str) -> Result<String> {
 /// # Arguments
 ///
 /// * `input_path` - Optional path to the input file containing JSON API spec.
-///   If None, defaults to "api_v29.json" in the project root, or "api_v29_1.json" if available.
-///   The filename must follow the pattern "api_vXX.json" or "api_vXX_X.json" where XX is the Bitcoin Core version and X is a single digit.
+///   If None, defaults to "bitcoin-core-api.json" in the project root.
+///   The file must contain a "version" field and a "methods" field with the API specification.
 ///
 /// # Returns
 ///
@@ -91,15 +83,12 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
                 project_root.join(path)
             },
         None => {
-            let default = project_root.join("api_v29_1.json");
+            let default = project_root.join("bitcoin-core-api.json");
             if default.exists() {
-                println!("[pipeline] no input provided; defaulting to api_v29_1.json");
                 default
             } else {
                 return Err(anyhow::anyhow!(
-                    "No input file specified. Please provide a path to an API JSON file.\n\
-                     The filename must follow the pattern 'api_vXX.json' or 'api_vXX_X.json' where XX is the Bitcoin Core version and X is a single digit.\n\
-                     Examples: api_v28.json, api_v29.json, api_v29_1.json"
+                    "No input file specified. Provide 'bitcoin-core-api.json'."
                 ));
             }
         }
@@ -107,9 +96,7 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
 
     if !input_path.exists() {
         return Err(anyhow::anyhow!(
-            "Input file not found: {:?}. Please provide a path to an API JSON file.\n\
-             The filename must follow the pattern 'api_vXX.json' or 'api_vXX_X.json' where XX is the Bitcoin Core version and X is a single digit.\n\
-             Examples: api_v28.json, api_v29.json, api_v29_1.json",
+            "Input file not found: {:?}. Provide 'bitcoin-core-api.json'.",
             input_path
         ));
     }
@@ -129,12 +116,8 @@ pub fn run(input_path: Option<&PathBuf>) -> Result<()> {
     copy_templates_to(&src_dir)
         .with_context(|| format!("Failed to copy template files to {src_dir:?}"))?;
 
-    // Extract version early to pass to functions that need it
-    let filename = input_path.file_name().and_then(|f| f.to_str()).ok_or_else(|| {
-        anyhow::anyhow!("Could not extract filename from input path: {:?}", input_path)
-    })?;
-
-    let version_str = extract_version_from_filename(filename)?;
+    // Extract version early to pass to functions that need it (prefer JSON's version field)
+    let version_str = extract_version(&input_path)?;
     let target_version = Version::from_string(&version_str)?;
     println!("Generating midas client for Bitcoin Core {}", version_str);
 

@@ -22,13 +22,12 @@ use crate::generators::{doc_comment, response_type};
 use crate::versioning::Version;
 
 /// Load API methods from a JSON file using the new schema system
-pub fn load_api_methods_from_file<P: AsRef<Path>>(
-    path: P,
-) -> std::result::Result<Vec<BtcMethod>, Box<dyn std::error::Error + Send + Sync>> {
+pub fn load_api_methods_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<BtcMethod>> {
     let raw = std::fs::read_to_string(&path)?;
     let v: Value = serde_json::from_str(&raw)?;
 
-    let methods_value = v.get("methods").ok_or("Missing 'methods' field in JSON")?;
+    let methods_value =
+        v.get("methods").ok_or_else(|| anyhow::anyhow!("Missing 'methods' field in JSON"))?;
 
     let methods_map: std::collections::HashMap<String, BtcMethod> =
         serde_json::from_value(methods_value.clone())?;
