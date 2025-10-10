@@ -15,15 +15,28 @@ use std::path::Path;
 use std::process::Command;
 
 use anyhow::Result;
-use bitcoin_rpc_types::{ApiDefinition, BtcMethod};
+use bitcoin_rpc_types::BtcMethod;
+use serde_json::Value;
 
 use crate::generators::{doc_comment, response_type};
 use crate::versioning::Version;
 
 /// Load API methods from a JSON file using the new schema system
-pub fn load_api_methods_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<BtcMethod>> {
-    let api_def = ApiDefinition::from_file(path)?;
-    Ok(api_def.rpcs.into_values().collect())
+pub fn load_api_methods_from_file<P: AsRef<Path>>(
+    path: P,
+) -> std::result::Result<Vec<BtcMethod>, Box<dyn std::error::Error + Send + Sync>> {
+    let raw = std::fs::read_to_string(&path)?;
+    let v: Value = serde_json::from_str(&raw)?;
+
+    let methods_value = v.get("methods").ok_or("Missing 'methods' field in JSON")?;
+
+    let methods_map: std::collections::HashMap<String, BtcMethod> =
+        serde_json::from_value(methods_value.clone())?;
+
+    // Sort methods by name to ensure consistent ordering across runs
+    let mut methods: Vec<BtcMethod> = methods_map.into_values().collect();
+    methods.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(methods)
 }
 
 /// Sub-crate: **`namespace_scaffolder`**
