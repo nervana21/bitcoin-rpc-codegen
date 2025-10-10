@@ -3,8 +3,8 @@
 //! Provides a `Version` type with helpers for formatting and comparison.
 use thiserror::Error;
 
-/// Midas build number component of the generated crate version (e.g., 29.1.{BUILD_VERSION}).
-pub const BUILD_VERSION: u32 = 2;
+/// Midas build number component of the generated crate version (e.g., 30.0.{BUILD_VERSION}).
+pub const BUILD_VERSION: u32 = 0;
 
 /// Bitcoin Core version representation
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
