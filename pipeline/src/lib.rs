@@ -278,7 +278,7 @@ pub fn generate_into(out_dir: &Path, input_path: &Path, target_version: &Version
      pub use config::Config;\n\
      pub use client_trait::client::BitcoinClient{version_capitalized};\n\
      pub use node::BitcoinNodeManager;\n\
-     pub use bitcoin::Network;\n\
+     pub use bitcoin::{{Network, Txid}};\n\
      pub use test_config::TestConfig;\n\
      pub use test_node::client::BitcoinTestClient;\n\
      pub use responses::*;\n\
