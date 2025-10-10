@@ -1,5 +1,7 @@
 {
-  "rpcs": {
+  "implementation": "bitcoin_core",
+  "version": "v30.0.0",
+  "methods": {
     "abandontransaction": {
       "category": "wallet",
       "description": "Mark in-wallet transaction <txid> as abandoned\nThis will mark this transaction and all its in-wallet descendants as abandoned which will allow\nfor their inputs to be respent.  It can be used to replace \"stuck\" or evicted transactions.\nIt only works on transactions which are not included in a block and are not currently in the mempool.\nIt has no effect on transactions which are already abandoned.\n",
@@ -4646,7 +4648,7 @@
     },
     "finalizepsbt": {
       "category": "rawtransactions",
-      "description": "Finalize the inputs of a PSBT. If the transaction is fully signed, it will produce a\nnetwork serialized transaction which can be broadcast with sendrawtransaction. Otherwise a PSBT will be\ncreated which has the final_scriptSig and final_scriptWitness fields filled for inputs that are complete.\nImplements the Finalizer and Extractor roles.\n",
+      "description": "Finalize the inputs of a PSBT. If the transaction is fully signed, it will produce a\nnetwork serialized transaction which can be broadcast with sendrawtransaction. Otherwise a PSBT will be\ncreated which has the final_scriptSig and final_scriptwitness fields filled for inputs that are complete.\nImplements the Finalizer and Extractor roles.\n",
       "examples": "> bitcoin-cli finalizepsbt \"psbt\"\n",
       "name": "finalizepsbt",
       "argument_names": [

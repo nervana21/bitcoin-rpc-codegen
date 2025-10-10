@@ -19,7 +19,7 @@ Together, these features translate Bitcoin Core into idiomatic Rust.
 
 ## Semantic Compression
 
-This project applies semantic compression. It models the RPC surface as a structured schema and generates type-safe Rust clients directly from that schema. This unites Rust consumers of the RPC interface layer. All generated code is derived from a **single source of truth**: [api_v29_1.json](api_v29_1.json). By adopting this schema, consistency is guaranteed not only within this codebase, but also across any Rust project that consumes Core [RPCs](https://github.com/nervana21/bitcoin/tree/2025-07-schema-generation).
+This project applies semantic compression. It models the RPC surface as a structured schema and generates type-safe Rust clients directly from that schema. This unites Rust consumers of the RPC interface layer. All generated code is derived from a **single source of truth**: [bitcoin-core-api.json](bitcoin-core-api.json). By adopting this schema, consistency is guaranteed not only within this codebase, but also across any Rust project that consumes Core [RPCs](https://github.com/nervana21/bitcoin/tree/2025-07-schema-generation).
 
 Deep Dive: [docs/semantic-compression.md](docs/semantic-compression.md)
 

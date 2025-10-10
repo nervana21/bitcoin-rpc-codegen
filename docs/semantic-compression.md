@@ -25,7 +25,7 @@ Where:
 
 This approach extends to **versioned families** of interfaces. Instead of one $\mathcal{S}$, the generator supports a set $\{\mathcal{S}_v\}$ for different Bitcoin Core versions:
 
-- $\{\Delta_v\}$ = Structured descriptions for each version (e.g., `api_v27.json`, `api_v28.json`, …)
+- $\{\Delta_v\}$ = Structured descriptions for each version (e.g., `bitcoin-core-api.json` with embedded version)
 - $\Gamma(\Delta_v) = \mathcal{I}_v$, with $\mathcal{I}_v \models \mathcal{S}_v$ for all $v$
 
 ```math
@@ -41,7 +41,7 @@ This scales from a single interface, to versioned families, to other structured 
 In this project:
 
 - `S` = Bitcoin Core RPC v28 specification
-- `Δ` = Structured schema (e.g., `api_v28.json`)
+- `Δ` = Structured schema (e.g., `bitcoin-core-api.json`)
 - `Γ` = [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen)
 - `I` = [`bitcoin-rpc-midas`](https://github.com/nervana21/bitcoin-rpc-midas`), the generated Rust client
 
