@@ -91,6 +91,8 @@ pub fn get_helpers_for_version(version: &str) -> Box<dyn VersionedClientHelpers>
     match major_version {
         "28" => Box::new(V28Helpers),
         "29" => Box::new(V29Helpers),
+        // Temporarily map v30 to v29 helpers until specialized support is added
+        "30" => Box::new(V29Helpers),
         _ => panic!("Unsupported version: {version}"),
     }
 }
@@ -122,6 +124,13 @@ mod tests {
     fn test_unsupported_version_panics() { get_helpers_for_version("invalid"); }
 
     #[test]
-    #[should_panic(expected = "Unsupported version: v30.1")]
-    fn test_unsupported_major_version_panics() { get_helpers_for_version("v30.1"); }
+    fn test_v30_maps_to_v29_helpers() {
+        // v30 should map to v29 helpers (temporary support)
+        let _helpers = get_helpers_for_version("v30.1");
+        let _helpers = get_helpers_for_version("v30");
+    }
+
+    #[test]
+    #[should_panic(expected = "Unsupported version: v31")]
+    fn test_unsupported_major_version_panics() { get_helpers_for_version("v31"); }
 }
