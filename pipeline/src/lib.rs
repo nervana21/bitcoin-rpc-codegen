@@ -393,7 +393,6 @@ Compared to hand-written RPC clients, this toolchain offers:
 - Reduced repetition
 - Fewer versioning issues
 - Increased compile-time checks
-- Support for all Bitcoin p2p networks (mainnet, regtest, signet, testnet, and testnet4)
 - Improved isolation from environment and port conflicts
 
 ## Architecture
