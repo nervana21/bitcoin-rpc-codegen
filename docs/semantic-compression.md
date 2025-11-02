@@ -1,3 +1,5 @@
+> **Note:** This document is part of the archived `bitcoin-rpc-codegen` repository. The concepts have been evolved and updated in the [Ethos](https://github.com/nervana21/ethos) project. For the latest version, see [semantic-convergence.md](https://github.com/nervana21/ethos/blob/main/docs/semantic-convergence.md) in the Ethos repository.
+
 # Semantic Compression and Protocol Interface Complexity
 
 This document explains the theory behind [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen), introducing **semantic compression**: a way to measure how compactly a generator can produce correct protocol implementations from a semantic specification.
@@ -43,7 +45,7 @@ In this project:
 - `S` = Bitcoin Core RPC v28 specification
 - `Δ` = Structured schema (e.g., `bitcoin-core-api.json`)
 - `Γ` = [`bitcoin-rpc-codegen`](https://github.com/nervana21/bitcoin-rpc-codegen)
-- `I` = [`bitcoin-rpc-midas`](https://github.com/nervana21/bitcoin-rpc-midas`), the generated Rust client
+- `I` = [`bitcoin-rpc-midas`](https://github.com/nervana21/bitcoin-rpc-midas), the generated Rust client
 
 The generator `Γ` reads `Δ` and emits a type-safe client `I` that matches `S`. The goal: minimize `Γ`'s size while ensuring `I` is correct.
 
