@@ -2,6 +2,17 @@
 [![Docs.rs](https://img.shields.io/docsrs/bitcoin-rpc-midas)](https://docs.rs/bitcoin-rpc-midas)
 [![crates.io](https://img.shields.io/crates/v/bitcoin-rpc-midas)](https://crates.io/crates/bitcoin-rpc-midas)
 
+---
+
+# ⚠️ **IMPORTANT: Project Migration Notice**
+
+> ## **This project has been migrated to [ethos](https://github.com/nervana21/ethos)**
+> 
+> **This repository is now archived.**  
+> Ethos is the successor to bitcoin-rpc-codegen, extending its semantic compression framework to all Bitcoin ecosystem protocols.
+
+---
+
 # bitcoin-rpc-codegen
 
 Generate [bitcoin-rpc-midas](https://github.com/nervana21/bitcoin-rpc-midas), a Bitcoin Core client that supercharges Bitcoin testing and development.
@@ -17,11 +28,9 @@ Compared to hand-written RPC clients, [midas](https://github.com/nervana21/bitco
 
 Together, these features translate Bitcoin Core into idiomatic Rust.
 
-## Semantic Compression
+## Semantic Conversion
 
-This project applies semantic compression. It models the RPC surface as a structured schema and generates type-safe Rust clients directly from that schema. This unites Rust consumers of the RPC interface layer. All generated code is derived from a **single source of truth**: [bitcoin-core-api.json](bitcoin-core-api.json). By adopting this schema, consistency is guaranteed not only within this codebase, but also across any Rust project that consumes Core [RPCs](https://github.com/nervana21/bitcoin/tree/2025-07-schema-generation).
-
-Deep Dive: [docs/semantic-compression.md](docs/semantic-compression.md)
+Deep Dive: [semantic-convergence.md](https://github.com/nervana21/ethos/blob/main/docs/semantic-convergence.md)
 
 ## Architecture
 
@@ -48,7 +57,7 @@ optional features, so your `Cargo.toml` could look like this:
 
 ```toml
 [dependencies]
-bitcoin-rpc-midas = "29.1.2"
+bitcoin-rpc-midas = "30.0.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
@@ -68,17 +77,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Contributing
-
-Contributors are warmly welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## License
 
 MIT OR Apache-2.0
 
 ## Related Projects
 
-Part of the bitcoin-rpc crate ecosystem, providing type-safe Rust primitives for testing and development at the Bitcoin Core JSON-RPC interface.
+**[Ethos](https://github.com/nervana21/ethos)**: The successor to this project, a meta-compiler for The Bitcoin Protocol.
 
 ## Security
 
